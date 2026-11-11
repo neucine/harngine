@@ -1,0 +1,15 @@
+{
+  "name": "@harngine/muse",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "description": "Living creative thought-space and flagship Harngine reference application",
+  "scripts": {
+    "build:ui": "bash scripts/build-ui.sh",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "harngine": "workspace:*",
+    "weivjs": "0.1.0"
+  }
+}

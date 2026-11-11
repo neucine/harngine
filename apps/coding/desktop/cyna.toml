@@ -1,0 +1,12 @@
+name = "coding_desktop"
+version = "0.1.2"
+src = "src"
+type = "staticlib"
+entry = "src/lib.cy"
+
+[dependencies]
+neiv = { version = "0.1.3" }
+
+[build]
+target = "native"
+opt = "release"

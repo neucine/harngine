@@ -1,0 +1,32 @@
+{
+  "name": "harngine",
+  "version": "0.1.0-alpha.0",
+  "description": "An execution framework for agent applications",
+  "license": "MPL-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24.21.0 <25"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./internal": {
+      "types": "./dist/internal/index.d.ts",
+      "import": "./dist/internal/index.js"
+    }
+  },
+  "bin": {
+    "harngine-manifest": "./dist/build/manifest-cli.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "dependencies": {
+    "ajv": "8.20.0",
+    "better-sqlite3": "13.0.3"
+  }
+}

@@ -1,0 +1,400 @@
+<template>
+  <div class="world-shell">
+    <span class="bootstrap">{{ boot() }}</span>
+
+    <header class="mast">
+      <div class="brand"><i>Q</i><span>Quest</span></div>
+      <div class="world-name">The Museum of Nearby Things</div>
+      <div class="presence"><i></i>{{ busy ? "The world is listening…" : presenceLabel() }}</div>
+    </header>
+
+    <section if="showEntrance" class="entrance">
+      <div class="entrance-art">
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+        <span class="star star-one">✦</span><span class="star star-two">·</span><span class="star star-three">✦</span>
+      </div>
+      <div class="entrance-copy">
+        <div class="overline">A shared cultural world</div>
+        <h1>The Museum<br />of Nearby Things</h1>
+        <p>Together, discover what connects these objects.</p>
+      </div>
+      <div class="enter-card">
+        <div class="expedition-mark">First expedition · about 3 minutes</div>
+        <p>Choose a lens, inspect two real artifacts, and pull a thread between them. The world will answer.</p>
+        <label>What should we call you?<input bind:value="draftName" on:input="updateName" maxlength="32" placeholder="Your name" /></label>
+        <button on:click="enterWorld" bind:disabled="busy">{{ busy ? "Opening…" : "Begin the first expedition" }}</button>
+        <small if="errorMessage" role="alert">{{ errorMessage }}</small>
+      </div>
+    </section>
+
+    <main if="data" class="world">
+      <aside class="left-rail">
+        <div class="you"><span>{{ initial(data.visitor.name) }}</span><div><b>{{ data.visitor.name }}</b><small>Your path is remembered</small></div></div>
+        <section>
+          <div class="rail-title">Here now</div>
+          <div class="visitors">
+            <div for="visitor in data.visitors" class="visitor">
+              <i>{{ initial(visitor.name) }}</i><span>{{ visitor.name }}</span>
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="rail-title">Motifs surfacing</div>
+          <div class="chips"><span for="motif in data.facets.motifs">{{ motif }}</span></div>
+        </section>
+        <button class="how-link" on:click="toggleHow">{{ showHow ? "Return to the world" : "How this world lives" }} <span>↗</span></button>
+      </aside>
+
+      <div class="main-stage">
+        <div if="errorMessage" class="error" role="alert">{{ errorMessage }}</div>
+
+        <section if="showHow" class="how-view">
+          <div class="overline">Under the surface</div>
+          <h1>A world that remembers<br />without keeping score.</h1>
+          <p class="lede">Quest uses durable, private perspectives and shared world reactions. The machinery stays beneath the experience; no trace decides what a visitor must think.</p>
+          <div class="how-grid">
+            <article><span>01</span><h3>Your perspective travels with you</h3><p>Each visitor has a private, durable companion that remembers where they have wandered and offers a different question on return.</p></article>
+            <article><span>02</span><h3>Meaning changes the shared world</h3><p>Leave a thought or draw a connection. A durable reaction listens across both source records and lets a new correspondence surface for everyone.</p></article>
+            <article><span>03</span><h3>Facts keep their roots</h3><p>Objects and dates remain attached to museum records. Interpretations are visibly human; they never masquerade as collection facts.</p></article>
+          </div>
+          <section class="memory-ledger">
+            <h2>Recent world reactions</h2>
+            <div if="data.reactions.length === 0" class="quiet">The world is waiting for its first new association.</div>
+            <article for="reaction in data.reactions" class="ledger-row">
+              <i>✦</i><div><p>{{ reaction.body }}</p><small>Remembered after {{ reaction.visitor_name }} wandered here · Work {{ shortId(reaction.work_id) }}</small></div>
+            </article>
+          </section>
+        </section>
+
+        <div if="!showHow">
+          <section if="guideActive" class="guide-card">
+            <div class="guide-progress"><span>First expedition</span><b>{{ guideProgress() }}</b></div>
+            <div class="guide-head"><div><div class="overline">A small purpose, not a right answer</div><h1>Together, discover what connects these objects.</h1></div><p>Your thread will become part of the shared world. Another visitor can follow it—or challenge it.</p></div>
+
+            <div if="guideStep === 1" class="guide-action">
+              <div><span>1 · Choose a lens</span><h2>What will you look for?</h2><p>A lens changes the question, not the facts.</p></div>
+              <div class="lens-row">
+                <button on:click="choosePower"><b>Power</b><small>Who gets to name, own, or command?</small></button>
+                <button on:click="chooseMeasure"><b>Measure</b><small>How is the world made graspable?</small></button>
+                <button on:click="chooseMemory"><b>Memory</b><small>What survives, and what disappears?</small></button>
+              </div>
+            </div>
+
+            <div if="guideStep === 2" class="guide-action compact">
+              <div><span>2 · Inspect one artifact through {{ guideLens }}</span><h2>Begin with {{ selected.title }}.</h2><p>Notice one detail in its image or record. There is no hidden answer.</p></div>
+              <button class="guide-primary" on:click="beginThread">I noticed something →</button>
+            </div>
+
+            <div if="guideStep === 3" class="guide-action compact">
+              <div><span>3 · Pull a thread</span><h2>Choose a second object.</h2><p>Which one changes what the first artifact means through the lens of {{ guideLens }}?</p></div>
+              <div class="target-row">
+                <button on:click="chooseTargetZero">{{ guideChoices[0].title }} →</button>
+                <button on:click="chooseTargetOne">{{ guideChoices[1].title }} →</button>
+                <button on:click="chooseTargetTwo">{{ guideChoices[2].title }} →</button>
+              </div>
+            </div>
+
+            <div if="guideStep === 4" class="guide-action connection-step">
+              <div><span>4 · Make or challenge a connection</span><h2>{{ guidePair() }}</h2><p>Say what holds the two together—or why the obvious connection breaks.</p></div>
+              <div class="stance-row"><button bind:class="stanceClass('Make')" on:click="chooseMake">Make</button><button bind:class="stanceClass('Challenge')" on:click="chooseChallenge">Challenge</button></div>
+              <input bind:value="guideReason" on:input="updateGuideReason" maxlength="120" placeholder="Because both… / Unlike the first…" />
+              <button class="guide-primary" on:click="revealEcho" bind:disabled="busy || !guideStance || tooShort(guideReason)">{{ busy ? "Listening across the collection…" : "Reveal the echo" }}</button>
+            </div>
+
+            <div if="guideStep === 5" class="guide-action echo-step">
+              <div><span>✦ The world answered</span><h2>Your thread is now part of the constellation.</h2><p>{{ latestReaction }}</p><small>It will remain here for the next visitor to follow or challenge.</small></div>
+              <button class="guide-primary" on:click="finishGuide">Keep exploring freely →</button>
+            </div>
+          </section>
+
+          <section if="!guideActive" class="world-intro">
+            <div>
+              <div class="overline">A living constellation · {{ data.mode }}</div>
+              <h1>{{ data.world.title }}</h1>
+              <p>{{ data.world.invitation }}</p>
+            </div>
+            <div class="return-note" if="perspective">
+              <span>The Keeper of Nearness</span>
+              <p>{{ perspective.message }}</p>
+              <b>{{ perspective.question }}</b>
+            </div>
+          </section>
+
+          <section class="constellation" aria-label="Museum object constellation">
+            <button
+              for="item in data.objects"
+              bind:class="objectClass(item.id)"
+              on:click="wanderTo(item.id)"
+              bind:title="'Wander to ' + item.title"
+            >
+              <img bind:src="item.image" alt="" />
+              <span class="node-number">{{ nodeNumber(item.id) }}</span>
+              <span class="node-copy"><b>{{ item.title }}</b><small>{{ item.date }} · {{ item.place }}</small></span>
+            </button>
+            <div class="thread-line thread-a"></div><div class="thread-line thread-b"></div><div class="thread-line thread-c"></div>
+          </section>
+
+          <section class="encounter">
+            <div class="object-view">
+              <div class="object-image"><img bind:src="selected.image" bind:alt="selected.title" /><span>{{ selected.kind }}</span></div>
+              <div class="object-story">
+                <div class="overline">You are near · Met {{ selected.id }}</div>
+                <h2>{{ selected.title }}</h2>
+                <p class="maker">{{ selected.maker }} · {{ selected.date }}</p>
+                <p>{{ selected.material }}</p>
+                <div class="source-line"><span>Collection record · {{ selected.source.mode }}</span><a bind:href="selected.source.sourceLink" target="_blank" rel="noreferrer">Visit The Met ↗</a></div>
+              </div>
+            </div>
+
+            <aside class="leave-something">
+              <div class="overline">Leave something behind</div>
+              <h3>What did this object make you notice?</h3>
+              <textarea bind:value="draftThought" on:input="updateThought" maxlength="360" placeholder="An interpretation, a question, an image…"></textarea>
+              <button on:click="leaveThought" bind:disabled="busy || tooShort(draftThought)">Let the world hear it</button>
+              <div class="or"><span></span>or draw a trail<span></span></div>
+              <select bind:value="trailTarget" on:change="updateTrailTarget">
+                <option value="">Choose another object</option>
+                <option for="item in otherObjects" bind:value="item.id">{{ item.title }}</option>
+              </select>
+              <input bind:value="draftTrail" on:input="updateTrail" maxlength="120" placeholder="Name the connection" />
+              <button class="secondary" on:click="drawTrail" bind:disabled="busy || !trailTarget || tooShort(draftTrail)">Make this path visible</button>
+            </aside>
+          </section>
+
+          <section if="latestReaction" class="bloom">
+            <span>✦ The constellation shifted</span>
+            <p>{{ latestReaction }}</p>
+          </section>
+
+          <section class="shared-memory">
+            <div class="section-head"><div><div class="overline">Shared memory</div><h2>What people have left nearby</h2></div><small>{{ data.interpretations.length }} interpretations · {{ visitorTrailCount() }} visitor trails</small></div>
+            <div if="nearbyThoughts.length === 0" class="quiet">No one has left words beside this object yet. Silence is part of the world too.</div>
+            <div class="thought-grid">
+              <blockquote for="thought in nearbyThoughts">
+                <p>“{{ thought.body }}”</p><footer>{{ thought.visitor_name }} · left here {{ relativeTime(thought.created_at) }}</footer>
+              </blockquote>
+            </div>
+            <div class="trail-list">
+              <article for="trail in nearbyTrails"><i>↝</i><div><b>{{ trail.label }}</b><small>{{ trailOrigin(trail) }}</small></div></article>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script lang="ts">
+  export interface Props { token: string; }
+  export let props: Props;
+
+  let data: any = null;
+  let selected: any = { id: 0, title: "", maker: "", date: "", material: "", kind: "", image: "", source: {} };
+  let otherObjects: any[] = [];
+  let nearbyThoughts: any[] = [];
+  let nearbyTrails: any[] = [];
+  let perspective: any = null;
+  let initialized = false;
+  let busy = false;
+  let showEntrance = true;
+  let showHow = false;
+  let errorMessage = "";
+  let draftName = "";
+  let draftThought = "";
+  let trailTarget = "";
+  let draftTrail = "";
+  let latestReaction = "";
+  let auth: any = null;
+  let guideActive = true;
+  let guideStep = 1;
+  let guideLens = "";
+  let guideFrom = 444408;
+  let guideTo = 0;
+  let guideStance = "";
+  let guideReason = "";
+  let guideChoices: any[] = [{ title: "" }, { title: "" }, { title: "" }];
+
+  function boot() {
+    if (!initialized && typeof window !== "undefined") {
+      initialized = true;
+      const saved = window.localStorage.getItem("quest-world-visitor");
+      if (saved) {
+        try { auth = JSON.parse(saved); } catch { auth = null; }
+      }
+      guideActive = window.localStorage.getItem("quest-first-expedition") !== "complete";
+      if (auth) queueMicrotask(returnToWorld);
+      window.setInterval(() => { if (auth && !busy && !showEntrance) load(); }, 3500);
+    }
+    return "";
+  }
+
+  async function api(path: string, body?: any) {
+    const response = await fetch(path, {
+      method: body ? "POST" : "GET",
+      headers: {
+        "x-quest-token": props.token,
+        ...(auth ? { "x-visitor-token": auth.visitorToken } : {}),
+        ...(body ? { "content-type": "application/json" } : {})
+      },
+      ...(body ? { body: JSON.stringify(body) } : {})
+    });
+    const value = await response.json();
+    if (!response.ok) throw new Error(value.error || "The world could not answer");
+    return value;
+  }
+
+  async function enterWorld() {
+    if (busy) return;
+    busy = true;
+    try {
+      const result = await api("/api/visitors", { name: draftName });
+      auth = { visitorId: result.visitorId, visitorToken: result.visitorToken };
+      window.localStorage.setItem("quest-world-visitor", JSON.stringify(auth));
+      perspective = result.perspective;
+      showEntrance = false;
+      await load();
+    } catch (error) { errorMessage = message(error); }
+    finally { busy = false; }
+  }
+
+  async function returnToWorld() {
+    busy = true;
+    try {
+      const result = await api("/api/return", {});
+      perspective = result.perspective;
+      showEntrance = false;
+      await load();
+    } catch (error) {
+      window.localStorage.removeItem("quest-world-visitor");
+      auth = null;
+      showEntrance = true;
+      errorMessage = message(error);
+    } finally { busy = false; }
+  }
+
+  async function load() {
+    try { applyState(await api("/api/world")); }
+    catch (error) { errorMessage = message(error); }
+  }
+
+  function applyState(next: any) {
+    data = next;
+    selected = next.objects.find((item: any) => item.id === next.selectedObjectId) || next.objects[0];
+    otherObjects = next.objects.filter((item: any) => item.id !== selected.id);
+    nearbyThoughts = next.interpretations.filter((item: any) => item.object_id === selected.id);
+    nearbyTrails = next.connections.filter((item: any) => item.from === selected.id || item.to === selected.id);
+    errorMessage = "";
+  }
+
+  async function wanderTo(objectId: number) {
+    if (busy || objectId === selected.id) return;
+    busy = true;
+    latestReaction = "";
+    try {
+      const result = await api("/api/wander", { objectId });
+      perspective = result.perspective;
+      await load();
+    } catch (error) { errorMessage = message(error); }
+    finally { busy = false; }
+  }
+
+  async function leaveThought() {
+    if (busy) return;
+    busy = true;
+    try {
+      const result = await api("/api/interpret", { objectId: selected.id, text: draftThought });
+      latestReaction = result.text;
+      draftThought = "";
+      await load();
+    } catch (error) { errorMessage = message(error); }
+    finally { busy = false; }
+  }
+
+  async function drawTrail() {
+    if (busy) return;
+    busy = true;
+    try {
+      const result = await api("/api/connect", { from: selected.id, to: Number(trailTarget), label: draftTrail });
+      latestReaction = result.text;
+      draftTrail = "";
+      trailTarget = "";
+      await load();
+    } catch (error) { errorMessage = message(error); }
+    finally { busy = false; }
+  }
+
+  function updateName(event: Event) { draftName = fieldValue(event); }
+  function updateThought(event: Event) { draftThought = fieldValue(event); }
+  function updateTrail(event: Event) { draftTrail = fieldValue(event); }
+  function updateTrailTarget(event: Event) { trailTarget = fieldValue(event); }
+  function updateGuideReason(event: Event) { guideReason = fieldValue(event); }
+  function fieldValue(event: Event) { return (event.currentTarget as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value; }
+  function message(error: unknown) { return error instanceof Error ? error.message : "The world could not answer"; }
+  function toggleHow() { showHow = !showHow; }
+  function initial(name: string) { return name.slice(0, 1).toUpperCase(); }
+  function presenceLabel() { return data ? `${data.visitors.length} ${data.visitors.length === 1 ? "visitor" : "visitors"} in the world` : "World waking"; }
+  function objectClass(id: number) { return `object-node${id === selected.id ? " selected" : ""}${data.visits.includes(id) ? " visited" : ""}`; }
+  function nodeNumber(id: number) { return String(data.objects.findIndex((item: any) => item.id === id) + 1).padStart(2, "0"); }
+  function visitorTrailCount() { return data.connections.filter((trail: any) => trail.origin === "visitor").length; }
+  function trailOrigin(trail: any) { return trail.origin === "visitor" ? `A path drawn by ${trail.visitor_name}` : "A curatorial trail"; }
+  function shortId(value: string) { return value ? value.slice(-8) : ""; }
+  function tooShort(value: string) { return value.length < 3; }
+  function guideProgress() { return guideStep === 5 ? "Echo revealed" : `${guideStep} of 4`; }
+  function choosePower() { chooseLens("Power"); }
+  function chooseMeasure() { chooseLens("Measure"); }
+  function chooseMemory() { chooseLens("Memory"); }
+  function chooseLens(lens: string) {
+    guideLens = lens;
+    guideFrom = selected.id;
+    guideChoices = data.objects.filter((item: any) => item.id !== guideFrom);
+    guideStep = 2;
+  }
+  function beginThread() { guideStep = 3; }
+  function chooseTargetZero() { chooseTarget(0); }
+  function chooseTargetOne() { chooseTarget(1); }
+  function chooseTargetTwo() { chooseTarget(2); }
+  function chooseTarget(index: number) {
+    guideTo = guideChoices[index].id;
+    guideStep = 4;
+  }
+  function chooseMake() { guideStance = "Make"; }
+  function chooseChallenge() { guideStance = "Challenge"; }
+  function stanceClass(value: string) { return value === guideStance ? "active" : ""; }
+  function guidePair() {
+    const left = data.objects.find((item: any) => item.id === guideFrom);
+    const right = data.objects.find((item: any) => item.id === guideTo);
+    return left && right ? `${left.title} ↝ ${right.title}` : "Two objects, one thread";
+  }
+  async function revealEcho() {
+    if (busy || !guideTo || !guideStance || tooShort(guideReason)) return;
+    busy = true;
+    try {
+      const label = `${guideStance} through ${guideLens}: ${guideReason}`;
+      const result = await api("/api/connect", { from: guideFrom, to: guideTo, label });
+      latestReaction = result.text;
+      guideStep = 5;
+      await load();
+    } catch (error) { errorMessage = message(error); }
+    finally { busy = false; }
+  }
+  function finishGuide() {
+    guideActive = false;
+    window.localStorage.setItem("quest-first-expedition", "complete");
+  }
+  function relativeTime(value: number) {
+    const minutes = Math.max(0, Math.round((Date.now() - value) / 60000));
+    return minutes < 1 ? "just now" : minutes === 1 ? "a minute ago" : `${minutes} minutes ago`;
+  }
+</script>
+
+<style>
+  :global(:root) { --night:#121815; --forest:#1d2823; --paper:#f0eadb; --cream:#faf6eb; --ink:#17201d; --gold:#d5ad5c; --rust:#9b4c3d; --sage:#91a99a; --line:#d8cfbb; }
+  :global(*) { box-sizing:border-box; }
+  :global(body) { margin:0; background:var(--night); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,sans-serif; }
+  :global(button),:global(input),:global(textarea),:global(select) { font:inherit; }
+  .bootstrap{display:none}.world-shell{min-height:100vh;background:var(--paper);background-image:radial-gradient(#614e3420 1px,transparent 1px);background-size:20px 20px}.mast{position:sticky;z-index:10;top:0;height:64px;padding:0 3.5vw;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:#121815f5;color:#fff;border-bottom:1px solid #ffffff15;backdrop-filter:blur(10px)}.brand{display:flex;gap:10px;align-items:center;text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:700}.brand i{display:grid;place-items:center;width:31px;height:31px;border:1px solid var(--gold);border-radius:50%;color:var(--gold);font:16px Georgia;font-style:normal}.world-name{font:16px Georgia;color:#eae2d1}.presence{justify-self:end;display:flex;gap:9px;align-items:center;color:#b8c1bb;font-size:10px}.presence i{width:6px;height:6px;border-radius:50%;background:#80a888;box-shadow:0 0 0 4px #80a88820}.entrance{position:relative;min-height:calc(100vh - 64px);padding:8vh 8vw;overflow:hidden;display:grid;grid-template-columns:1.2fr .8fr;align-content:center;gap:8vw;background:var(--forest);color:white}.entrance-copy{position:relative;z-index:2}.overline{text-transform:uppercase;letter-spacing:.18em;font-size:9px;font-weight:800;color:var(--rust)}.entrance .overline{color:#e0bd73}.entrance h1,.world-intro h1,.how-view>h1{margin:14px 0 24px;font:normal clamp(56px,8vw,105px)/.86 Georgia,serif;letter-spacing:-.06em}.entrance-copy p{max-width:660px;font:24px/1.5 Georgia;color:#e2ded2}.enter-card{position:relative;z-index:2;padding:30px;background:var(--cream);color:var(--ink);box-shadow:0 30px 90px #0005}.expedition-mark{margin-bottom:10px;color:var(--rust);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.enter-card p{margin:0 0 25px;font:18px/1.5 Georgia}.enter-card label{display:block;margin-bottom:7px;color:#716b60;font-size:10px;text-transform:uppercase;letter-spacing:.12em}.enter-card input{width:100%;padding:14px;border:1px solid var(--line);background:white}.enter-card button,.leave-something button{width:100%;margin-top:11px;padding:13px;border:0;background:var(--rust);color:white;font-weight:700;cursor:pointer}.enter-card small{display:block;margin-top:10px;color:var(--rust)}.entrance-art{position:absolute;inset:0;opacity:.6}.orbit{position:absolute;border:1px solid #dabf7d22;border-radius:50%}.orbit-one{width:70vw;height:70vw;left:-20vw;top:-25vw}.orbit-two{width:50vw;height:50vw;right:-10vw;bottom:-25vw}.star{position:absolute;color:var(--gold)}.star-one{left:22%;top:24%;font-size:28px}.star-two{left:63%;top:15%;font-size:55px}.star-three{right:14%;bottom:20%;font-size:17px}.world{display:grid;grid-template-columns:230px minmax(0,1fr);max-width:1700px;margin:auto}.left-rail{position:sticky;top:64px;height:calc(100vh - 64px);padding:28px 20px;display:flex;flex-direction:column;border-right:1px solid var(--line);background:#f4efe2}.you{display:flex;gap:10px;align-items:center;padding-bottom:24px;border-bottom:1px solid var(--line)}.you>span,.visitor i{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--forest);color:white;font-style:normal;font-size:11px}.you b,.you small{display:block}.you small{color:#827b6e;font-size:9px}.left-rail section{margin-top:25px}.rail-title{text-transform:uppercase;letter-spacing:.13em;font-size:9px;color:#81796a;margin-bottom:11px}.visitors{display:grid;gap:8px}.visitor{display:flex;gap:8px;align-items:center;font-size:11px}.visitor i{width:24px;height:24px;background:#5c7467;font-size:9px}.chips{display:flex;flex-wrap:wrap;gap:5px}.chips span{padding:4px 7px;border:1px solid #cfc4ad;border-radius:20px;font-size:9px;color:#675f54}.how-link{margin-top:auto;padding:11px 3px;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;color:#44594d;font-size:11px;cursor:pointer}.how-link span{float:right}.main-stage{padding:38px clamp(25px,4vw,65px) 80px;min-width:0}.error{padding:12px;margin-bottom:16px;background:#f5dcd5;color:#833a2e}.world-intro{display:grid;grid-template-columns:1.2fr .8fr;gap:50px;align-items:end}.world-intro h1{font-size:clamp(46px,6vw,82px);margin:10px 0 15px}.world-intro>div>p{max-width:680px;margin:0;color:#6f6a60;font:17px/1.6 Georgia}.return-note{padding:20px;border-left:2px solid var(--gold);background:#f8f3e7}.return-note span{color:var(--rust);font-size:9px;text-transform:uppercase;letter-spacing:.12em}.return-note p{margin:9px 0;color:#3d463f;font:15px/1.5 Georgia}.return-note b{font-size:11px;color:#59685e}.guide-card{padding:28px;background:var(--forest);color:white;border:1px solid #ffffff18;box-shadow:0 22px 70px #24312924}.guide-progress{display:flex;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid #ffffff1a;color:#d5caa9;font-size:9px;text-transform:uppercase;letter-spacing:.16em}.guide-head{display:grid;grid-template-columns:1.4fr .6fr;gap:35px;align-items:end;padding:24px 0}.guide-head .overline{color:var(--gold)}.guide-head h1{max-width:780px;margin:8px 0 0;font:normal clamp(34px,4.3vw,62px)/.96 Georgia;letter-spacing:-.04em}.guide-head>p{margin:0;color:#b9c2bc;font:15px/1.5 Georgia}.guide-action{padding:22px;background:var(--cream);color:var(--ink)}.guide-action>div>span{color:var(--rust);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em}.guide-action h2{margin:6px 0;font:27px/1.15 Georgia}.guide-action p{margin:5px 0;color:#6e695f;font:14px/1.5 Georgia}.lens-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:18px}.lens-row button{padding:15px;border:1px solid var(--line);background:white;text-align:left;cursor:pointer}.lens-row b,.lens-row small{display:block}.lens-row b{margin-bottom:5px;color:var(--rust);font:19px Georgia}.lens-row small{color:#746e62;font-size:10px;line-height:1.4}.guide-action.compact{display:flex;justify-content:space-between;gap:25px;align-items:center}.guide-primary{padding:12px 18px;border:0;background:var(--rust);color:white;font-weight:700;cursor:pointer}.guide-primary:disabled{opacity:.45}.target-row{display:grid;min-width:340px;gap:6px}.target-row button{padding:9px 12px;border:1px solid var(--line);background:white;text-align:left;color:var(--ink);cursor:pointer}.target-row button:hover{border-color:var(--rust);color:var(--rust)}.connection-step{display:grid;grid-template-columns:1.2fr auto minmax(230px,.8fr) auto;gap:12px;align-items:center}.stance-row{display:flex;gap:5px}.stance-row button{padding:9px 12px;border:1px solid var(--line);background:white;cursor:pointer}.stance-row button.active{background:var(--forest);color:white}.connection-step input{min-width:0;padding:11px;border:1px solid var(--line)}.echo-step{display:flex;justify-content:space-between;gap:30px;align-items:center;background:#f3dfb5}.echo-step small{display:block;margin-top:10px;color:#7a6950}.constellation{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:30px 0}.object-node{position:relative;z-index:2;padding:0;border:1px solid #cfc5b1;background:#f8f4e9;text-align:left;cursor:pointer;transition:.25s;overflow:hidden}.object-node:hover{transform:translateY(-4px);box-shadow:0 18px 45px #30271a22}.object-node.selected{outline:3px solid var(--rust);outline-offset:2px}.object-node.visited:after{content:'visited';position:absolute;top:9px;right:9px;padding:3px 6px;background:#18231fd9;color:white;text-transform:uppercase;letter-spacing:.1em;font-size:7px}.object-node img{width:100%;height:155px;object-fit:cover;filter:saturate(.82)}.node-number{display:block;margin:10px 12px 2px;color:var(--rust);font:10px Georgia}.node-copy{display:block;padding:0 12px 14px}.node-copy b,.node-copy small{display:block}.node-copy b{min-height:39px;font:15px/1.2 Georgia}.node-copy small{margin-top:7px;color:#777064;font-size:9px}.thread-line{position:absolute;z-index:1;top:75px;height:1px;background:#a7823d66;transform-origin:left}.thread-a{left:20%;width:20%;transform:rotate(4deg)}.thread-b{left:45%;width:21%;transform:rotate(-3deg)}.thread-c{left:70%;width:18%;transform:rotate(5deg)}.encounter{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(285px,.65fr);gap:18px}.object-view{display:grid;grid-template-columns:minmax(220px,.75fr) minmax(280px,1fr);background:var(--forest);color:white;min-height:390px}.object-image{position:relative}.object-image img{width:100%;height:100%;min-height:390px;object-fit:cover}.object-image span{position:absolute;left:13px;bottom:13px;padding:5px 8px;background:#121815d9;font-size:9px;text-transform:uppercase;letter-spacing:.1em}.object-story{display:flex;flex-direction:column;justify-content:center;padding:35px}.object-story .overline{color:#e0bd73}.object-story h2{margin:10px 0;font:normal 35px/1.05 Georgia}.object-story .maker{color:#d8cba9}.object-story>p{font:14px/1.55 Georgia;color:#bdc5bf}.source-line{display:flex;justify-content:space-between;gap:12px;margin-top:20px;padding-top:14px;border-top:1px solid #ffffff20;font-size:9px;color:#aebbb3}.source-line a{color:#e0bd73}.leave-something{padding:23px;border:1px solid var(--line);background:var(--cream)}.leave-something h3{margin:7px 0 13px;font:24px/1.1 Georgia}.leave-something textarea,.leave-something input,.leave-something select{width:100%;padding:11px;border:1px solid var(--line);background:white;color:var(--ink)}.leave-something textarea{min-height:100px;resize:vertical}.leave-something button.secondary{background:#435b4e}.leave-something button:disabled,.enter-card button:disabled{opacity:.45;cursor:not-allowed}.or{display:flex;gap:8px;align-items:center;margin:18px 0;color:#9a9284;font-size:9px;text-transform:uppercase;letter-spacing:.1em}.or span{flex:1;height:1px;background:var(--line)}.leave-something select{margin-bottom:8px}.bloom{margin-top:18px;padding:20px 24px;background:#733e36;color:white}.bloom span{text-transform:uppercase;letter-spacing:.14em;font-size:9px;color:#e6c67f}.bloom p{margin:8px 0 0;font:17px/1.45 Georgia}.shared-memory{margin-top:42px}.section-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:16px}.section-head h2,.memory-ledger h2{margin:5px 0 0;font:30px Georgia}.section-head small{color:#7b7468}.quiet{padding:35px;border:1px dashed var(--line);color:#817a6d;text-align:center;font:15px Georgia}.thought-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.thought-grid blockquote{margin:0;padding:20px;background:var(--cream);border:1px solid var(--line)}.thought-grid p{margin:0;font:17px/1.4 Georgia}.thought-grid footer{margin-top:16px;color:#817a6d;font-size:9px}.trail-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.trail-list article{display:flex;gap:9px;align-items:center;padding:9px 12px;border:1px solid var(--line);background:#f7f1e4}.trail-list i{color:var(--rust);font-style:normal}.trail-list b,.trail-list small{display:block}.trail-list b{font-size:10px}.trail-list small{color:#827a6d;font-size:8px}.how-view>.overline{margin-top:5vh}.how-view>h1{font-size:clamp(52px,7vw,90px);margin:12px 0 22px}.how-view .lede{max-width:720px;font:19px/1.6 Georgia;color:#666158}.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:35px}.how-grid article{padding:24px;background:var(--cream);border:1px solid var(--line)}.how-grid span{color:var(--rust);font:20px Georgia}.how-grid h3{font:23px/1.15 Georgia}.how-grid p{color:#746e63;font-size:12px;line-height:1.55}.memory-ledger{margin-top:30px}.ledger-row{display:grid;grid-template-columns:30px 1fr;gap:11px;padding:14px 0;border-top:1px solid var(--line)}.ledger-row i{color:var(--rust);font-style:normal}.ledger-row p{margin:0;font:15px Georgia}.ledger-row small{color:#817a6e;font-size:9px}
+  @media(max-width:1100px){.constellation{grid-template-columns:repeat(2,1fr)}.thread-line{display:none}.encounter,.world-intro{grid-template-columns:1fr}.return-note{max-width:700px}.thought-grid{grid-template-columns:repeat(2,1fr)}.connection-step{grid-template-columns:1fr 1fr}.connection-step>div:first-child{grid-column:1/-1}}
+  @media(max-width:760px){.mast{grid-template-columns:1fr auto}.world-name{display:none}.world{grid-template-columns:1fr}.left-rail{position:static;height:auto;display:grid;grid-template-columns:1fr 1fr;padding:18px}.left-rail section{display:none}.how-link{margin:0;border:0;text-align:right}.main-stage{padding:28px 16px 60px}.entrance{grid-template-columns:1fr;padding:45px 22px}.entrance h1{font-size:57px}.enter-card{max-width:520px}.guide-card{padding:17px}.guide-head,.lens-row{grid-template-columns:1fr}.guide-action.compact,.echo-step{display:grid}.target-row{min-width:0}.connection-step{grid-template-columns:1fr}.connection-step>div:first-child{grid-column:auto}.constellation{grid-template-columns:1fr 1fr}.object-node img{height:125px}.object-view{grid-template-columns:1fr}.object-image img{height:330px;min-height:0}.thought-grid,.how-grid{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}}
+  @media(max-width:480px){.constellation{grid-template-columns:1fr}.object-node{display:grid;grid-template-columns:110px 1fr}.object-node img{width:110px;height:120px;grid-row:1/3}.node-copy b{min-height:0}.object-story h2{font-size:29px}.mast{padding:0 15px}.presence{font-size:0}.presence i{display:block}}
+</style>

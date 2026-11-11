@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.tsbuildinfo
+
+.harngine/
+# Preserve ignored data directories created before the Harngine rename.
+.pangent/
+*.tgz

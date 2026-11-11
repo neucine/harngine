@@ -1,0 +1,182 @@
+{
+  "recordingVersion": 1,
+  "provider": "met",
+  "providerVersion": "collection-api-v1",
+  "fetchedAt": "2026-10-10T22:28:08Z",
+  "source": "https://collectionapi.metmuseum.org/public/collection/v1/objects/{objectID}",
+  "licence": "CC0-1.0",
+  "objects": [
+    {
+      "contentHash": "1e6b3d229cc63997cc5208c0e2c2206db6bcaa0ef10cec0356e5aad195ef89be",
+      "payload": {
+        "artistDisplayName": "‘Umar ibn Yusuf ibn ‘Umar ibn ‘Ali ibn Rasul al-Muzaffari",
+        "classification": "Metal",
+        "creditLine": "Edward C. Moore Collection, Bequest of Edward C. Moore, 1891",
+        "culture": "",
+        "department": "Islamic Art",
+        "dimensions": "Case (a): Max. W. 7 5/8 in. (19.4 cm)\r\n                Diam. 6 1/8 in. (15.6 cm)\r\n                D. 1/4 in. (0.6 cm)\r\nBar with attached nail (b):  Max. H. 1 7/8 in. (4.8 cm)\r\n                                               Max. W. 1 1/8 in. (2.9 cm)\r\n                                               L. 5 in. (12.7 cm)\r\nNet (c): Diam. 5 in. (12.7 cm)\r\nPlates (d-g): Diam. 5 in. (12.7 cm)\r\nPin (h): L. 1 3/4 in. (4.4 cm)\r\n             W. 1/2 in. (1.3 cm)",
+        "dynasty": "",
+        "isPublicDomain": true,
+        "medium": "Brass; cast and hammered, pierced, chased, inlaid with silver",
+        "objectBeginDate": 1290,
+        "objectDate": "dated 690 AH/1291 CE",
+        "objectEndDate": 1292,
+        "objectID": 444408,
+        "objectName": "Astrolabe",
+        "objectURL": "https://www.metmuseum.org/art/collection/search/444408",
+        "period": "",
+        "primaryImage": "https://images.metmuseum.org/CRDImages/is/original/DP170386.jpg",
+        "primaryImageSmall": "https://images.metmuseum.org/CRDImages/is/web-large/DP170386.jpg",
+        "reign": "",
+        "rightsAndReproduction": "",
+        "tags": [
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300054534",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q333",
+            "term": "Astronomy"
+          }
+        ],
+        "title": "Astrolabe of ‘Umar ibn Yusuf ibn ‘Umar ibn ‘Ali ibn Rasul al-Muzaffari"
+      }
+    },
+    {
+      "contentHash": "495be3b7b5d54831d15bbf825801704da89354baa02d9aefe668d2bd5a267bc5",
+      "payload": {
+        "artistDisplayName": "Michael Ostendorfer",
+        "classification": "Books",
+        "creditLine": "Gift of Herbert N. Straus, 1925",
+        "culture": "",
+        "department": "Drawings and Prints",
+        "dimensions": "17 7/8 × 12 11/16 × 1 5/16 in. (45.4 × 32.3 × 3.3 cm)",
+        "dynasty": "",
+        "isPublicDomain": true,
+        "medium": "Hand-colored woodcuts",
+        "objectBeginDate": 1540,
+        "objectDate": "May 1540",
+        "objectEndDate": 1540,
+        "objectID": 337061,
+        "objectName": "Book",
+        "objectURL": "https://www.metmuseum.org/art/collection/search/337061",
+        "period": "",
+        "primaryImage": "https://images.metmuseum.org/CRDImages/dp/original/DP-18111-001.jpg",
+        "primaryImageSmall": "https://images.metmuseum.org/CRDImages/dp/web-large/DP-18111-001.jpg",
+        "reign": "",
+        "rightsAndReproduction": "",
+        "tags": [
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300054534",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q333",
+            "term": "Astronomy"
+          }
+        ],
+        "title": "Astronomicum Caesareum"
+      }
+    },
+    {
+      "contentHash": "685acecd1cf5f4dbb5aa23534fe510d33f5c6dce78b5203e4597082625e2699e",
+      "payload": {
+        "artistDisplayName": "Francesco di Giorgio Martini",
+        "classification": "Woodwork",
+        "creditLine": "Rogers Fund, 1939",
+        "culture": "",
+        "department": "European Sculpture and Decorative Arts",
+        "dimensions": "H. 15 ft. 10 15/16 in. (485 cm), W. 16 ft. 11 15/16 in. (518 cm), D. 12 ft. 7 3/16 in. (384 cm)",
+        "dynasty": "",
+        "isPublicDomain": true,
+        "medium": "Walnut, beech, rosewood, oak and fruitwoods in walnut base",
+        "objectBeginDate": 1473,
+        "objectDate": "ca. 1478–82",
+        "objectEndDate": 1487,
+        "objectID": 198556,
+        "objectName": "Period room",
+        "objectURL": "https://www.metmuseum.org/art/collection/search/198556",
+        "period": "",
+        "primaryImage": "https://images.metmuseum.org/CRDImages/es/original/DT2954.jpg",
+        "primaryImageSmall": "https://images.metmuseum.org/CRDImages/es/web-large/DT2954.jpg",
+        "reign": "",
+        "rightsAndReproduction": "",
+        "tags": [
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300041620",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q34379",
+            "term": "Musical Instruments"
+          },
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300266506",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q5113",
+            "term": "Birds"
+          },
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300028051",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q571",
+            "term": "Books"
+          },
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300391239",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q2998430",
+            "term": "Interiors"
+          },
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300226591",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q20793164",
+            "term": "Armor"
+          },
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300042101",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q180733",
+            "term": "Lutes"
+          }
+        ],
+        "title": "Studiolo from the Ducal Palace in Gubbio"
+      }
+    },
+    {
+      "contentHash": "0b06e13dea92f0ce1a5098319ce1e88d0bfaa2afe035a73b828f0bb9a4b4dcc2",
+      "payload": {
+        "artistDisplayName": "",
+        "classification": "",
+        "creditLine": "Rogers Fund, 1934",
+        "culture": "",
+        "department": "Egyptian Art",
+        "dimensions": "H. 72 × W. 20 × D. 46.5 cm, 55.3 kg (28 3/8 × 7 7/8 × 18 5/16 in., 122 lb.)",
+        "dynasty": "Dynasty 30",
+        "isPublicDomain": true,
+        "medium": "Metagraywacke",
+        "objectBeginDate": -360,
+        "objectDate": "360–343 BCE",
+        "objectEndDate": -343,
+        "objectID": 544887,
+        "objectName": "Statue, Horus, King Nectanebo II; Dendur-decoded",
+        "objectURL": "https://www.metmuseum.org/art/collection/search/544887",
+        "period": "Late Period",
+        "primaryImage": "https://images.metmuseum.org/CRDImages/eg/original/DP-38684-002.jpg",
+        "primaryImageSmall": "https://images.metmuseum.org/CRDImages/eg/web-large/DP-38684-002.jpg",
+        "reign": "reign of Nectanebo II",
+        "rightsAndReproduction": "",
+        "tags": [
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300250051",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q43489",
+            "term": "Falcons"
+          },
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300025928",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q8441",
+            "term": "Men"
+          },
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/ia/901001076",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q84122",
+            "term": "Horus"
+          },
+          {
+            "AAT_URL": "http://vocab.getty.edu/page/aat/300046020",
+            "Wikidata_URL": "https://www.wikidata.org/wiki/Q170984",
+            "term": "Crowns"
+          }
+        ],
+        "title": "Statue of Horus as a falcon protecting King Nectanebo II"
+      }
+    }
+  ]
+}

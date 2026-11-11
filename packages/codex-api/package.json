@@ -1,0 +1,16 @@
+{
+  "name": "@harngine/codex-api",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "harngine": "workspace:*",
+    "@harngine/codex-cli": "workspace:*"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@harngine/hearth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "harngine": "workspace:*"
+  },
+  "devDependencies": {
+    "weivjs": "0.1.0"
+  },
+  "scripts": {
+    "build:ui": "sh scripts/build-ui.sh",
+    "start": "node dist/main.js"
+  }
+}

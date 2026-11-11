@@ -1,0 +1,187 @@
+<template>
+  <div class="shell">
+    <span class="boot">{{ boot() }}</span>
+    <header class="topbar">
+      <button class="brand" on:click="showHome"><i></i><span>Hearth<small>A living home-world</small></span></button>
+      <div class="season" if="world"><span>{{ world.season.name }} in Wellington</span><b>{{ world.season.phrase }}</b></div>
+      <div class="people" aria-label="Choose whose view">
+        <button for="person in participants" bind:class="personClass(person.id)" on:click="chooseViewer(person.id)">{{ person.initials }}</button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="home-name"><small>Our home</small><h2>{{ world ? world.homeName : "Harbour House" }}</h2><p>Cuba Street · Te Aro</p></div>
+      <nav aria-label="Hearth navigation">
+        <button bind:class="navClass('home')" on:click="showHome"><span>◉</span>Living hearth</button>
+        <button bind:class="navClass('garden')" on:click="showGarden"><span>✦</span>Memory garden</button>
+        <button bind:class="navClass('rituals')" on:click="showRituals"><span>◌</span>Our rituals</button>
+        <button bind:class="navClass('how')" on:click="showHow"><span>?</span>How Hearth listens</button>
+      </nav>
+      <div class="aside-bottom">
+        <p><b>{{ viewerName() }}’s lens</b><br />Private traces stay in this lens.</p>
+        <button class="trace-button" on:click="openPulse">Place your pulse <span>＋</span></button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="error" if="errorMessage" role="alert">{{ errorMessage }}</div>
+      <div class="pulse-result" if="pulseResult"><b>The hearth answered</b><span>{{ pulseResult }}</span></div>
+      <section class="loading" if="!world"><i></i><p>Listening to the house…</p></section>
+
+      <div if="world && active === 'home'" class="home-view">
+        <section class="hearthscape">
+          <div class="sky-copy"><small>Read the household weather</small><h1>{{ world.householdWeather.name }}</h1><p>{{ world.householdWeather.detail }}</p><button class="primary-pulse" on:click="openPulse">Place your pulse · 30 seconds</button><em>{{ world.householdWeather.perspectives.length }} voices are shaping this hearth</em></div>
+          <div class="living-orbit">
+            <i class="ring one"></i><i class="ring two"></i><i class="ring three"></i>
+            <div class="ember"><span></span></div>
+            <div class="rain"></div>
+            <b>{{ energyWord() }}</b><small>the feeling of home</small>
+          </div>
+          <div class="outside"><span>{{ world.localWeather.summary }}</span><p>{{ world.localWeather.detail }}</p><small>Outside · Open-Meteo</small></div>
+        </section>
+
+        <section class="play-loop" aria-label="How to take part">
+          <div><b>1</b><span><strong>Place a pulse</strong><small>Energy, need, hope or atmosphere</small></span></div>
+          <i>→</i><div><b>2</b><span><strong>Notice what changes</strong><small>The shared shape, never private words</small></span></div>
+          <i>→</i><div><b>3</b><span><strong>Shape one small moment</strong><small>Warm, adapt or let a ritual pass</small></span></div>
+        </section>
+
+        <section class="perspectives">
+          <div class="section-title"><div><small>Household weather</small><h2>Two days, held together</h2></div><p>Difference is information, not a problem to solve.</p></div>
+          <div class="perspective-row">
+            <article for="perspective in world.householdWeather.perspectives" bind:class="'perspective ' + (perspective.private ? 'private' : '')">
+              <i></i><div><b>{{ perspective.name }}</b><p>{{ perspective.private ? "A private trace is shaping this view" : perspective.feeling }}</p></div><span>{{ perspective.private ? "only you" : "shared" }}</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="opening" if="world.opening">
+          <div class="opening-mark">✦</div><div class="opening-copy"><small>A gentle opening</small><h2>{{ world.opening.title }}</h2><p>{{ world.opening.body }}</p><blockquote>{{ world.opening.invitation }}</blockquote><details><summary>Why am I seeing this?</summary><p>{{ world.opening.why }}</p></details></div>
+          <div class="opening-actions"><button on:click="dismissOpening">Let it pass</button><button class="warm" on:click="keepRitual">Warm this into a ritual</button><small>Nothing becomes a commitment.</small></div>
+        </section>
+
+        <section class="rhythms">
+          <div class="section-title"><div><small>Rhythms taking shape</small><h2>What the house is learning</h2></div><p>Patterns stay tentative until life repeats them.</p></div>
+          <div class="rhythm-grid"><article for="rhythm in world.rhythms"><span>{{ rhythm.confidence }}</span><h3>{{ rhythm.title }}</h3><p>{{ rhythm.observation }}</p></article></div>
+        </section>
+
+        <section class="guided-example">
+          <small>Try it together · a privacy-safe example</small><h2>Two pulses, one small opening</h2>
+          <div><p><b>Alex</b> shares “need: quieter”.</p><p><b>Sam</b> shares “hope: a little closeness”.</p><p><b>Hearth</b> changes the shared weather and offers ten minutes of window tea—without revealing either person’s private note.</p></div>
+          <button on:click="openPulse">Place the next pulse</button><span>Return when another voice arrives, the weather turns, or a ritual begins to feel familiar.</span>
+        </section>
+      </div>
+
+      <div if="world && active === 'garden'" class="garden-view">
+        <div class="page-intro"><small>Seasonal memory garden</small><h1>The life that has gathered here.</h1><p>Shared memories grow in the common garden. Private ones appear only through the lens that holds them.</p></div>
+        <section class="garden">
+          <div class="garden-glow"></div><div class="ground"></div>
+          <button for="bloom in world.blooms" bind:class="bloomClass(bloom)" on:click="selectBloom(bloom.id)" aria-label="Memory bloom"><i></i><span>{{ bloom.private ? "private" : bloom.dateLabel }}</span></button>
+          <article class="memory-card" if="selectedBloom"><small>{{ selectedBloom.chapter || selectedBloom.dateLabel }}</small><h2>{{ selectedBloom.title }}</h2><p>{{ selectedBloom.detail }}</p><span>{{ selectedBloom.private ? "Only visible to you" : "Held in shared memory" }}</span></article>
+          <p class="garden-caption">Memories stay memories. They change the texture of what Hearth notices next.</p>
+        </section>
+      </div>
+
+      <div if="world && active === 'rituals'" class="ritual-view">
+        <div class="page-intro"><small>Rituals</small><h1>Small shapes that make this home ours.</h1><p>Kept because they feel meaningful—not because anyone has to complete them.</p></div>
+        <section class="ritual-list"><article for="ritual in world.rituals"><div class="ritual-symbol">◌</div><div><small>{{ ritual.cadence }}</small><h2>{{ ritual.title }}</h2><p>{{ ritual.description }}</p></div><span>kept by {{ ritual.createdBy }}</span></article></section>
+      </div>
+
+      <div if="world && active === 'how'" class="how-view">
+        <div class="page-intro"><small>How Hearth listens</small><h1>Close enough to care.<br />Quiet enough to trust.</h1><p>Hearth keeps the household’s memory without turning private life into a feed, score, or optimisation problem.</p></div>
+        <section class="principles">
+          <article><b>01</b><h3>You choose the boundary</h3><p>Every trace is private or shared when it is given. Private words never appear in another person’s lens.</p></article>
+          <article><b>02</b><h3>Suggestions explain themselves</h3><p>Every opening can say what it noticed, whose information it used, and why now.</p></article>
+          <article><b>03</b><h3>Patterns remain humble</h3><p>Hearth distinguishes a forming rhythm from a familiar one. It does not diagnose people or infer hidden motives.</p></article>
+          <article><b>04</b><h3>The home survives absence</h3><p>Observations and perspectives are durable. Returning later does not reset the household’s story.</p></article>
+        </section>
+        <section class="sources"><h2>What shaped this view</h2><article for="source in world.provenance.sources"><i></i><div><b>{{ source.label }}</b><p>{{ source.detail }}</p></div></article><small>Last quietly observed {{ observedLabel() }}</small></section>
+      </div>
+    </main>
+
+    <div class="modal-layer" if="showTrace" on:click="closeFromBackdrop">
+      <section class="trace-card" role="dialog" aria-modal="true" aria-labelledby="trace-title">
+        <button class="close" on:click="closeTrace" aria-label="Close">×</button><small>Step 1 of the shared loop</small><h2 id="trace-title">Place your pulse</h2><p>Choose a starting point, then decide who can hold it. One tap is enough.</p>
+        <div class="pulse-field"><span class="field-label">What are you bringing?</span><div class="pulse-picker"><button bind:class="pulseClass('need: a little quiet')" on:click="chooseNeed"><b>Need</b><span>a little quiet</span></button><button bind:class="pulseClass('hope: some closeness')" on:click="chooseHope"><b>Hope</b><span>some closeness</span></button><button bind:class="pulseClass('bringing warmth')" on:click="chooseWarmth"><b>Atmosphere</b><span>bringing warmth</span></button><button bind:class="pulseClass('need: room to exhale')" on:click="chooseSpace"><b>Space</b><span>room to exhale</span></button></div></div>
+        <div class="pulse-field"><span class="field-label">Energy</span><div class="energy-picker"><button bind:class="energyClass(1)" on:click="chooseEnergy1">1</button><button bind:class="energyClass(2)" on:click="chooseEnergy2">2</button><button bind:class="energyClass(3)" on:click="chooseEnergy3">3</button><button bind:class="energyClass(4)" on:click="chooseEnergy4">4</button><button bind:class="energyClass(5)" on:click="chooseEnergy5">5</button></div></div>
+        <label>Your words, if you want<input bind:value="draftFeeling" on:input="updateFeeling" maxlength="40" placeholder="Choose above or write your own" /></label>
+        <label>Anything else, if you want<textarea bind:value="draftNote" on:input="updateNote" maxlength="280" placeholder="A sentence the house can hold for you"></textarea></label>
+        <fieldset><legend>Who can hold this?</legend><button bind:class="visibilityClass('private')" on:click="chooseVisibility('private')"><b>Just me</b><span>Shapes only my view</span></button><button bind:class="visibilityClass('shared')" on:click="chooseVisibility('shared')"><b>Our household</b><span>Can shape the shared weather</span></button></fieldset>
+        <button class="save" bind:disabled="busy || !draftFeeling" on:click="saveTrace">{{ busy ? "Holding…" : draftVisibility === "private" ? "Shape only my lens" : "Shape the shared hearth" }}</button>
+      </section>
+    </div>
+  </div>
+</template>
+
+<script lang="ts">
+  export interface Props { token: string; }
+  export let props: Props;
+  let data: any = null;
+  let world: any = null;
+  let participants: any[] = [];
+  let viewer = "alex";
+  let active = "home";
+  let initialized = false;
+  let busy = false;
+  let errorMessage = "";
+  let pulseResult = "";
+  let showTrace = false;
+  let draftEnergy = 3;
+  let draftFeeling = "";
+  let draftNote = "";
+  let draftVisibility = "private";
+  let selectedBloom: any = null;
+
+  function boot() { if (!initialized && typeof window !== "undefined") { initialized = true; queueMicrotask(load); window.setInterval(() => { if (!busy && !showTrace) load(); }, 5000); } return ""; }
+  async function api(path: string, body?: any) { const response = await fetch(path, { method: body ? "POST" : "GET", headers: { "x-hearth-token": props.token, ...(body ? { "content-type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) }); const value = await response.json(); if (!response.ok) throw new Error(value.error || "Hearth could not listen just now"); return value; }
+  function apply(next: any) { data = next; participants = next.participants || []; world = next.world; if (selectedBloom && world) selectedBloom = world.blooms.find((item: any) => item.id === selectedBloom.id) || null; errorMessage = ""; }
+  async function load(requestedViewer?: string) { try { const next = await api("/api/state?viewer=" + (requestedViewer || viewer)); queueMicrotask(() => apply(next)); } catch (error) { queueMicrotask(() => { errorMessage = error instanceof Error ? error.message : "Hearth could not listen just now"; }); } }
+  function viewerName() { const person = participants.find((item: any) => item.id === viewer); return person ? person.name : "Your"; }
+  function chooseViewer(id: string) { viewer = id; world = null; selectedBloom = null; void load(id); }
+  function personClass(id: string) { return "person " + (id === viewer ? "active" : ""); }
+  function navClass(name: string) { return name === active ? "active" : ""; }
+  function showHome() { active = "home"; }
+  function showGarden() { active = "garden"; }
+  function showRituals() { active = "rituals"; }
+  function showHow() { active = "how"; }
+  function energyWord() { if (!world) return "listening"; const n = world.householdWeather.energy; return n < 2.5 ? "low tide" : n > 3.8 ? "bright current" : "held weather"; }
+  function openPulse() { draftEnergy = 3; draftFeeling = ""; draftNote = ""; draftVisibility = "shared"; showTrace = true; }
+  function closeTrace() { showTrace = false; }
+  function closeFromBackdrop(event: Event) { if (event.target === event.currentTarget) closeTrace(); }
+  function chooseEnergy1() { draftEnergy = 1; }
+  function chooseEnergy2() { draftEnergy = 2; }
+  function chooseEnergy3() { draftEnergy = 3; }
+  function chooseEnergy4() { draftEnergy = 4; }
+  function chooseEnergy5() { draftEnergy = 5; }
+  function energyClass(level: number) { return level === draftEnergy ? "active" : ""; }
+  function chooseNeed() { draftFeeling = "need: a little quiet"; }
+  function chooseHope() { draftFeeling = "hope: some closeness"; }
+  function chooseWarmth() { draftFeeling = "bringing warmth"; }
+  function chooseSpace() { draftFeeling = "need: room to exhale"; }
+  function pulseClass(feeling: string) { return feeling === draftFeeling ? "active" : ""; }
+  function updateFeeling(event: Event) { draftFeeling = (event.currentTarget as HTMLInputElement).value; }
+  function updateNote(event: Event) { draftNote = (event.currentTarget as HTMLTextAreaElement).value; }
+  function chooseVisibility(value: string) { draftVisibility = value; }
+  function visibilityClass(value: string) { return value === draftVisibility ? "active" : ""; }
+  async function refreshAfterPulse(id: string) { for (let attempt = 0; attempt < 20; attempt += 1) { const next = await api("/api/state?viewer=" + id); if (next.world) { queueMicrotask(() => apply(next)); return; } await new Promise((resolve) => window.setTimeout(resolve, 300)); } }
+  async function saveTrace() { if (busy || !draftFeeling) return; busy = true; const boundary = draftVisibility; try { await api("/api/check-in", { viewer, energy: draftEnergy, feeling: draftFeeling, note: draftNote, visibility: boundary }); showTrace = false; pulseResult = boundary === "private" ? "Only your lens shifted. No words or signal crossed the household boundary." : "Your pulse joined the shared shape. The ember and household weather are listening."; busy = false; void refreshAfterPulse(viewer); } catch (error) { queueMicrotask(() => { busy = false; errorMessage = error instanceof Error ? error.message : "Could not hold this pulse"; }); } }
+  async function keepRitual() { if (!world.opening || busy) return; busy = true; try { await api("/api/ritual", { viewer, openingId: world.opening.id }); const next = await api("/api/state?viewer=" + viewer); queueMicrotask(() => { apply(next); busy = false; active = "rituals"; }); } catch (error) { queueMicrotask(() => { busy = false; errorMessage = error instanceof Error ? error.message : "Could not keep this ritual"; }); } }
+  async function dismissOpening() { if (!world.opening || busy) return; busy = true; try { await api("/api/dismiss", { viewer, openingId: world.opening.id }); const next = await api("/api/state?viewer=" + viewer); queueMicrotask(() => { apply(next); busy = false; }); } catch (error) { queueMicrotask(() => { busy = false; }); } }
+  function bloomClass(bloom: any) { return "bloom " + bloom.id + " " + bloom.tone + (bloom.private ? " private" : "") + (selectedBloom && selectedBloom.id === bloom.id ? " selected" : ""); }
+  function selectBloom(id: string) { selectedBloom = world.blooms.find((item: any) => item.id === id) || null; }
+  function observedLabel() { return world ? new Date(world.provenance.observedAt).toLocaleString("en-NZ", { dateStyle: "medium", timeStyle: "short" }) : ""; }
+</script>
+
+<style>
+  .shell{--cream:#f0eadb;--ink:#142018;--moss:#516b53;--sage:#9fb59a;--ember:#ee9a6b;--night:#101813;min-height:100vh;background:var(--night);color:var(--cream);font-family:Inter,ui-sans-serif,system-ui,sans-serif}.boot{display:none}button,input,textarea{font:inherit}button{color:inherit}header{position:fixed;z-index:10;top:0;left:0;right:0;height:76px;display:grid;grid-template-columns:260px 1fr auto;align-items:center;border-bottom:1px solid rgba(240,234,219,.1);background:rgba(16,24,19,.88);backdrop-filter:blur(18px);padding:0 34px}.brand{display:flex;gap:12px;align-items:center;border:0;background:none;text-align:left;cursor:pointer}.brand>i{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 55% 55%,#ffd0a7 0 8%,#d66e49 24%,#4b3321 50%,transparent 53%);box-shadow:0 0 24px #d9785055}.brand span{font-family:Georgia,serif;font-size:21px}.brand small{display:block;font:10px Inter,sans-serif;color:#94a497;letter-spacing:1px;text-transform:uppercase;margin-top:2px}.season{text-align:center}.season span{font:16px Georgia,serif}.season b{display:block;font-size:10px;color:#8fa091;font-weight:400;letter-spacing:.7px;margin-top:3px}.people{display:flex}.person{width:34px;height:34px;margin-left:-7px;border:2px solid #18251c;border-radius:50%;background:#516b53;font-size:11px;cursor:pointer;opacity:.55}.person:first-child{background:#a65f48}.person.active{opacity:1;transform:translateY(-2px);box-shadow:0 4px 14px #0006}aside{position:fixed;top:76px;bottom:0;left:0;width:230px;border-right:1px solid rgba(240,234,219,.09);padding:34px 24px;display:flex;flex-direction:column;background:#121c16}.home-name small,.page-intro small,.section-title small,.opening small,.trace-card>small{color:#9aab9c;text-transform:uppercase;letter-spacing:1.8px;font-size:9px}.home-name h2{font:24px Georgia,serif;margin:8px 0 3px}.home-name p{color:#77877a;font-size:11px;margin:0}.shell nav{margin-top:48px;display:grid;gap:7px}.shell nav button{border:0;background:transparent;color:#859488;text-align:left;padding:11px 12px;border-radius:10px;font-size:12px;cursor:pointer}.shell nav button span{display:inline-block;width:26px;color:#b8c6b7}.shell nav button.active,.shell nav button:hover{background:#26362a;color:#f3edde}.aside-bottom{margin-top:auto}.aside-bottom p{font-size:11px;color:#829185;line-height:1.6}.aside-bottom b{color:#d8ddcf}.trace-button{width:100%;border:1px solid #425645;border-radius:12px;background:#1d2a21;padding:12px;text-align:left;font-size:12px;cursor:pointer}.trace-button span{float:right;color:#e9a57e}main{margin-left:230px;padding-top:76px;min-height:100vh}.error{margin:22px 40px 0;background:#8a4035;padding:12px 16px;border-radius:9px;font-size:12px}.loading{min-height:calc(100vh - 76px);display:grid;place-content:center;text-align:center;color:#95a496}.loading i{width:50px;height:50px;border-radius:50%;margin:auto;background:radial-gradient(circle,#f1b383,#6e3f2a 30%,transparent 62%);animation:pulse 2s infinite}.hearthscape{min-height:540px;position:relative;display:grid;grid-template-columns:1fr 390px 1fr;align-items:center;padding:34px 6vw;background:radial-gradient(circle at 52% 48%,#71533930,transparent 24%),linear-gradient(150deg,#18281e,#0d1511 70%);overflow:hidden}.hearthscape:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 49.8%,rgba(240,234,219,.05) 50%,transparent 50.2%),linear-gradient(rgba(240,234,219,.025) 1px,transparent 1px);background-size:100% 100%,100% 48px;opacity:.5}.sky-copy,.outside{position:relative;z-index:2;max-width:270px}.sky-copy small{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#94a496}.sky-copy h1{font:42px/1.08 Georgia,serif;margin:14px 0}.sky-copy p,.outside p{color:#a3afa4;font:14px/1.65 Georgia,serif}.outside{justify-self:end}.outside span{font:26px Georgia,serif}.outside small{color:#718176;font-size:9px;text-transform:uppercase;letter-spacing:1px}.living-orbit{position:relative;width:350px;height:350px;border-radius:50%;display:grid;place-content:center;text-align:center;background:radial-gradient(circle,rgba(240,173,113,calc(var(--warmth)*.6)) 0 4%,rgba(180,104,66,.18) 15%,rgba(91,119,86,.08) 42%,transparent 68%);filter:saturate(calc(.7 + var(--light)*.5))}.ring{position:absolute;border:1px solid rgba(226,218,193,.13);border-radius:50%;inset:10%}.ring.two{inset:22%;border-style:dashed;animation:turn 38s linear infinite}.ring.three{inset:35%}.ember{width:78px;height:78px;border-radius:50%;margin:auto;display:grid;place-content:center;background:radial-gradient(circle at 45% 58%,#ffcf96,#d36d47 35%,#512d20 68%,transparent 70%);box-shadow:0 0 60px #e6875266}.ember span{width:12px;height:23px;background:#ffe1b4;border-radius:60% 40% 65% 35%;filter:blur(2px);animation:pulse 2.2s infinite}.living-orbit>b{font:20px Georgia,serif;margin-top:13px}.living-orbit>small{font-size:8px;text-transform:uppercase;letter-spacing:1.4px;color:#93a197;margin-top:4px}.rain{position:absolute;inset:8%;border-radius:50%;opacity:var(--rain);background:repeating-linear-gradient(112deg,transparent 0 19px,rgba(196,214,208,.23) 20px 21px,transparent 22px 34px);animation:drift 9s linear infinite}.perspectives,.rhythms{padding:58px 6vw;background:#f0eadb;color:#162118}.section-title{display:flex;align-items:end;justify-content:space-between;margin-bottom:26px}.section-title h2{font:31px Georgia,serif;margin:7px 0 0}.section-title p{max-width:300px;color:#687468;font:13px Georgia,serif}.perspective-row{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.perspective{border:1px solid #cbd2c5;border-radius:18px;padding:19px;display:grid;grid-template-columns:55px 1fr auto;gap:15px;align-items:center;background:#f7f3e9}.perspective>i{width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 50% 60%,rgba(219,131,88,calc(var(--energy)/5)),#dbe3d3 62%)}.perspective b{font:18px Georgia,serif}.perspective p{margin:5px 0;color:#667267;font-size:12px}.perspective>span{font-size:9px;text-transform:uppercase;color:#819080}.perspective.private{background:#e9e5da;border-style:dashed}.opening{padding:48px 6vw;display:grid;grid-template-columns:80px 1fr auto;gap:28px;align-items:center;background:#26382c}.opening-mark{width:68px;height:68px;border-radius:50%;display:grid;place-content:center;background:#e6aa7b;color:#543424;font-size:26px}.opening h2{font:32px Georgia,serif;margin:8px 0}.opening-copy>p{color:#b8c2b7;max-width:650px}.opening blockquote{font:17px/1.5 Georgia,serif;color:#f5e8d2;border-left:1px solid #e6aa7b;margin:18px 0 12px;padding-left:18px}.opening details{font-size:10px;color:#90a093}.opening-actions{display:grid;gap:8px;min-width:190px}.opening-actions button{border:1px solid #6a7e6d;background:transparent;border-radius:20px;padding:10px;cursor:pointer;font-size:11px}.opening-actions .warm{background:#e6aa7b;color:#3a271c;border-color:#e6aa7b}.rhythms{background:#e7e3d7}.rhythm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.rhythm-grid article{background:#f3eee3;border-radius:18px;padding:24px}.rhythm-grid span{font-size:9px;text-transform:uppercase;color:#778576}.rhythm-grid h3{font:22px Georgia,serif;margin:12px 0 7px}.rhythm-grid p{font:14px/1.55 Georgia,serif;color:#59675b}.page-intro{padding:65px 7vw 38px;background:#18251d}.page-intro h1{font:48px/1.05 Georgia,serif;margin:12px 0}.page-intro p{color:#9ba99d;font:15px Georgia,serif;max-width:600px}.garden{height:620px;position:relative;overflow:hidden;background:linear-gradient(#18251d 0 42%,#26382b 43%,#17231b 100%)}.garden-glow{position:absolute;inset:-30% 20% 20%;background:radial-gradient(circle,#91a98222,transparent 58%)}.ground{position:absolute;left:-5%;right:-5%;bottom:-18%;height:60%;border-radius:50%;background:#202f24}.bloom{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);border:0;border-radius:50%;cursor:pointer;background:radial-gradient(circle,#ffe0b0 0 8%,#dd8a5d 10% 25%,#5f734f 28% 36%,transparent 38%);filter:drop-shadow(0 8px 10px #0005);transition:.2s}.bloom.bright{filter:hue-rotate(20deg) drop-shadow(0 8px 10px #0005)}.bloom.quiet{filter:saturate(.45) drop-shadow(0 8px 10px #0005)}.bloom.tender{filter:hue-rotate(-20deg) drop-shadow(0 8px 10px #0005)}.bloom.private{outline:1px dashed #e7d8b477;outline-offset:6px}.bloom.selected{transform:scale(1.18)}.bloom span{position:absolute;top:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8px;color:#a9b4aa;text-transform:uppercase;margin-top:5px}.memory-card{position:absolute;right:5vw;bottom:55px;width:300px;background:#efe9db;color:#172219;padding:25px;border-radius:18px;box-shadow:0 18px 50px #0006}.memory-card small{font-size:9px;text-transform:uppercase;color:#7f8c7f}.memory-card h2{font:26px Georgia,serif;margin:10px 0}.memory-card p{font:14px/1.55 Georgia,serif}.memory-card span{font-size:9px;color:#7a887c}.garden-caption{position:absolute;left:6vw;bottom:40px;max-width:340px;color:#849488;font:12px/1.6 Georgia,serif}.ritual-list{padding:25px 7vw 70px;background:#eee8dc;color:#172219;min-height:500px}.ritual-list article{display:grid;grid-template-columns:65px 1fr auto;gap:25px;align-items:center;padding:28px 0;border-bottom:1px solid #ccd1c7}.ritual-symbol{width:55px;height:55px;border-radius:50%;background:#d9dfd2;display:grid;place-content:center;font-size:24px}.ritual-list small{font-size:9px;text-transform:uppercase;color:#7c897e}.ritual-list h2{font:27px Georgia,serif;margin:5px 0}.ritual-list p{color:#657166;margin:0;font:13px Georgia,serif}.ritual-list article>span{font-size:9px;color:#8b968b}.principles{padding:30px 7vw 55px;background:#eee8dc;color:#172219;display:grid;grid-template-columns:repeat(2,1fr);gap:15px}.principles article{background:#f7f2e8;padding:26px;border-radius:16px}.principles b{color:#a1664c;font:14px Georgia,serif}.principles h3{font:22px Georgia,serif}.principles p{color:#647066;font:13px/1.6 Georgia,serif}.sources{padding:45px 7vw 70px;background:#1a281f}.sources h2{font:28px Georgia,serif}.sources article{display:grid;grid-template-columns:10px 1fr;gap:14px;border-top:1px solid #34473a;padding:15px 0}.sources i{width:7px;height:7px;background:#df9b73;border-radius:50%;margin-top:6px}.sources b{font-size:12px}.sources p{font-size:11px;color:#91a095;margin:5px 0}.sources>small{font-size:9px;color:#718075}.modal-layer{position:fixed;z-index:30;inset:0;background:#08100bcc;display:grid;place-content:center;padding:20px}.trace-card{position:relative;width:min(520px,calc(100vw - 40px));max-height:90vh;overflow:auto;background:#eee8dc;color:#172219;border-radius:22px;padding:34px;box-sizing:border-box}.trace-card .close{position:absolute;right:22px;top:18px;border:0;background:none;color:#617064;font-size:25px;cursor:pointer}.trace-card h2{font:32px Georgia,serif;margin:10px 0}.trace-card>p{color:#687469;font:13px Georgia,serif}.trace-card label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#647166;margin-top:20px}.trace-card input,.trace-card textarea{display:block;width:100%;box-sizing:border-box;margin-top:8px;border:1px solid #c7cec2;border-radius:10px;background:#f8f4ea;padding:12px;color:#172219}.trace-card textarea{min-height:80px;resize:vertical}.energy-picker{display:flex;gap:8px;margin-top:8px}.energy-picker button{width:38px;height:38px;border-radius:50%;border:1px solid #b8c1b4;background:transparent;color:#516052;cursor:pointer}.energy-picker button.active{background:#405943;color:white}.trace-card fieldset{border:0;padding:0;margin:22px 0 12px;display:grid;grid-template-columns:1fr 1fr;gap:9px}.trace-card legend{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#647166;margin-bottom:8px}.trace-card fieldset button{border:1px solid #c3cabf;background:transparent;color:#26342a;border-radius:11px;text-align:left;padding:12px;cursor:pointer}.trace-card fieldset button.active{border-color:#57705a;background:#dce3d7}.trace-card fieldset b,.trace-card fieldset span{display:block}.trace-card fieldset span{font-size:9px;color:#758176;margin-top:4px}.trace-card .save{width:100%;border:0;background:#263c2d;color:white;border-radius:20px;padding:12px;cursor:pointer}.trace-card .save:disabled{opacity:.5}@keyframes turn{to{transform:rotate(360deg)}}@keyframes pulse{50%{transform:scale(1.08);opacity:.75}}@keyframes drift{to{background-position:120px 100px}}@media(max-width:850px){header{grid-template-columns:1fr auto;padding:0 18px}.season{display:none}aside{position:static;width:auto;padding:18px 20px;margin-top:76px;display:block}.home-name{display:none}.shell nav{margin:0;display:flex;overflow:auto}.shell nav button{white-space:nowrap}.aside-bottom{display:flex;gap:15px;align-items:center}.aside-bottom p{display:none}.trace-button{width:auto;margin-left:auto}main{margin:0;padding:0}.hearthscape{grid-template-columns:1fr;gap:28px;text-align:center;padding:48px 22px}.sky-copy,.outside{justify-self:center}.living-orbit{width:280px;height:280px;justify-self:center}.perspective-row,.rhythm-grid,.principles{grid-template-columns:1fr}.opening{grid-template-columns:1fr;text-align:center}.opening-mark{margin:auto}.opening-actions{min-width:0}.section-title{display:block}.page-intro h1{font-size:38px}.garden{height:680px}.memory-card{left:20px;right:20px;width:auto}.ritual-list article{grid-template-columns:50px 1fr}.ritual-list article>span{display:none}}
+  .living-orbit{background:radial-gradient(circle,rgba(240,173,113,.38) 0 4%,rgba(180,104,66,.18) 15%,rgba(91,119,86,.08) 42%,transparent 68%);filter:saturate(1.05)}
+  .rain{opacity:.22}
+  .perspective>i{background:radial-gradient(circle at 50% 60%,rgba(219,131,88,.72),#dbe3d3 62%)}
+  .bloom.first-night{left:18%;top:42%;width:68px;height:68px}
+  .bloom.hallway-laugh{left:37%;top:20%;width:56px;height:56px}
+  .bloom.quiet-corner{left:57%;top:47%;width:64px;height:64px}
+  .bloom.soup-sunday{left:74%;top:27%;width:72px;height:72px}
+  .primary-pulse{margin-top:18px;border:1px solid #d8a57d;background:#d98a61;color:#23170f;border-radius:22px;padding:11px 16px;cursor:pointer;font-size:11px}.sky-copy em{display:block;margin-top:10px;color:#7f9083;font:9px Inter,sans-serif;text-transform:uppercase;letter-spacing:1px}.play-loop{background:#17231b;border-top:1px solid #2e4033;border-bottom:1px solid #2e4033;padding:17px 6vw;display:flex;align-items:center;justify-content:center;gap:24px}.play-loop>div{display:flex;align-items:center;gap:10px;max-width:230px}.play-loop b{width:28px;height:28px;border:1px solid #7f947f;border-radius:50%;display:grid;place-content:center;color:#dca17c;font-size:10px}.play-loop span{display:grid}.play-loop strong{font:14px Georgia,serif}.play-loop small{color:#7f9083;font-size:9px;margin-top:3px}.play-loop>i{color:#607165}.guided-example{padding:52px 6vw;background:#dcd9cd;color:#172219;text-align:center}.guided-example>small{text-transform:uppercase;letter-spacing:1.5px;color:#68766a;font-size:9px}.guided-example h2{font:30px Georgia,serif;margin:9px 0 20px}.guided-example>div{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:900px;margin:auto}.guided-example p{background:#eeeae0;border-radius:14px;padding:16px;font:13px/1.5 Georgia,serif;margin:0}.guided-example button{display:block;margin:22px auto 10px;border:0;border-radius:22px;background:#314937;color:white;padding:11px 22px;cursor:pointer}.guided-example>span{display:block;color:#687469;font:11px Georgia,serif}.pulse-result{position:fixed;z-index:20;right:28px;top:92px;width:300px;background:#f0eadb;color:#172219;border-radius:14px;padding:16px;box-shadow:0 12px 40px #0007}.pulse-result b,.pulse-result span{display:block}.pulse-result b{font:16px Georgia,serif}.pulse-result span{font-size:10px;line-height:1.5;color:#5b695e;margin-top:4px}.pulse-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.pulse-picker button{border:1px solid #bbc4b7;background:transparent;border-radius:11px;text-align:left;padding:10px;color:#26342a;cursor:pointer}.pulse-picker button.active{border-color:#57705a;background:#dce3d7}.pulse-picker b,.pulse-picker span{display:block}.pulse-picker span{font-size:9px;color:#758176;margin-top:3px}
+  .pulse-field{margin-top:20px}.field-label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#647166}
+  @media(max-width:850px){.play-loop{align-items:stretch;overflow:auto;justify-content:flex-start}.play-loop>i{display:none}.play-loop>div{min-width:210px}.guided-example>div{grid-template-columns:1fr}.pulse-result{left:16px;right:16px;top:86px;width:auto}}
+</style>

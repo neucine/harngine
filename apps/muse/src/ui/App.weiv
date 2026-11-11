@@ -1,0 +1,364 @@
+<template>
+  <div class="muse-shell">
+    <span class="bootstrap">{{ boot() }}</span>
+    <header>
+      <div class="brand"><i>m</i><div><b>Muse</b><small>living material</small></div></div>
+      <div class="presence"><span></span>{{ busy ? "Space is shifting…" : headerStatus() }}</div>
+      <button class="quiet" bind:disabled="!seedChosen" on:click="toggleLineage">{{ showLineage ? "Return to space" : lineageLabel() }}</button>
+    </header>
+
+    <main>
+      <div if="errorMessage" class="error">{{ errorMessage }}</div>
+      <section if="!space" class="arrival">
+        <div class="orb"></div>
+        <p class="eyebrow">Opening a thought-space</p>
+        <h1>Material is arriving<br />from three directions.</h1>
+        <p>Sources are being kept apart long enough to disagree.</p>
+        <div class="arrival-agents"><span>Archivist</span><span>Contrarian</span><span>Metaphorist</span></div>
+      </section>
+
+      <section if="space && !seedChosen" class="seed-room">
+        <div class="seed-copy">
+          <p class="eyebrow">Your first move</p>
+          <h1>Turn three unlikely fragments<br />into one idea worth keeping.</h1>
+          <p>Start with a live question. Muse will keep the sources attached while you gather, collide, and grow a Spark.</p>
+        </div>
+        <div class="seed-card">
+          <label>What are you trying to see differently?<textarea id="seed-question" bind:value="seedDraft" on:input="updateSeed" rows="3"></textarea></label>
+          <button class="begin" bind:disabled="seedDraft.length < 8" on:click="beginSeed">Enter the material →</button>
+          <div class="prepared">
+            <span>Or choose a prepared live seed</span>
+            <button on:click="preparedOffice">What is an office for now?</button>
+            <button on:click="preparedRitual">Which rituals make hybrid teams feel real?</button>
+            <button on:click="preparedFreedom">When does flexibility become infrastructure?</button>
+          </div>
+          <p class="source-note">No account or credential needed · OpenAlex, Crossref, and Wikimedia material is already waiting</p>
+        </div>
+        <div class="micro-arc"><span><b>1</b> Seed</span><i></i><span><b>2</b> Gather</span><i></i><span><b>3</b> Collide</span><i></i><span><b>4</b> Keep a Spark</span></div>
+      </section>
+
+      <section if="space && seedChosen && !showLineage" class="workspace">
+        <aside class="left-rail">
+          <p class="eyebrow">Your seed</p>
+          <h1>{{ seed }}</h1>
+          <p class="intro">Gather two or three fragments that do not obviously belong together. Your active studio perspective will collide them into a grounded Spark.</p>
+
+          <div class="gravity">
+            <div><b>Semantic gravity</b><span>{{ gravityLabel() }}</span></div>
+            <input type="range" min="0" max="2" step="1" bind:value="gravity" on:input="changeGravity" />
+            <div class="gravity-labels"><small>evidence</small><small>tension</small><small>poetry</small></div>
+          </div>
+
+          <div class="agents">
+            <button bind:class="agentClass('archivist')" on:click="chooseArchivist"><i>A</i><span><b>Archivist</b><small>guards context</small></span></button>
+            <button bind:class="agentClass('contrarian')" on:click="chooseContrarian"><i>C</i><span><b>Contrarian</b><small>finds the fracture</small></span></button>
+            <button bind:class="agentClass('metaphorist')" on:click="chooseMetaphorist"><i>M</i><span><b>Metaphorist</b><small>listens for images</small></span></button>
+          </div>
+        </aside>
+
+        <section class="field" aria-label="Constellation of creative material">
+          <div class="play-path">
+            <span class="done">1 · Seed</span><i></i><span bind:class="selectedIds.length > 0 ? 'done' : 'current'">2 · Gather</span><i></i><span bind:class="selectedIds.length > 1 ? 'current' : ''">3 · Collide</span><i></i><span bind:class="latestSpark() ? 'done' : ''">4 · Keep</span>
+          </div>
+          <div class="field-top">
+            <div><span>{{ activeNodes().length }} awake</span><span>{{ dormantCount() }} sleeping</span><span>{{ space.relations.length }} relations</span></div>
+            <p>{{ selectionHint() }}</p>
+          </div>
+          <div class="constellation">
+            <div class="halo one"></div><div class="halo two"></div>
+            <button bind:class="nodeClass(nodeAt(0))" bind:style="nodeStyle(nodeAt(0))" on:click="select0"><span class="node-kind">{{ nodeAt(0).kind }}</span><b>{{ nodeAt(0).title }}</b><small>{{ nodeExcerpt(nodeAt(0)) }}</small><i>{{ evidenceLabel(nodeAt(0)) }}</i></button>
+            <button bind:class="nodeClass(nodeAt(1))" bind:style="nodeStyle(nodeAt(1))" on:click="select1"><span class="node-kind">{{ nodeAt(1).kind }}</span><b>{{ nodeAt(1).title }}</b><small>{{ nodeExcerpt(nodeAt(1)) }}</small><i>{{ evidenceLabel(nodeAt(1)) }}</i></button>
+            <button bind:class="nodeClass(nodeAt(2))" bind:style="nodeStyle(nodeAt(2))" on:click="select2"><span class="node-kind">{{ nodeAt(2).kind }}</span><b>{{ nodeAt(2).title }}</b><small>{{ nodeExcerpt(nodeAt(2)) }}</small><i>{{ evidenceLabel(nodeAt(2)) }}</i></button>
+            <button bind:class="nodeClass(nodeAt(3))" bind:style="nodeStyle(nodeAt(3))" on:click="select3"><span class="node-kind">{{ nodeAt(3).kind }}</span><b>{{ nodeAt(3).title }}</b><small>{{ nodeExcerpt(nodeAt(3)) }}</small><i>{{ evidenceLabel(nodeAt(3)) }}</i></button>
+            <button bind:class="nodeClass(nodeAt(4))" bind:style="nodeStyle(nodeAt(4))" on:click="select4"><span class="node-kind">{{ nodeAt(4).kind }}</span><b>{{ nodeAt(4).title }}</b><small>{{ nodeExcerpt(nodeAt(4)) }}</small><i>{{ evidenceLabel(nodeAt(4)) }}</i></button>
+            <button bind:class="nodeClass(nodeAt(5))" bind:style="nodeStyle(nodeAt(5))" on:click="select5"><span class="node-kind">{{ nodeAt(5).kind }}</span><b>{{ nodeAt(5).title }}</b><small>{{ nodeExcerpt(nodeAt(5)) }}</small><i>{{ evidenceLabel(nodeAt(5)) }}</i></button>
+            <button bind:class="nodeClass(nodeAt(6))" bind:style="nodeStyle(nodeAt(6))" on:click="select6"><span class="node-kind">{{ nodeAt(6).kind }}</span><b>{{ nodeAt(6).title }}</b><small>{{ nodeExcerpt(nodeAt(6)) }}</small><i>{{ evidenceLabel(nodeAt(6)) }}</i></button>
+            <button bind:class="nodeClass(nodeAt(7))" bind:style="nodeStyle(nodeAt(7))" on:click="select7"><span class="node-kind">{{ nodeAt(7).kind }}</span><b>{{ nodeAt(7).title }}</b><small>{{ nodeExcerpt(nodeAt(7)) }}</small><i>{{ evidenceLabel(nodeAt(7)) }}</i></button>
+            <div class="center-note"><i></i><span>meaning stays<br />movable</span></div>
+          </div>
+          <div class="gesture-bar">
+            <span>{{ selectedIds.length }} / 3 gathered</span>
+            <button bind:disabled="selectedIds.length < 2 || busy" on:click="makeSpark">{{ busy ? "Colliding…" : "Make a Spark ✦" }}</button>
+            <button bind:disabled="selectedIds.length !== 1 || busy" on:click="toggleSleep">{{ selectedDormant() ? "Revive direction" : "Let it sleep" }}</button>
+            <button bind:disabled="selectedIds.length === 0" on:click="clearSelection">Release</button>
+          </div>
+        </section>
+
+        <aside class="conversation">
+          <section if="latestSpark()" class="spark-card">
+            <div class="spark-top"><span>New Spark · {{ latestSparkPerspective() }}</span><i>✦</i></div>
+            <h2>{{ latestSparkTitle() }}</h2>
+            <p>{{ latestSparkBody() }}</p>
+            <small>{{ latestSparkTension() }}</small>
+            <button bind:disabled="latestSparkSaved()" on:click="saveSpark">{{ latestSparkSaved() ? "Kept for incubation ✓" : "Keep this Spark" }}</button>
+          </section>
+          <div if="selectedNode" class="material-detail">
+            <span bind:class="'kind-mark ' + selectedNode.kind">{{ selectedNode.kind }}</span>
+            <h2>{{ selectedNode.title }}</h2>
+            <p>{{ selectedNode.body }}</p>
+            <div if="selectedNode.evidence.length > 0" class="provenance">↳ {{ selectedNode.evidence.length }} provenance link{{ selectedNode.evidence.length === 1 ? "" : "s" }} retained</div>
+          </div>
+          <div else class="material-detail empty-detail">
+            <span class="kind-mark">open</span>
+            <h2>Enter the material.</h2>
+            <p>Choose a node. Nothing here is a step in a funnel; it is a place you can return to.</p>
+          </div>
+
+          <div class="thread">
+            <div class="thread-head"><span>{{ perspectiveName() }}</span><small>tending this region</small></div>
+            <div class="message seed">{{ perspectiveWelcome() }}</div>
+            <div bind:class="latestConversation() ? 'exchange' : 'exchange hidden'">
+              <div class="message mine">{{ latestPrompt() }}</div>
+              <div class="message agent-message"><b>{{ latestPerspective() }}</b>{{ latestResponse() }}</div>
+            </div>
+          </div>
+          <div class="composer">
+            <textarea bind:value="prompt" on:input="updatePrompt" placeholder="What changes if I follow this?" rows="2"></textarea>
+            <button bind:disabled="!selectedNode || prompt.length < 3 || busy" on:click="askMaterial">Ask material ↗</button>
+          </div>
+        </aside>
+      </section>
+
+      <section if="space && seedChosen && showLineage" class="lineage-view">
+        <div class="lineage-hero">
+          <p class="eyebrow">Lineage playback</p>
+          <h1>The space remembers<br />how it changed.</h1>
+          <p>Rejected and dormant directions remain part of the record. Re-entry does not mean starting over.</p>
+        </div>
+        <div class="timeline">
+          <article for="event in reversedLineage()">
+            <time>{{ eventTime(event.at) }}</time><i></i>
+            <div><span>{{ event.verb }}</span><h2>{{ event.detail }}</h2><small>{{ event.nodeIds.length }} material reference{{ event.nodeIds.length === 1 ? "" : "s" }}</small></div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+</template>
+
+<script lang="ts">
+  export interface Props { token: string; }
+  export let props: Props;
+
+  let data: any = null;
+  let space: any = null;
+  let busy = false;
+  let initialized = false;
+  let starting = false;
+  let errorMessage = "";
+  let selectedIds: string[] = [];
+  let selectedNode: any = null;
+  let perspective = "contrarian";
+  let prompt = "";
+  let gravity = "1";
+  let showLineage = false;
+  let seedChosen = false;
+  let seed = "";
+  let seedDraft = "What is an office for when focused work can happen anywhere?";
+
+  function boot() {
+    if (!initialized && typeof window !== "undefined") {
+      initialized = true;
+      queueMicrotask(load);
+      window.setInterval(() => { if (!busy && !space) load(); }, 900);
+    }
+    return "";
+  }
+
+  async function api(path: string, body?: any) {
+    const response = await fetch(path, {
+      method: body ? "POST" : "GET",
+      headers: { "x-muse-token": props.token, ...(body ? { "content-type": "application/json" } : {}) },
+      ...(body ? { body: JSON.stringify(body) } : {})
+    });
+    const value = await response.json();
+    if (!response.ok) throw new Error(value.error || "The space could not respond");
+    return value;
+  }
+
+  async function load() {
+    try {
+      const next = await api("/api/state");
+      if (next.status === "idle" && !starting) {
+        starting = true;
+        await api("/api/research", next.defaults);
+        return load();
+      }
+      queueMicrotask(() => applyState(next));
+    } catch (error) {
+      queueMicrotask(() => { errorMessage = error instanceof Error ? error.message : "The space could not open"; });
+    }
+  }
+
+  function applyState(next: any) {
+    data = next;
+    if (next.space) space = next.space;
+    syncSelected();
+    errorMessage = "";
+  }
+
+  function updateSeed(event: Event) { seedDraft = (event.currentTarget as HTMLTextAreaElement).value; }
+  function beginSeed() { if (seedDraft.trim().length >= 8) { seed = seedDraft.trim(); seedChosen = true; } }
+  function preparedOffice() { seedDraft = "What is an office for when focused work can happen anywhere?"; beginSeed(); }
+  function preparedRitual() { seedDraft = "Which rituals make hybrid teams feel real?"; beginSeed(); }
+  function preparedFreedom() { seedDraft = "When does flexibility become infrastructure?"; beginSeed(); }
+  function headerStatus() {
+    if (!space) return "Material arriving";
+    const kept = (space.sparks || []).filter((item: any) => item.saved).length;
+    return kept > 0 ? `${kept} Spark${kept === 1 ? "" : "s"} incubating` : "Space remembers";
+  }
+  function lineageLabel() {
+    if (!space) return "See lineage";
+    const kept = (space.sparks || []).filter((item: any) => item.saved).length;
+    return kept > 0 ? `Lineage · ${kept} incubating` : "See lineage";
+  }
+
+  function syncSelected() {
+    if (!space) return;
+    selectedIds = selectedIds.filter((id) => space.nodes.some((node: any) => node.id === id));
+    selectedNode = selectedIds.length > 0 ? space.nodes.find((node: any) => node.id === selectedIds[selectedIds.length - 1]) : null;
+  }
+
+  function activeNodes() { return space.nodes.filter((node: any) => !node.dormant); }
+  function dormantCount() { return space.nodes.filter((node: any) => node.dormant).length; }
+  function visibleNodes() { return space.nodes; }
+  function nodeAt(index: number) { return space.nodes[index]; }
+  function selectedDormant() { return Boolean(selectedNode && selectedNode.dormant); }
+
+  function selectNode(id: string) {
+    const existing = selectedIds.indexOf(id);
+    if (existing >= 0) selectedIds = selectedIds.filter((item) => item !== id);
+    else selectedIds = [...selectedIds.slice(-2), id];
+    syncSelected();
+  }
+
+  function clearSelection() { selectedIds = []; selectedNode = null; }
+  function select0() { selectNode(nodeAt(0).id); }
+  function select1() { selectNode(nodeAt(1).id); }
+  function select2() { selectNode(nodeAt(2).id); }
+  function select3() { selectNode(nodeAt(3).id); }
+  function select4() { selectNode(nodeAt(4).id); }
+  function select5() { selectNode(nodeAt(5).id); }
+  function select6() { selectNode(nodeAt(6).id); }
+  function select7() { selectNode(nodeAt(7).id); }
+  function changeGravity(event: Event) { gravity = (event.currentTarget as HTMLInputElement).value; }
+  function gravityLabel() { return gravity === "0" ? "sources pull inward" : gravity === "2" ? "motifs pull inward" : "tensions pull inward"; }
+
+  function nodeStyle(node: any) {
+    let x = node.x; let y = node.y;
+    if (gravity === "0" && node.kind === "source") { x = 47 + (node.x - 47) * 0.35; y = 42 + (node.y - 42) * 0.35; }
+    if (gravity === "1" && node.kind === "tension") { x = 47; y = 40; }
+    if (gravity === "2" && ["motif", "inference"].includes(node.kind)) { x = 48 + (node.x - 48) * 0.3; y = 42 + (node.y - 42) * 0.3; }
+    return `left:${x}%;top:${y}%;`;
+  }
+
+  function nodeClass(node: any) {
+    return `material-node ${node.kind}${node.dormant ? " dormant" : ""}${selectedIds.includes(node.id) ? " selected" : ""}`;
+  }
+  function nodeExcerpt(node: any) { return node.body.length > 82 ? node.body.slice(0, 82) + "…" : node.body; }
+  function evidenceLabel(node: any) { return node.evidence.length > 0 ? `${node.evidence.length} trace` : "untraced fragment"; }
+  function selectionHint() {
+    if (selectedIds.length === 3) return "Three fragments gathered. Make the collision.";
+    if (selectedIds.length === 2) return "Enough to Spark—or gather one stranger fragment.";
+    if (selectedIds.length === 1) return "Good. Now choose something that does not obviously belong.";
+    return "Gather your first fragment.";
+  }
+
+  function chooseArchivist() { perspective = "archivist"; }
+  function chooseContrarian() { perspective = "contrarian"; }
+  function chooseMetaphorist() { perspective = "metaphorist"; }
+  function agentClass(id: string) { return `agent${perspective === id ? " active" : ""}`; }
+  function perspectiveName() { return perspective === "archivist" ? "The Archivist" : perspective === "metaphorist" ? "The Metaphorist" : "The Contrarian"; }
+  function perspectiveLabel(id: string) { return id === "archivist" ? "Archivist" : id === "metaphorist" ? "Metaphorist" : "Contrarian"; }
+  function perspectiveWelcome() {
+    if (perspective === "archivist") return "I will keep the conditions attached while you wander.";
+    if (perspective === "metaphorist") return "I am listening for the image the evidence cannot say by itself.";
+    return "I will look for the claim this material refuses to make.";
+  }
+  function nodeConversations() {
+    if (!selectedNode) return [];
+    return space.conversations.filter((item: any) => item.nodeId === selectedNode.id);
+  }
+  function latestConversation() { const items = nodeConversations(); return items.length > 0 ? items[items.length - 1] : null; }
+  function latestPrompt() { const item = latestConversation(); return item ? item.prompt : ""; }
+  function latestResponse() { const item = latestConversation(); return item ? item.response : ""; }
+  function latestPerspective() { const item = latestConversation(); return item ? perspectiveLabel(item.perspective) : ""; }
+  function latestSpark() { const items = space && space.sparks ? space.sparks : []; return items.length > 0 ? items[items.length - 1] : null; }
+  function latestSparkTitle() { const item = latestSpark(); return item ? item.title : ""; }
+  function latestSparkBody() { const item = latestSpark(); return item ? item.body : ""; }
+  function latestSparkTension() { const item = latestSpark(); return item ? item.tension : ""; }
+  function latestSparkSaved() { const item = latestSpark(); return Boolean(item && item.saved); }
+  function latestSparkPerspective() { const item = latestSpark(); return item ? perspectiveLabel(item.perspective) : ""; }
+  function updatePrompt(event: Event) { prompt = (event.currentTarget as HTMLTextAreaElement).value; }
+
+  async function askMaterial() {
+    if (!selectedNode || busy || prompt.trim().length < 3) return;
+    busy = true;
+    try {
+      const next = await api("/api/conversation", { nodeId: selectedNode.id, perspective, prompt: prompt.trim() });
+      queueMicrotask(() => { space = next.space; prompt = ""; syncSelected(); });
+    } catch (error) { queueMicrotask(() => { errorMessage = error instanceof Error ? error.message : "The material went quiet"; }); }
+    finally { queueMicrotask(() => { busy = false; }); }
+  }
+
+  async function gesture(action: string) {
+    if (busy) return;
+    busy = true;
+    try {
+      const next = await api("/api/gesture", { action, nodeIds: selectedIds });
+      queueMicrotask(() => { space = next.space; syncSelected(); });
+    } catch (error) { queueMicrotask(() => { errorMessage = error instanceof Error ? error.message : "The gesture did not land"; }); }
+    finally { queueMicrotask(() => { busy = false; }); }
+  }
+  function juxtapose() { gesture("juxtapose"); }
+  function toggleSleep() { gesture(selectedDormant() ? "revive" : "sleep"); }
+  function makeSpark() { void createSparkFromSelection(); }
+  async function createSparkFromSelection() {
+    if (busy) return;
+    busy = true;
+    try {
+      const next = await api("/api/spark", { seed, perspective, nodeIds: selectedIds });
+      queueMicrotask(() => { space = next.space; syncSelected(); });
+    } catch (error) { queueMicrotask(() => { errorMessage = error instanceof Error ? error.message : "The fragments did not collide"; }); }
+    finally { queueMicrotask(() => { busy = false; }); }
+  }
+  function saveSpark() { void keepLatestSpark(); }
+  async function keepLatestSpark() {
+    const item = latestSpark();
+    if (!item || item.saved || busy) return;
+    busy = true;
+    try {
+      const next = await api("/api/spark/save", { sparkId: item.id });
+      queueMicrotask(() => { space = next.space; });
+    } catch (error) { queueMicrotask(() => { errorMessage = error instanceof Error ? error.message : "The Spark could not be kept"; }); }
+    finally { queueMicrotask(() => { busy = false; }); }
+  }
+  function toggleLineage() { showLineage = !showLineage; }
+  function reversedLineage() { return [...space.lineage].reverse(); }
+  function eventTime(value: string) { return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+</script>
+
+<style>
+  .muse-shell { --night:#171714; --paper:#ede9df; --dim:#999589; --line:#3a3933; --acid:#d7ef5b; --violet:#b8a2f7; --coral:#ef8e6d; --blue:#85bcd1; min-height:100vh; color:var(--paper); background:radial-gradient(circle at 52% 34%,#292821 0,#171714 48%); font:14px/1.45 Inter,ui-sans-serif,system-ui,sans-serif; }
+  .muse-shell,.muse-shell *{box-sizing:border-box}button,input,textarea{font:inherit}.bootstrap{display:none}button{cursor:pointer}
+  header{height:70px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 27px;border-bottom:1px solid #34332e;background:#171714d9;backdrop-filter:blur(14px);position:sticky;top:0;z-index:20}
+  .brand{display:flex;align-items:center;gap:10px}.brand>i{display:grid;place-items:center;width:34px;height:34px;border-radius:50% 45% 55% 48%;background:var(--acid);color:#202117;font:700 19px Georgia;transform:rotate(-8deg)}.brand b{font:600 20px Georgia}.brand small{display:block;color:var(--dim);font-size:9px;letter-spacing:.13em;text-transform:uppercase}
+  .presence{display:flex;align-items:center;gap:9px;color:#aaa69a;font-size:11px}.presence span{width:6px;height:6px;border-radius:50%;background:var(--acid);box-shadow:0 0 0 5px #d7ef5b18}.quiet{justify-self:end;border:1px solid var(--line);border-radius:99px;background:transparent;color:#c7c3b8;padding:7px 12px;font-size:10px}.quiet:hover{border-color:#777268}
+  main{min-height:calc(100vh - 70px)}.error{position:fixed;z-index:30;top:82px;left:50%;transform:translateX(-50%);padding:10px 14px;border-radius:8px;background:#7b3429;color:white}
+  .eyebrow{margin:0 0 10px;color:var(--acid);font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+  .arrival{display:grid;place-items:center;align-content:center;min-height:calc(100vh - 70px);text-align:center}.arrival h1{margin:7px 0 14px;font:500 clamp(41px,6vw,74px)/.98 Georgia;letter-spacing:-.045em}.arrival>p:not(.eyebrow){color:var(--dim)}.orb{width:45px;height:45px;margin-bottom:20px;border:1px solid var(--acid);border-radius:50%;box-shadow:inset 14px -10px 26px #d7ef5b77,0 0 55px #d7ef5b36;animation:breathe 1.8s infinite alternate}@keyframes breathe{to{transform:scale(1.13);opacity:.7}}.arrival-agents{display:flex;gap:7px;margin-top:20px}.arrival-agents span{padding:5px 8px;border:1px solid var(--line);border-radius:99px;color:#aaa69a;font-size:9px}
+  .quiet:disabled{opacity:.25;cursor:not-allowed}.seed-room{display:grid;grid-template-columns:minmax(360px,.9fr) minmax(430px,.7fr);gap:clamp(45px,8vw,130px);align-items:center;min-height:calc(100vh - 70px);max-width:1180px;margin:auto;padding:60px 45px 110px;position:relative}.seed-copy h1{margin:9px 0 22px;font:500 clamp(48px,6vw,77px)/.96 Georgia;letter-spacing:-.055em}.seed-copy>p:last-child{max-width:590px;color:var(--dim);font-size:15px;line-height:1.6}.seed-card{padding:27px;border:1px solid #48463f;border-radius:18px;background:#201f1bcc;box-shadow:0 30px 90px #0005}.seed-card label{display:block;margin-bottom:9px;color:var(--acid);font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.seed-card textarea{width:100%;resize:vertical;padding:14px;border:1px solid #555248;border-radius:11px;background:#171714;color:var(--paper);outline:none;font:19px/1.35 Georgia}.seed-card textarea:focus{border-color:var(--acid);box-shadow:0 0 0 3px #d7ef5b12}.begin{width:100%;margin-top:10px;padding:12px;border:0;border-radius:10px;background:var(--acid);color:#191a12;font-weight:800}.begin:disabled{opacity:.3}.prepared{display:grid;gap:6px;margin-top:25px;padding-top:18px;border-top:1px solid var(--line)}.prepared>span{margin-bottom:3px;color:var(--dim);font-size:9px}.prepared button{padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:#c9c5ba;text-align:left;font:12px Georgia}.prepared button:hover{border-color:#777268;background:#292823}.source-note{margin:18px 0 0;color:#6f6c64;font-size:8px;text-align:center}.micro-arc{position:absolute;left:45px;right:45px;bottom:42px;display:flex;align-items:center;justify-content:center;color:#7f7b71;font-size:9px}.micro-arc span{display:flex;align-items:center;gap:7px}.micro-arc b{display:grid;place-items:center;width:22px;height:22px;border:1px solid #555248;border-radius:50%;color:var(--acid)}.micro-arc i{width:65px;height:1px;margin:0 10px;background:#3b3933}
+  .workspace{display:grid;grid-template-columns:230px minmax(570px,1fr) 300px;min-height:calc(100vh - 70px)}.left-rail,.conversation{padding:28px 20px}.left-rail{border-right:1px solid #302f2a}.left-rail h1{margin:5px 0 14px;font:500 27px/1.04 Georgia;letter-spacing:-.035em}.intro{color:var(--dim);font-size:11px;line-height:1.65}
+  .gravity{margin:35px 0 28px;padding-top:18px;border-top:1px solid var(--line)}.gravity>div:first-child{display:flex;justify-content:space-between;gap:8px}.gravity b{font-size:10px}.gravity span{color:var(--dim);font-size:8px}.gravity input{width:100%;margin:16px 0 4px;accent-color:var(--acid)}.gravity-labels{display:flex;justify-content:space-between;color:var(--dim)}
+  .agents{display:grid;gap:6px}.agent{display:flex;gap:9px;align-items:center;width:100%;padding:9px;border:1px solid transparent;border-radius:10px;background:transparent;color:#aaa69a;text-align:left}.agent:hover,.agent.active{border-color:var(--line);background:#25241f;color:var(--paper)}.agent i{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#37362f;color:var(--acid);font-size:9px;font-style:normal}.agent span{display:grid}.agent b{font-size:10px}.agent small{font-size:8px;color:var(--dim)}
+  .field{position:relative;min-width:0;padding:15px 22px 0;overflow:hidden}.play-path{display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#625f57;font-size:8px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}.play-path span.current{color:var(--paper)}.play-path span.done{color:var(--acid)}.play-path i{width:34px;height:1px;margin:0 7px;background:#3e3c36}.field-top{display:flex;align-items:center;justify-content:space-between;gap:14px}.field-top>div{display:flex;gap:7px}.field-top span{padding:4px 7px;border:1px solid var(--line);border-radius:99px;color:var(--dim);font-size:8px}.field-top p{color:var(--dim);font:italic 11px Georgia}.constellation{position:relative;height:calc(100vh - 188px);min-height:550px}.halo{position:absolute;border:1px solid #ffffff08;border-radius:50%}.halo.one{inset:14% 20% 17%}.halo.two{inset:27% 32% 30%}.center-note{position:absolute;left:48%;top:43%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:7px;color:#65635b;font:italic 10px Georgia}.center-note i{width:7px;height:7px;border-radius:50%;background:#55534c}
+  .material-node{position:absolute;transform:translate(-50%,-50%);display:grid;gap:5px;width:145px;padding:11px 12px;border:1px solid #44423b;border-radius:13px;background:#22211dcc;color:var(--paper);text-align:left;box-shadow:0 12px 45px #0000001f;transition:left .55s ease,top .55s ease,opacity .25s,transform .2s,border-color .2s}.material-node:hover{transform:translate(-50%,-50%) scale(1.04);border-color:#817d70;z-index:3}.material-node.selected{border-color:var(--acid);box-shadow:0 0 0 3px #d7ef5b12,0 16px 50px #0006;z-index:4}.material-node.dormant{opacity:.25;filter:saturate(.3)}.node-kind{font-size:7px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--blue)}.material-node.tension .node-kind{color:var(--coral)}.material-node.motif .node-kind{color:var(--violet)}.material-node.inference .node-kind{color:var(--acid)}.material-node b{font:500 13px/1.1 Georgia}.material-node small{color:#9d998e;font-size:8px;line-height:1.35}.material-node>i{color:#777369;font-size:7px;font-style:normal}
+  .gesture-bar{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:6px;border:1px solid #44423b;border-radius:99px;background:#1c1b18e8;backdrop-filter:blur(10px);z-index:8}.gesture-bar span{padding:0 8px;color:var(--dim);font-size:8px}.gesture-bar button{padding:7px 10px;border:0;border-radius:99px;background:#34332d;color:#dedacf;font-size:9px}.gesture-bar button:first-of-type{background:var(--acid);color:#1b1c13;font-weight:750}.gesture-bar button:disabled{opacity:.3;cursor:not-allowed}
+  .conversation{display:flex;flex-direction:column;border-left:1px solid #302f2a;background:#191916}.material-detail{min-height:190px;padding-bottom:20px;border-bottom:1px solid var(--line)}.kind-mark{display:inline-block;padding:4px 7px;border-radius:99px;background:#32312b;color:var(--blue);font-size:7px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.kind-mark.tension{color:var(--coral)}.kind-mark.motif{color:var(--violet)}.material-detail h2{margin:14px 0 8px;font:500 24px/1.08 Georgia}.material-detail p{color:#a5a196;font:13px/1.55 Georgia}.provenance{color:#77746b;font-size:8px}.empty-detail{color:var(--dim)}
+  .spark-card{margin:-8px -8px 18px;padding:18px;border:1px solid #6f7441;border-radius:15px;background:linear-gradient(145deg,#323526,#24251e);box-shadow:0 18px 55px #0005}.spark-top{display:flex;justify-content:space-between;color:var(--acid);font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.spark-top i{font-style:normal;font-size:15px}.spark-card h2{margin:11px 0 8px;font:500 25px/1.05 Georgia}.spark-card p{margin:0;color:#d2cec2;font:12px/1.55 Georgia}.spark-card small{display:block;margin:11px 0;color:#8f8b80;font-size:8px;line-height:1.45}.spark-card button{width:100%;padding:9px;border:0;border-radius:8px;background:var(--acid);color:#1b1c13;font-size:9px;font-weight:800}.spark-card button:disabled{background:#4a4e35;color:#cdd49c}
+  .thread{flex:1;max-height:calc(100vh - 405px);overflow:auto;padding:18px 0}.thread-head{display:flex;justify-content:space-between;margin-bottom:12px}.thread-head span{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em}.thread-head small{color:var(--dim);font-size:8px}.message{margin:8px 0;padding:10px 11px;border-radius:11px;background:#292823;color:#b8b4a9;font:11px/1.5 Georgia}.message.mine{margin-left:35px;background:#34372b;color:#dce5b4}.message.agent-message b{display:block;margin-bottom:4px;color:var(--acid);font:800 7px Inter;text-transform:uppercase;letter-spacing:.12em}.composer{display:grid;gap:7px;padding-top:12px;border-top:1px solid var(--line)}.composer textarea{resize:none;width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:#22211d;color:var(--paper);outline:none;font:11px/1.4 Georgia}.composer textarea:focus{border-color:#716e63}.composer button{justify-self:end;padding:7px 10px;border:0;border-radius:8px;background:var(--acid);color:#1b1c13;font-size:9px;font-weight:750}.composer button:disabled{opacity:.3}
+  .exchange.hidden{display:none}
+  .lineage-view{display:grid;grid-template-columns:minmax(320px,.7fr) minmax(460px,1.3fr);gap:70px;max-width:1180px;margin:auto;padding:75px 40px}.lineage-hero{position:sticky;top:145px;align-self:start}.lineage-hero h1{margin:10px 0 18px;font:500 52px/.98 Georgia;letter-spacing:-.045em}.lineage-hero>p:last-child{max-width:420px;color:var(--dim)}.timeline{border-left:1px solid var(--line)}.timeline article{display:grid;grid-template-columns:60px 15px 1fr;gap:13px;margin:0 0 39px;transform:translateX(-68px)}.timeline time{color:var(--dim);font-size:9px;text-align:right}.timeline article>i{width:9px;height:9px;margin-top:3px;border:2px solid var(--night);border-radius:50%;background:var(--acid);box-shadow:0 0 0 1px #6e713c}.timeline article span{color:var(--acid);font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.timeline h2{margin:6px 0;font:500 20px/1.2 Georgia}.timeline small{color:var(--dim);font-size:8px}
+  @media(max-width:1100px){.workspace{grid-template-columns:205px minmax(520px,1fr)}.conversation{position:fixed;z-index:12;right:0;top:70px;bottom:0;width:300px;box-shadow:-18px 0 50px #0007}.field{padding-right:110px}.material-node{width:132px}}
+  @media(max-width:760px){header{grid-template-columns:1fr auto}.presence{display:none}.seed-room{grid-template-columns:1fr;padding:42px 22px 90px}.seed-copy h1{font-size:46px}.micro-arc{left:20px;right:20px}.micro-arc i{width:13px}.workspace{display:block}.left-rail{display:none}.field{padding:15px}.conversation{position:static;width:100%;min-height:420px;border-top:1px solid var(--line);box-shadow:none}.material-detail{min-height:0}.material-detail p{display:none}.thread{display:none}.constellation{height:58vh;min-height:470px}.material-node{width:116px}.lineage-view{grid-template-columns:1fr;padding:45px 25px}.lineage-hero{position:static}.lineage-hero h1{font-size:42px}}
+</style>

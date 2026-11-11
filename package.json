@@ -1,0 +1,44 @@
+{
+  "name": "harngine-monorepo",
+  "private": true,
+  "license": "MPL-2.0",
+  "type": "module",
+  "packageManager": "bun@1.2.16",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "apps/coding/*"
+  ],
+  "scripts": {
+    "clean": "bun scripts/clean.mjs",
+    "manifest": "bun packages/harngine/src/build/manifest-cli.ts",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "build": "bun run manifest && bun run clean && bun node_modules/typescript/bin/tsc -b --force",
+    "typecheck": "bun node_modules/typescript/bin/tsc --noEmit -p tsconfig.test.json",
+    "test": "bun run build && node_modules/node/bin/node node_modules/vitest/vitest.mjs run",
+    "check": "bun run format:check && bun run typecheck && bun run test",
+    "test:package": "bun run build && bun scripts/package-smoke.mjs",
+    "test:linux": "bash scripts/test-linux.sh",
+    "agent:desktop": "bun scripts/build-coding-desktop.mjs",
+    "agent:coding": "bun scripts/run-coding-cli.mjs cli",
+    "demo:coding": "bun run build && node_modules/node/bin/node apps/coding/demo/dist/coding-session.js",
+    "demo:hearth": "sh apps/hearth/scripts/build-ui.sh && bun node_modules/typescript/bin/tsc -b apps/hearth --force && node_modules/node/bin/node apps/hearth/dist/main.js",
+    "demo:quest": "bun run manifest && sh apps/quest/scripts/build-ui.sh && bun node_modules/typescript/bin/tsc -b apps/quest --force && node_modules/node/bin/node apps/quest/dist/main.js",
+    "demo:roam": "bun node_modules/typescript/bin/tsc -b packages/harngine apps/roam --force && node_modules/node/bin/node apps/roam/dist/main.js",
+    "demo:muse": "bun run manifest && sh apps/muse/scripts/build-ui.sh && bun node_modules/typescript/bin/tsc -b packages/harngine apps/muse --force && node_modules/node/bin/node apps/muse/dist/cli.js",
+    "demo:muse:live": "bun run manifest && sh apps/muse/scripts/build-ui.sh && bun node_modules/typescript/bin/tsc -b packages/harngine apps/muse --force && node_modules/node/bin/node apps/muse/dist/cli.js --live"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "24.10.1",
+    "fast-check": "4.10.2",
+    "node": "24.21.0",
+    "typescript": "5.9.3",
+    "vitest": "5.0.2"
+  },
+  "trustedDependencies": [
+    "node"
+  ]
+}

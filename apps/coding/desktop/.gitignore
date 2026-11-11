@@ -1,0 +1,6 @@
+build/
+server/
+web/generated/
+src/generated/
+web/agent-config.ts
+web/agent-bridge.json

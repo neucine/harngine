@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "references": [
+    { "path": "../../../packages/harngine" },
+    { "path": "../../../packages/codex-cli" }
+  ],
+  "include": ["src/**/*.ts"]
+}

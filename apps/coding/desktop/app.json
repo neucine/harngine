@@ -1,0 +1,9 @@
+{
+  "id": "dev.neucine.harngine.coding",
+  "name": "Coding Desktop",
+  "entry": "index.html",
+  "capabilities": [],
+  "localHttp": {
+    "server": { "source": "server", "executable": "bin/node", "args": ["main.mjs"] }
+  }
+}

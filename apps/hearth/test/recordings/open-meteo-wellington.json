@@ -1,0 +1,31 @@
+{
+  "latitude": -41.300526,
+  "longitude": 174.70589,
+  "generationtime_ms": 0.13399124145507812,
+  "utc_offset_seconds": 46800,
+  "timezone": "Pacific/Auckland",
+  "timezone_abbreviation": "GMT+13",
+  "elevation": 13,
+  "daily_units": {
+    "time": "iso8601",
+    "weather_code": "wmo code",
+    "precipitation_probability_max": "%",
+    "precipitation_sum": "mm",
+    "wind_gusts_10m_max": "km/h"
+  },
+  "daily": {
+    "time": [
+      "2026-10-11",
+      "2026-10-12",
+      "2026-10-13",
+      "2026-10-14",
+      "2026-10-15",
+      "2026-10-16",
+      "2026-10-17"
+    ],
+    "weather_code": [53, 3, 51, 53, 53, 53, 51],
+    "precipitation_probability_max": [84, 0, 89, 67, 73, 88, 75],
+    "precipitation_sum": [3.2, 0, 1.7, 2.1, 5.4, 5.2, 2.4],
+    "wind_gusts_10m_max": [69.1, 54.7, 76.3, 105.5, 104.4, 108.7, 96.5]
+  }
+}

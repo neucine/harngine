@@ -1,0 +1,215 @@
+<template>
+  <div class="app-shell">
+    <span class="bootstrap">{{ boot() }}</span>
+    <aside class="rail">
+      <div class="brand"><i>r</i><div><b>roam</b><small>living journey atlas</small></div></div>
+      <nav aria-label="Atlas navigation">
+        <button bind:class="navClass('atlas')" on:click="showAtlas"><span>✦</span>Play</button>
+        <button bind:class="navClass('signals')" on:click="showSignals"><span>⌁</span>Desires</button>
+        <button bind:class="navClass('scouts')" on:click="showScouts"><span>◉</span>Scouts</button>
+        <button bind:class="navClass('memory')" on:click="showMemory"><span>◌</span>Saved trails</button>
+      </nav>
+      <button class="new-atlas" on:click="openNew">＋ open another atlas</button>
+      <div class="rail-foot">
+        <div class="faces"><i for="traveler in travelers">{{ traveler.initials }}</i></div>
+        <p>{{ travelers.length }} imaginations in motion</p>
+        <small>Built with Weiv · grounded by Harngine</small>
+      </div>
+    </aside>
+
+    <main>
+      <header>
+        <div><span class="pulse-dot"></span>{{ busy ? "scouts are listening…" : statusLine() }}</div>
+        <button bind:disabled="busy" on:click="refreshAtlas">↻ check the world</button>
+      </header>
+      <div if="errorMessage" class="error" role="alert">{{ errorMessage }}</div>
+      <section if="!data" class="loading"><i></i><p>Waking the place scouts…</p></section>
+
+      <div if="data && active === 'atlas'" class="atlas-view">
+        <section class="intro">
+          <div>
+            <div class="kicker">ROAM’S ONE SMALL GAME · {{ data.brief.origin }} → Japan</div>
+            <h1>Make one day everyone wants to live.</h1>
+            <p>Drop one concrete desire. Watch the scouts grow a day around it.</p>
+          </div>
+          <div class="date-orbit"><small>the window</small><b>{{ shortDate(data.brief.startDate) }}—{{ shortDate(data.brief.endDate) }}</b><span>{{ weatherWhisper() }}</span></div>
+        </section>
+
+        <section class="drop-zone">
+          <div class="play-step"><b>1</b><span>Drop a desire</span></div>
+          <div class="desire-input"><input bind:value="quickDesire" on:input="updateQuickDesire" on:keydown="quickKey" placeholder="I want a quiet breakfast…" maxlength="120" /><button bind:disabled="busy" on:click="dropDesire">drop it on the world ↘</button></div>
+          <div class="live-examples"><small>or play the live example</small><button on:click="exampleBreakfast">quiet breakfast</button><button on:click="exampleSwim">ocean swim</button><button on:click="exampleMusic">late-night music</button><button on:click="exampleArchitecture">hidden architecture</button></div>
+        </section>
+
+        <section class="grown-fragment">
+          <div><span>VISIBLE CONSEQUENCE</span><h2>Scouts grew three route fragments around “{{ latestDesire() }}”</h2><p>Place and weather are real observations; the fragments remain playful possibilities.</p></div>
+          <div class="fragment-list"><button for="world in worlds" on:click="focusWorld(world.id)"><i></i><b>{{ world.title }}</b><small>{{ world.days[0].title }} · {{ world.days[0].place }}</small></button></div>
+        </section>
+
+        <section class="map-card">
+          <div class="map-copy"><span>2 · PULL A POSSIBILITY CLOSER</span><p>Tap a world, then shape the group’s gravity.</p></div>
+          <div class="map-stage">
+            <div class="contour c1"></div><div class="contour c2"></div><div class="contour c3"></div>
+            <div class="island tokyo">東京<small>Tokyo</small></div><div class="island hakone">箱根<small>Hakone</small></div>
+            <div class="ribbon r1"></div><div class="ribbon r2"></div><div class="ribbon r3"></div>
+            <button for="world in worlds" bind:class="pinClass(world)" on:click="focusWorld(world.id)">
+              <i></i><b>{{ world.title }}</b><small>{{ world.atmosphere }}</small>
+            </button>
+            <div class="map-legend"><span><i></i>shared signals</span><span><i></i>live conditions</span><span><i></i>scout connections</span></div>
+          </div>
+        </section>
+
+        <section class="signal-stream">
+          <div class="section-title"><div><span>WHAT THE GROUP IS PULLING TOWARD</span><h2>Signals in the room</h2></div><button on:click="openSignal">＋ add a signal</button></div>
+          <div class="chips"><button for="signal in signals" bind:class="signalClass(signal)"><small>{{ signal.kind }}</small>{{ signal.text }}</button></div>
+        </section>
+
+        <section class="world-section">
+          <div class="section-title"><div><span>THREE EVOLVING JOURNEY WORLDS</span><h2>Different ways the same week could feel</h2></div><p>None is a funnel. Keep one, blend them, or let them change.</p></div>
+          <div class="world-grid">
+            <article for="world in worlds" bind:class="worldClass(world)">
+              <div class="world-top"><span>{{ world.label }}</span><b>{{ world.fit }}% resonance</b></div>
+              <div bind:class="'orb ' + world.id"><i></i></div>
+              <h3>{{ world.title }}</h3><p>{{ world.summary }}</p>
+              <div class="echoes">echoing · {{ echoLine(world) }}</div>
+              <div class="gravity"><button bind:disabled="busy" on:click="pullWorld(world.id)">↗ pull closer</button><button bind:disabled="busy" on:click="pushWorld(world.id)">↘ push away</button><b>{{ gravityLabel(world.id) }}</b></div>
+            </article>
+          </div>
+          <div class="weave"><div><span>3 · WEAVE THE GROUP</span><b>“{{ latestDesire() }}”</b><i>＋</i><b>“{{ partnerDesire() }}”</b></div><button bind:disabled="busy" on:click="weaveDesires">weave these desires →</button></div>
+        </section>
+
+        <section class="ribbon-workspace">
+          <div class="journey-ribbon">
+            <div class="section-title"><div><span>4 · WALK THROUGH THE RESULTING DAY</span><h2>{{ selected.title }}</h2></div><button bind:disabled="busy" on:click="saveTrail">save this trail ☆</button></div>
+            <div class="days">
+              <button for="day in selected.days" bind:class="dayClass(day)" on:click="simulateDay(day.day)">
+                <i>{{ padDay(day.day) }}</i><div><small>{{ day.place }} · {{ shortDate(day.date) }}</small><b>{{ day.title }}</b><p>{{ day.texture }}</p></div><span>{{ day.pace }}</span>
+              </button>
+            </div>
+          </div>
+          <aside>
+            <section class="simulation">
+              <span class="eyebrow">ALTERNATE-DAY SIMULATION</span>
+              <h3>What if the day turns?</h3>
+              <div class="weather-shape"><i></i><b>{{ simulated.title }}</b><small>day {{ simulated.day }} · {{ simulated.place }}</small></div>
+              <p>{{ simulated.alternate }}</p>
+              <button on:click="nextSimulation">shuffle this day ↝</button>
+            </section>
+            <section class="scout-glimpse">
+              <span class="eyebrow">SCOUT CHORUS</span>
+              <article for="scout in scouts"><i bind:style="scoutStyle(scout)">{{ scout.name.slice(0, 1) }}</i><div><b>{{ scout.name }} · {{ scout.lens }}</b><p>{{ scout.changed }}</p></div></article>
+              <button on:click="showScouts">hear what they noticed →</button>
+            </section>
+          </aside>
+        </section>
+      </div>
+
+      <div if="data && active === 'signals'" class="subview">
+        <div class="kicker">COLLECTIVE TASTE, STILL EVOLVING</div><h1>Signals, not requirements</h1><p class="lede">Moods, fascinations, rhythms and constraints can coexist without being flattened into a form score.</p>
+        <div class="signal-wall"><article for="signal in signals" bind:class="signalClass(signal)"><small>{{ signal.kind }} · {{ authorName(signal.author) }}</small><b>{{ signal.text }}</b><p>Now echoing across {{ worldEchoCount(signal.text) }} journey worlds.</p></article></div>
+        <button class="primary" on:click="openSignal">Add something the group should feel</button>
+      </div>
+
+      <div if="data && active === 'scouts'" class="subview">
+        <div class="kicker">PERSISTENT PERSPECTIVES</div><h1>The scouts notice differently</h1><p class="lede">Each pulse remembers the group, reads the changing world, and leaves a trace instead of restarting from zero.</p>
+        <div class="scout-grid"><article for="scout in scouts"><i bind:style="scoutStyle(scout)">{{ scout.name.slice(0, 1) }}</i><span>{{ scout.lens }}</span><h2>{{ scout.name }}</h2><p>{{ scout.note }}</p><small>{{ scout.changed }}</small></article></div>
+        <section class="sources"><h2>What grounds them</h2><article for="source in sources"><i bind:class="sourceClass(source)"></i><div><b>{{ source.provider }}</b><p>{{ source.note }}</p></div><a bind:href="source.url" rel="noreferrer" target="_blank">{{ source.state }}</a></article></section>
+      </div>
+
+      <div if="data && active === 'memory'" class="subview memory-view">
+        <div class="kicker">SAVED TRAILS</div><h1>Return to a day worth living</h1><p class="lede">Saved trails keep the desire, route world and environmental context together so the group can return after conditions change.</p>
+        <div class="memory-stats"><article><b>{{ savedTrails.length }}</b><span>trails saved</span></article><article><b>{{ data.memory.previousPulses }}</b><span>earlier pulses retained</span></article><article><b>{{ signals.length }}</b><span>desires remembered</span></article></div>
+        <section class="saved-list"><article for="trail in savedTrails"><span>☆</span><div><b>{{ trail.title }}</b><p>grown around “{{ trail.desire }}”</p></div><small>{{ savedDate(trail.savedAt) }}</small></article></section>
+        <section class="story"><article for="entry in story"><i>{{ storyIcon(entry) }}</i><div><b>{{ entry.presentation.title }}</b><p>{{ entry.presentation.summary || entry.type }}</p></div></article></section>
+      </div>
+    </main>
+
+    <div if="showSignal" class="modal-layer" on:click="closeSignalBackdrop">
+      <section class="modal" role="dialog" aria-modal="true"><span class="kicker">ADD TO THE FIELD</span><h2>What should this journey feel like?</h2><div class="kind-row"><button on:click="kindMood">mood</button><button on:click="kindFascination">fascination</button><button on:click="kindRhythm">rhythm</button><button on:click="kindConstraint">constraint</button></div><label>{{ draftKind }}<textarea bind:value="draftSignal" on:input="updateSignal" maxlength="120" placeholder="late light, hand-painted signs, room to get lost…"></textarea></label><div class="modal-actions"><button on:click="closeSignal">not now</button><button class="primary" bind:disabled="busy" on:click="saveSignal">let the scouts notice</button></div></section>
+    </div>
+
+    <div if="showNew" class="modal-layer" on:click="closeNewBackdrop">
+      <section class="modal" role="dialog" aria-modal="true"><span class="kicker">OPEN A FRESH POSSIBILITY SPACE</span><h2>Begin with a few sparks</h2><div class="form-grid"><label>Starting from<input bind:value="draftOrigin" on:input="updateOrigin" /></label><label>First day<input type="date" bind:value="draftStart" on:input="updateStart" /></label><label>Last day · seven days<input type="date" bind:value="draftEnd" on:input="updateEnd" /></label><label class="wide">Signals, separated by commas<textarea bind:value="draftSparks" on:input="updateSparks" placeholder="soft mornings, strange typography, mountain air"></textarea></label></div><div class="modal-actions"><button on:click="closeNew">keep this atlas</button><button class="primary" bind:disabled="busy" on:click="createAtlas">grow the atlas</button></div></section>
+    </div>
+  </div>
+</template>
+
+<script lang="ts">
+  export interface Props { token: string; }
+  export let props: Props;
+  let data: any = null; let initialized = false; let busy = false; let errorMessage = ""; let active = "atlas";
+  let worlds: any[] = []; let signals: any[] = []; let travelers: any[] = []; let scouts: any[] = []; let sources: any[] = []; let story: any[] = []; let savedTrails: any[] = [];
+  let selected: any = { id: "", title: "", atmosphere: "", days: [] }; let simulated: any = { day: 0, title: "", place: "", alternate: "" };
+  let showSignal = false; let draftSignal = ""; let draftKind = "mood";
+  let showNew = false; let draftOrigin = "Auckland"; let draftStart = ""; let draftEnd = ""; let draftSparks = "";
+  let quickDesire = "";
+  function boot() { if (!initialized && typeof window !== "undefined") { initialized = true; queueMicrotask(load); window.setInterval(() => { if (!busy && !showSignal && !showNew) load(); }, 4000); } return ""; }
+  async function api(path: string, body?: any) { const response = await fetch(path, { method: body ? "POST" : "GET", headers: { "x-roam-token": props.token, ...(body ? { "content-type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) }); const value = await response.json(); if (!response.ok) throw new Error(value.error || "Request failed"); return value; }
+  async function load() { try { const next = await api("/api/state"); queueMicrotask(() => applyState(next)); } catch (error) { const message = error instanceof Error ? error.message : "Could not open the atlas"; queueMicrotask(() => { errorMessage = message; }); } }
+  function applyState(next: any) { data = next; worlds = next.worlds || []; signals = next.brief.signals || []; travelers = next.brief.travelers || []; scouts = next.scouts || []; sources = [next.geography && next.geography.provenance, next.weather && next.weather.provenance].filter(Boolean); story = next.story || []; savedTrails = next.brief.savedTrails || []; selected = worlds.find((world: any) => world.id === next.brief.activeWorldId) || worlds[0] || selected; simulated = selected.days[0] || simulated; errorMessage = ""; }
+  function shortDate(value: string) { return new Intl.DateTimeFormat("en-NZ", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(value + "T00:00:00Z")); }
+  function padDay(value: number) { return String(value).padStart(2, "0"); }
+  function statusLine() { return data && data.work.status === "completed" ? `atlas pulse ${data.memory.revisions} · awake` : "scouts are reading the conditions"; }
+  function weatherWhisper() { if (!data || !data.weather || !data.weather.places.length) return "seasonality still forming"; const day = data.weather.places[0].days[0]; return `${Math.round(day.temperatureMin)}–${Math.round(day.temperatureMax)}° · ${day.precipitationProbability}% rain`; }
+  function pinClass(world: any) { return `world-pin ${world.id}${world.id === selected.id ? " active" : ""}`; }
+  function worldClass(world: any) { return `world-card ${world.id === selected.id ? "selected" : ""}`; }
+  function signalClass(signal: any) { return `signal ${signal.kind}`; }
+  function dayClass(day: any) { return `day ${day.day === simulated.day ? "active" : ""}`; }
+  function echoLine(world: any) { return world.signalEchoes.join(" · "); }
+  function reactionCount(id: string) { return Number(data.brief.reactions[id] || 0); }
+  function gravityLabel(id: string) { const value = reactionCount(id); return value === 0 ? "open" : value > 0 ? `+${value} group gravity` : `${value} group gravity`; }
+  function latestDesire() { const desire = [...signals].reverse().find((signal: any) => signal.kind === "desire"); return desire ? desire.text : signals.at(-1)?.text || "one vivid moment"; }
+  function partnerSignal() { return signals.find((signal: any) => signal.author === "nora") || signals[0]; }
+  function partnerDesire() { return partnerSignal()?.text || "one beautiful pause"; }
+  function savedDate(value: string) { return new Intl.DateTimeFormat("en-NZ", { day: "numeric", month: "short" }).format(new Date(value)); }
+  function authorName(id: string) { const person = travelers.find((item: any) => item.id === id); return person ? person.name : "the group"; }
+  function worldEchoCount(text: string) { return worlds.filter((world: any) => world.signalEchoes.includes(text)).length; }
+  function scoutStyle(scout: any) { return `background:${scout.color}`; }
+  function sourceClass(source: any) { return `source-dot ${source.state}`; }
+  function storyIcon(entry: any) { if (entry.type === "call") return "↗"; if (entry.type === "child") return "∥"; return "◌"; }
+  function navClass(name: string) { return active === name ? "active" : ""; }
+  function showAtlas() { active = "atlas"; } function showSignals() { active = "signals"; } function showScouts() { active = "scouts"; } function showMemory() { active = "memory"; }
+  function simulateDay(day: number) { simulated = selected.days.find((item: any) => item.day === day) || selected.days[0]; }
+  function nextSimulation() { const index = selected.days.findIndex((item: any) => item.day === simulated.day); simulated = selected.days[(index + 1) % selected.days.length]; }
+  async function act(path: string, body?: any) { if (busy) return; busy = true; errorMessage = ""; try { await api(path, body || {}); await load(); } catch (error) { const message = error instanceof Error ? error.message : "The atlas could not shift"; queueMicrotask(() => { errorMessage = message; }); } finally { queueMicrotask(() => { busy = false; }); } }
+  async function focusWorld(id: string) { selected = worlds.find((world: any) => world.id === id) || selected; simulated = selected.days[0] || simulated; await act("/api/focus", { worldId: id }); }
+  async function pullWorld(id: string) { await act("/api/nudge", { worldId: id, direction: "closer" }); }
+  async function pushWorld(id: string) { await act("/api/nudge", { worldId: id, direction: "away" }); }
+  async function weaveDesires() { const partner = partnerSignal(); if (partner) await act("/api/weave", { signalId: partner.id }); }
+  async function saveTrail() { await act("/api/save", { worldId: selected.id }); queueMicrotask(() => { active = "memory"; }); }
+  async function refreshAtlas() { await act("/api/refresh", {}); }
+  function updateQuickDesire(event: Event) { quickDesire = (event.currentTarget as HTMLInputElement).value; }
+  function quickKey(event: KeyboardEvent) { if (event.key === "Enter") dropDesire(); }
+  async function submitDesire(text: string) { if (!text.trim()) return; await act("/api/signal", { kind: "desire", text, author: "maya" }); queueMicrotask(() => { quickDesire = ""; active = "atlas"; }); }
+  async function dropDesire() { await submitDesire(quickDesire); }
+  function exampleBreakfast() { submitDesire("quiet breakfast"); } function exampleSwim() { submitDesire("ocean swim"); } function exampleMusic() { submitDesire("late-night music"); } function exampleArchitecture() { submitDesire("hidden architecture"); }
+  function openSignal() { draftSignal = ""; draftKind = "desire"; showSignal = true; }
+  function closeSignal() { if (!busy) showSignal = false; }
+  function closeSignalBackdrop(event: Event) { if (event.target === event.currentTarget) closeSignal(); }
+  function updateSignal(event: Event) { draftSignal = (event.currentTarget as HTMLTextAreaElement).value; }
+  function kindMood() { draftKind = "mood"; } function kindFascination() { draftKind = "fascination"; } function kindRhythm() { draftKind = "rhythm"; } function kindConstraint() { draftKind = "constraint"; }
+  async function saveSignal() { if (!draftSignal.trim()) return; await act("/api/signal", { kind: draftKind, text: draftSignal, author: "maya" }); queueMicrotask(() => { showSignal = false; active = "atlas"; }); }
+  function openNew() { if (data) { draftOrigin = data.brief.origin; draftStart = data.brief.startDate; draftEnd = data.brief.endDate; draftSparks = ""; } showNew = true; }
+  function closeNew() { if (!busy) showNew = false; } function closeNewBackdrop(event: Event) { if (event.target === event.currentTarget) closeNew(); }
+  function value(event: Event) { return (event.currentTarget as HTMLInputElement | HTMLTextAreaElement).value; }
+  function updateOrigin(event: Event) { draftOrigin = value(event); } function updateStart(event: Event) { draftStart = value(event); } function updateEnd(event: Event) { draftEnd = value(event); } function updateSparks(event: Event) { draftSparks = value(event); }
+  async function createAtlas() { await act("/api/create", { origin: draftOrigin, startDate: draftStart, endDate: draftEnd, signals: draftSparks.split(",").map((item) => item.trim()).filter(Boolean) }); queueMicrotask(() => { showNew = false; active = "atlas"; }); }
+</script>
+
+<style>
+  .app-shell { --night:#0f1720; --ink:#172027; --paper:#f3efe7; --mist:#dfe5df; --coral:#ff725e; --blue:#6b8cff; --green:#75a77d; min-height:100vh; color:var(--ink); background:var(--paper); font:14px/1.5 Inter,ui-sans-serif,system-ui,sans-serif; }
+  .app-shell,.app-shell *{box-sizing:border-box} button,input,textarea{font:inherit} button{cursor:pointer}.bootstrap{display:none}
+  .rail{position:fixed;inset:0 auto 0 0;width:220px;padding:28px 20px;display:flex;flex-direction:column;color:#edf2ef;background:var(--night);z-index:5}.brand{display:flex;gap:12px;align-items:center;margin-bottom:38px}.brand>i{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--coral);font:italic 28px Georgia}.brand b{display:block;font:600 22px Georgia}.brand small{display:block;color:#91a09c;font-size:10px;letter-spacing:.08em}.rail nav{display:grid;gap:6px}.rail nav button,.new-atlas{border:0;border-radius:10px;padding:11px 12px;color:#9eaaa7;background:transparent;text-align:left}.rail nav button span{display:inline-block;width:28px;color:#65736f}.rail nav button:hover,.rail nav button.active{color:white;background:#ffffff12}.new-atlas{margin-top:22px;border:1px solid #ffffff1d;color:#d8dfdc}.rail-foot{margin-top:auto}.faces{display:flex}.faces i{display:grid;place-items:center;width:30px;height:30px;margin-right:-5px;border:2px solid var(--night);border-radius:50%;background:#42514f;color:white;font-style:normal;font-size:9px}.faces i:nth-child(2){background:#5e6fa7}.faces i:nth-child(3){background:#8a784c}.rail-foot p{margin:8px 0;color:#b2bfbb;font-size:11px}.rail-foot small{color:#586864;font-size:9px}
+  main{min-height:100vh;margin-left:220px}header{height:58px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1c28281a;background:#f8f5efcc;backdrop-filter:blur(12px);font-size:11px;letter-spacing:.04em}header button{border:0;background:transparent;color:#425850}.pulse-dot{display:inline-block;width:7px;height:7px;margin-right:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px #75a77d1f}.error{margin:16px 40px;padding:10px 14px;border-radius:8px;background:#ff725e1c;color:#9e3024}.loading{min-height:70vh;display:grid;place-items:center;align-content:center}.loading i{width:46px;height:46px;border:1px solid var(--green);border-radius:50%;animation:breathe 1.8s infinite}.loading p{color:#68736e}
+  .atlas-view,.subview{max-width:1320px;margin:auto;padding:42px 48px 80px}.intro{display:flex;justify-content:space-between;align-items:end;margin-bottom:28px}.kicker,.eyebrow,.section-title span{color:#728078;font-size:9px;font-weight:750;letter-spacing:.17em}.intro h1,.subview>h1{margin:5px 0 4px;font:500 clamp(38px,5vw,68px)/.98 Georgia,serif;letter-spacing:-.035em}.intro p,.lede{margin:0;color:#66716c;font:italic 16px Georgia}.date-orbit{width:210px;padding:18px;border-left:1px solid #cbcfc8}.date-orbit small,.date-orbit span{display:block;color:#7c8882;font-size:10px}.date-orbit b{display:block;margin:4px 0;font:500 17px Georgia}
+  .drop-zone{margin-bottom:18px;padding:20px;border-radius:20px;background:var(--night);color:white;box-shadow:0 18px 60px #0f17202b}.play-step{display:flex;gap:9px;align-items:center;margin-bottom:10px}.play-step b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--coral)}.play-step span{font:600 16px Georgia}.desire-input{display:grid;grid-template-columns:1fr auto;gap:8px}.desire-input input{min-width:0;padding:13px 15px;border:1px solid #ffffff29;border-radius:12px;background:#ffffff12;color:white}.desire-input input::placeholder{color:#91a09d}.desire-input button{border:0;border-radius:12px;padding:0 18px;background:var(--coral);color:white}.live-examples{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap}.live-examples small{margin-right:4px;color:#8e9b98}.live-examples button{border:1px solid #ffffff20;border-radius:14px;padding:5px 9px;background:transparent;color:#d9dfdd;font-size:9px}.grown-fragment{display:grid;grid-template-columns:1fr 1.2fr;gap:20px;align-items:center;margin-bottom:18px;padding:16px 18px;border:1px solid #d8d8d0;border-radius:18px;background:#faf8f3}.grown-fragment span{color:#718077;font-size:8px;letter-spacing:.15em}.grown-fragment h2{margin:4px 0;font:600 18px Georgia}.grown-fragment p{margin:0;color:#758079;font-size:9px}.fragment-list{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.fragment-list button{padding:9px;border:0;border-radius:10px;background:white;text-align:left}.fragment-list i{float:left;width:6px;height:6px;margin:5px 7px 20px 0;border-radius:50%;background:var(--coral)}.fragment-list b,.fragment-list small{display:block}.fragment-list b{font:600 11px Georgia}.fragment-list small{color:#77817c;font-size:7px}
+  .map-card{overflow:hidden;border-radius:24px;background:#dce4dd;box-shadow:0 20px 70px #1b31251c}.map-copy{display:flex;justify-content:space-between;padding:16px 20px;color:#516058;font-size:10px}.map-copy p{margin:0}.map-stage{position:relative;height:400px;overflow:hidden;background:radial-gradient(circle at 15% 30%,#f9d8c3 0,transparent 28%),radial-gradient(circle at 77% 22%,#ccd8f3 0,transparent 26%),radial-gradient(circle at 52% 79%,#c6dec7 0,transparent 31%),linear-gradient(135deg,#dce3dc,#edf0e9)}.contour{position:absolute;border:1px solid #5d706018;border-radius:48% 52% 63% 37%}.c1{inset:34px 12%;transform:rotate(-7deg)}.c2{inset:78px 25%;transform:rotate(13deg)}.c3{width:330px;height:330px;left:36%;top:18px}.island{position:absolute;color:#44554d24;font:600 72px Georgia}.island small{display:block;font:600 10px Inter;color:#52605866;letter-spacing:.15em}.tokyo{right:10%;top:35%}.hakone{left:12%;bottom:9%;font-size:54px}.ribbon{position:absolute;height:2px;transform-origin:left;background:linear-gradient(90deg,transparent,#ffffffad,transparent);filter:blur(.2px)}.r1{width:53%;left:20%;top:43%;transform:rotate(-10deg)}.r2{width:42%;left:32%;top:56%;transform:rotate(26deg)}.r3{width:35%;left:30%;top:66%;transform:rotate(-28deg)}.world-pin{position:absolute;width:170px;padding:10px 12px;border:0;border-radius:14px;color:#34423d;background:#ffffffe5;text-align:left;box-shadow:0 12px 36px #1831221c;transition:.2s}.world-pin:hover,.world-pin.active{transform:translateY(-5px) scale(1.03);box-shadow:0 18px 45px #18312233}.world-pin>i{float:left;width:11px;height:11px;margin:5px 9px 22px 0;border:3px solid white;border-radius:50%;background:var(--coral);box-shadow:0 0 0 2px var(--coral)}.world-pin b,.world-pin small{display:block}.world-pin b{font:600 16px Georgia}.world-pin small{overflow:hidden;color:#718078;font-size:9px;white-space:nowrap;text-overflow:ellipsis}.world-pin.lantern-drift{left:14%;top:24%}.world-pin.electric-quiet{right:15%;top:16%}.world-pin.mountain-breath{left:43%;bottom:12%}.world-pin.electric-quiet>i{background:var(--blue);box-shadow:0 0 0 2px var(--blue)}.world-pin.mountain-breath>i{background:var(--green);box-shadow:0 0 0 2px var(--green)}.map-legend{position:absolute;right:18px;bottom:14px;display:flex;gap:15px;padding:7px 10px;border-radius:12px;background:#f7f8f5a8;font-size:8px;color:#68756e}.map-legend i{display:inline-block;width:5px;height:5px;margin-right:5px;border-radius:50%;background:var(--coral)}.map-legend span:nth-child(2) i{background:var(--blue)}.map-legend span:nth-child(3) i{background:var(--green)}
+  .signal-stream,.world-section,.ribbon-workspace{margin-top:54px}.section-title{display:flex;align-items:end;justify-content:space-between;margin-bottom:18px}.section-title h2{margin:3px 0 0;font:500 28px Georgia}.section-title p{max-width:360px;margin:0;color:#6e7973;font-size:11px}.section-title button,.signal-stream>button{border:1px solid #bdc6bf;border-radius:20px;padding:8px 13px;background:transparent;color:#42564d}.chips{display:flex;gap:8px;overflow:auto;padding-bottom:5px}.signal{border:0;border-radius:22px;padding:10px 14px;background:#fff;white-space:nowrap}.signal small{margin-right:8px;color:#9b6e62;font-size:8px;text-transform:uppercase}.signal.mood{background:#ffe4dc}.signal.fascination{background:#e1e7fa}.signal.rhythm{background:#deeadf}.signal.constraint{background:#ece5cf}
+  .world-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.world-card{padding:18px;border:1px solid #d7d7cf;border-radius:18px;background:#f9f7f2;transition:.2s}.world-card:hover,.world-card.selected{border-color:#6f8176;transform:translateY(-3px);box-shadow:0 16px 40px #23312912}.world-top{display:flex;justify-content:space-between;color:#78837e;font-size:9px;text-transform:uppercase}.world-top b{color:#4a6358}.orb{position:relative;height:65px;margin:14px 0;background:radial-gradient(ellipse at center,#ff725e4d,transparent 67%)}.orb i{position:absolute;left:35%;top:17px;width:65px;height:27px;border:1px solid #ff725e;border-radius:50%;transform:rotate(-12deg)}.orb.electric-quiet{background:radial-gradient(ellipse at center,#6b8cff4d,transparent 67%)}.orb.electric-quiet i{border-color:var(--blue);transform:rotate(15deg)}.orb.mountain-breath{background:radial-gradient(ellipse at center,#75a77d4d,transparent 67%)}.orb.mountain-breath i{border-color:var(--green);transform:rotate(-3deg)}.world-card h3{margin:0;font:600 23px Georgia}.world-card>p{min-height:42px;color:#69736e;font-size:11px}.echoes{min-height:30px;color:#88928d;font-size:9px}.gravity{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:12px}.gravity button{border:1px solid #d4d8d2;border-radius:13px;padding:6px;background:transparent;color:#53655c;font-size:9px}.gravity b{grid-column:1/-1;color:#78837e;font-size:8px;text-align:center}.weave{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:12px;padding:15px 18px;border-radius:16px;background:#e4e8df}.weave>div{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.weave span{width:100%;color:#718077;font-size:8px;letter-spacing:.14em}.weave b{font:600 13px Georgia}.weave i{color:#8d9891}.weave>button{white-space:nowrap;border:0;border-radius:18px;padding:8px 12px;background:var(--night);color:white;font-size:9px}
+  .ribbon-workspace{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(270px,.7fr);gap:18px}.journey-ribbon,.simulation,.scout-glimpse{border-radius:20px;background:#fff}.journey-ribbon{padding:22px}.days{display:grid}.day{display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:start;padding:14px 8px;border:0;border-top:1px solid #e6e5df;background:transparent;text-align:left}.day:hover,.day.active{background:#f6f4ee}.day>i{display:grid;place-items:center;width:31px;height:31px;border:1px solid #cdd4ce;border-radius:50%;font-style:normal;font-size:10px}.day.active>i{color:#fff;background:var(--night)}.day small,.day b,.day p{display:block}.day small{color:#89928e;font-size:8px;text-transform:uppercase}.day b{font:600 15px Georgia}.day p{margin:2px 0;color:#69736e;font-size:10px}.day>span{padding:3px 7px;border-radius:10px;background:#e8eee9;color:#637268;font-size:8px}.ribbon-workspace aside{display:grid;gap:18px;align-content:start}.simulation,.scout-glimpse{padding:22px}.simulation h3,.scout-glimpse h3{margin:5px 0;font:600 22px Georgia}.weather-shape{position:relative;margin:18px 0;padding:18px;border-radius:15px;background:linear-gradient(145deg,#16232e,#34465b);color:white}.weather-shape i{position:absolute;right:16px;top:12px;width:52px;height:27px;border-radius:50%;background:#ffffff18;box-shadow:-24px 16px 0 #ffffff0d}.weather-shape b,.weather-shape small{display:block;position:relative}.weather-shape b{font:600 16px Georgia}.weather-shape small{color:#aebbc4;font-size:9px}.simulation>p{min-height:62px;color:#627069;font:italic 13px Georgia}.simulation>button,.scout-glimpse>button{border:0;background:transparent;color:#425d50;font-size:10px}.scout-glimpse article{display:flex;gap:9px;padding:10px 0;border-top:1px solid #e9e8e2}.scout-glimpse article>i,.scout-grid article>i{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:50%;color:#fff;font-style:normal}.scout-glimpse b{font-size:10px}.scout-glimpse p{margin:1px 0;color:#748078;font-size:9px}
+  .subview{padding-top:70px}.subview>h1{max-width:800px}.subview .lede{max-width:700px;margin:15px 0 38px;font-size:18px}.signal-wall,.scout-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}.signal-wall article{min-height:160px;padding:22px;border-radius:18px;white-space:normal}.signal-wall article b{display:block;margin:24px 0 8px;font:600 21px Georgia}.signal-wall article p{font-size:10px;color:#69736e}.primary{border:0!important;border-radius:22px!important;padding:11px 17px!important;background:var(--night)!important;color:white!important}.scout-grid article{min-height:275px;padding:25px;border:1px solid #d8dad4;border-radius:20px;background:#fff}.scout-grid article>span{float:right;color:#7e8983;font-size:9px;text-transform:uppercase}.scout-grid h2{clear:both;padding-top:24px;font:600 26px Georgia}.scout-grid p{color:#68736e}.scout-grid small{display:block;margin-top:24px;color:#4d6659}.sources,.story,.saved-list{max-width:850px;margin-top:40px;padding:22px;border-radius:18px;background:#fff}.sources h2{font:600 24px Georgia}.sources article{display:grid;grid-template-columns:10px 1fr auto;gap:12px;align-items:start;padding:13px 0;border-top:1px solid #ecebe5}.sources p{margin:2px 0;color:#748078;font-size:10px}.sources a{color:#53655d;font-size:9px}.source-dot{width:8px;height:8px;margin-top:5px;border-radius:50%;background:#aaa}.source-dot.live{background:#58a76c}.source-dot.cached{background:#d4ab55}.memory-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:850px}.memory-stats article{padding:24px;border-radius:18px;background:#fff}.memory-stats b{display:block;font:500 42px Georgia}.memory-stats span{color:#748078}.story article,.saved-list article{display:flex;gap:14px;padding:12px 0;border-top:1px solid #ecebe5}.story article>i,.saved-list article>span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#e6ece7;font-style:normal}.story b,.saved-list b{font-size:11px}.story p,.saved-list p{margin:2px 0;color:#748078;font-size:9px}.saved-list small{margin-left:auto;color:#89938d}
+  .modal-layer{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:20px;background:#0f1720b8;backdrop-filter:blur(8px)}.modal{width:min(560px,100%);padding:30px;border-radius:22px;background:#f7f4ed;box-shadow:0 28px 90px #0006}.modal h2{margin:6px 0 20px;font:500 31px Georgia}.kind-row{display:flex;gap:6px;margin-bottom:13px}.kind-row button{border:1px solid #cdd1ca;border-radius:16px;padding:6px 10px;background:transparent;font-size:9px}.modal label{display:grid;gap:6px;color:#64716a;font-size:10px}.modal textarea,.modal input{width:100%;padding:11px;border:1px solid #cdd1ca;border-radius:10px;background:white;color:var(--ink)}.modal textarea{min-height:90px;resize:vertical}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.modal-actions button{border:1px solid #cdd1ca;border-radius:20px;padding:9px 14px;background:transparent}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-grid .wide{grid-column:1/-1}
+  @keyframes breathe{50%{transform:scale(.78);opacity:.45}}
+  @media(max-width:980px){.rail{position:static;width:auto;height:auto;padding:15px 18px;display:flex;flex-direction:row;align-items:center}.brand{margin:0 auto 0 0}.rail nav{display:flex}.rail nav button{font-size:0}.rail nav button span{width:auto;font-size:16px}.new-atlas{margin:0 0 0 8px}.rail-foot{display:none}main{margin:0}.world-grid,.signal-wall,.scout-grid{grid-template-columns:1fr}.ribbon-workspace,.grown-fragment{grid-template-columns:1fr}.atlas-view,.subview{padding:30px 22px 70px}}
+  @media(max-width:650px){header{padding:0 18px}.intro{display:block}.date-orbit{width:auto;margin-top:20px}.desire-input{grid-template-columns:1fr}.desire-input button{padding:12px}.fragment-list{grid-template-columns:1fr}.map-stage{height:470px}.world-pin{width:145px}.world-pin.lantern-drift{left:5%}.world-pin.electric-quiet{right:4%;top:24%}.world-pin.mountain-breath{left:28%;bottom:13%}.map-legend{display:none}.section-title,.weave{display:block}.weave>button{margin-top:12px}.section-title>p{margin-top:8px}.form-grid{grid-template-columns:1fr}.form-grid .wide{grid-column:auto}.rail nav button:nth-child(4){display:none}}
+</style>

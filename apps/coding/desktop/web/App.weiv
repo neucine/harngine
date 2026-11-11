@@ -1,0 +1,261 @@
+<template>
+  <main>
+    <aside class="sidebar">
+      <div class="brand"><b class="logo">H</b><div><strong>Harngine</strong><small>CODING WORKSPACE</small></div></div>
+      <div class="project"><span class="muted-label">PROJECT</span><strong>{{ projectName }}</strong><small>{{ workspace }}</small></div>
+      <div class="section-head"><span class="muted-label">SESSIONS</span><button title="New session" @click="newSession">＋</button></div>
+      <div class="session-list">
+        <button #for="session in sessions" :data-session-id="session.id" :class="session.id === selectedSessionId ? 'session active' : 'session'" @click="selectSession"><span class="mode-icon">{{ session.agent.id === 'coding.workspace-write' ? '✎' : '⌕' }}</span><span class="session-copy"><strong>{{ session.title }}</strong><small>{{ session.agent.id === 'coding.workspace-write' ? 'Edit' : 'Read' }} · {{ shortId(session.id) }}</small></span><i #if="session.foregroundWorkId" class="live-dot"></i></button>
+        <p #if="sessions.length === 0" class="empty-list">Start a task to create a session.</p>
+      </div>
+      <div class="connection"><i class="live-dot"></i>{{ connection }}</div>
+    </aside>
+    <section class="main-pane">
+      <header><div><span class="muted-label">{{ projectName }}</span><h1>{{ selectedTitle }}</h1></div><div class="header-actions"><span :class="busy ? 'state running' : 'state'">{{ status }}</span><button @click="refresh">Refresh</button></div></header>
+      <div #if="errorText" class="error" role="alert">{{ errorText }}</div>
+      <div #if="sessionUnavailable" class="revision-notice" role="status"><span>This session uses an Agent revision that is no longer available. Its history is still here. Start a new session to continue with the current Agent; previous messages will not carry over.</span><button @click="newSession">Start new session</button></div>
+      <div #if="runSnapshot" class="run-strip"><span class="run-state">{{ runSnapshot.status === 'waiting' ? 'Waiting for ' + (runSnapshot.waitingFor || 'input') : runSnapshot.status }}</span><span #if="runSnapshot.usage">Model {{ runSnapshot.usage.modelTurns }} / {{ runSnapshot.limits?.maxModelTurns || '—' }}</span><span #if="runSnapshot.usage">Tools {{ runSnapshot.usage.toolExecutions }} / {{ runSnapshot.limits?.maxToolExecutions || '—' }}</span><span #if="runSnapshot.usage">Decisions {{ runSnapshot.usage.decisions }} / {{ runSnapshot.limits?.maxDecisions || '—' }}</span><span #if="runSnapshot.usage">Attempts {{ runSnapshot.usage.attempts }} / {{ runSnapshot.limits?.maxAttempts || '—' }}</span><small>{{ shortId(runSnapshot.id) }}</small></div>
+      <div class="body-grid">
+        <section class="transcript">
+          <div #if="messages.length === 0" class="welcome"><div class="welcome-mark">⌘</div><h2>Work on this repository</h2><p>Inspect code, explain a failure, or make a focused edit. Sessions and tool activity are saved.</p></div>
+          <div #for="row in timeline">
+            <article #if="row.kind === 'message'" :class="row.author === 'human' ? 'message human' : 'message agent'"><div class="message-head"><span>{{ row.author === 'human' ? 'YOU' : 'AGENT' }}</span><button #if="row.workId" :data-work-id="row.workId" @click="selectWork">{{ shortId(row.workId) }}</button></div><pre>{{ displayContent(row.content) }}</pre></article>
+            <details #if="row.kind === 'process'" class="process"><summary>{{ row.summary }}</summary><div class="process-steps"><div #for="step in row.steps" class="process-step"><span class="step-icon">{{ step.icon }}</span><div class="step-body"><div class="step-title"><strong>{{ step.label }}</strong><span #if="step.target" class="step-target">{{ step.target }}</span><small>{{ step.status }}</small></div><p #if="step.note" class="step-note">{{ step.note }}</p><div #if="step.oldText" class="change-preview"><div class="removed">− {{ step.oldText }}</div><div class="added">+ {{ step.newText }}</div></div><details #if="step.args" class="step-detail"><summary>Arguments</summary><pre>{{ step.args }}</pre></details><details #if="step.result" class="step-detail"><summary>Result</summary><pre>{{ step.result }}</pre></details></div></div></div></details>
+          </div>
+          <div #if="busy" class="working"><i class="live-dot"></i>{{ workStatus }} <span>{{ shortId(activeWorkId) }}</span></div>
+        </section>
+        <aside class="activity"><div class="right-tabs"><button :class="rightTab === 'activity' ? 'active' : ''" data-tab="activity" @click="selectRightTab">Activity</button><button :class="rightTab === 'files' ? 'active' : ''" data-tab="files" @click="selectRightTab">Files</button><button :class="rightTab === 'git' ? 'active' : ''" data-tab="git" @click="selectRightTab">Git</button></div>
+          <div #if="rightTab === 'activity'" class="activity-head"><span class="muted-label">WORK ACTIVITY</span><strong>{{ selectedWorkId ? shortId(selectedWorkId) : 'No work selected' }}</strong></div><div #if="rightTab === 'activity'" class="activity-list"><div #for="item in activity" class="activity-item"><span class="activity-icon">{{ item.icon }}</span><div><strong>{{ item.title }}</strong><small>{{ item.summary }}</small></div></div><p #if="activity.length === 0" class="empty-list">Model decisions and tool calls appear here.</p></div>
+          <div #if="rightTab === 'files'" class="context-list"><div class="context-head"><span class="muted-label">REPOSITORY FILES</span><button @click="loadFiles">↻</button></div><div #if="selectedFile" class="file-preview"><strong>{{ selectedFile }}</strong><small #if="fileTruncated">Preview limited to 20 KB</small><pre>{{ filePreview }}</pre></div><button #for="file in files" class="file-row" :data-path="file" @click="selectFile">{{ file }}</button><p #if="files.length === 0" class="empty-list">No files found.</p></div>
+          <div #if="rightTab === 'git'" class="context-list"><div class="context-head"><span class="muted-label">GIT STATUS</span><button @click="loadGit">↻</button></div><div class="git-branch">{{ gitBranch }}</div><div #for="change in gitChanges" class="git-change">{{ change }}</div><p #if="gitChanges.length === 0" class="empty-list">Working tree clean.</p></div>
+          <div #if="activeWorkId" class="work-controls"><span class="muted-label">ACTIVE WORK</span><div class="control-row"><input :value="steerDraft" @input="editSteer" placeholder="Guide this task…" /><button @click="steer">Steer</button></div><button class="stop" @click="cancelWork">Stop task</button></div>
+          <div #if="effectResolution" class="interaction resolution"><span class="muted-label">UNCERTAIN TOOL EFFECT</span><strong>{{ effectResolution.toolId }}</strong><p>Harngine paused this Work because the Tool result could not be proven. Review the current file and record what happened.</p><div #if="effectResolution.path" class="approval-path">{{ effectResolution.path }}</div><div #if="effectResolution.oldText" class="removed">− {{ effectResolution.oldText }}</div><div #if="effectResolution.newText" class="added">+ {{ effectResolution.newText }}</div><details #if="effectResolution.current" class="step-detail"><summary>Current file excerpt</summary><pre>{{ effectResolution.current }}</pre></details><label>Result if applied<input :value="resolutionValue" @input="editResolutionValue" placeholder="Actual Tool result" /></label><label>Reason if not applied<input :value="resolutionReason" @input="editResolutionReason" placeholder="Evidence for no effect" /></label><div class="control-row"><button data-resolution="success" @click="resolveEffect">Record applied</button><button class="deny" data-resolution="not-applied" @click="resolveEffect">Record not applied</button></div></div>
+          <div #for="interaction in interactions" class="interaction"><span class="muted-label">{{ interaction.type === 'approval' ? 'APPROVAL' : 'QUESTION' }}</span><strong>{{ interaction.type === 'approval' ? interaction.title : interaction.prompt }}</strong><div #if="interaction.type === 'approval'" class="approval-preview"><div #if="interaction.details?.path" class="approval-path">{{ interaction.details.path }}</div><div #if="interaction.details?.oldText" class="removed">− {{ interaction.details.oldText }}</div><div #if="interaction.details?.newText" class="added">+ {{ interaction.details.newText }}</div></div><div #if="interaction.type === 'approval'" class="control-row"><button :data-interaction-id="interaction.id" data-answer="true" @click="answerInteraction">Approve</button><button class="deny" :data-interaction-id="interaction.id" data-answer="false" @click="answerInteraction">Deny</button></div><div #if="interaction.type === 'question'" class="control-row"><input :value="questionDraft" @input="editQuestion" placeholder="Your answer" /><button :data-interaction-id="interaction.id" @click="answerInteraction">Reply</button></div></div>
+        </aside>
+      </div>
+      <footer><div #if="queuedWorkIds.length" class="queue"><strong>Queued tasks · {{ queuedWorkIds.length }}</strong><div #for="id in queuedWorkIds" class="queue-row"><span>{{ queuedLabel(id) }}</span><button :data-work-id="id" @click="cancelQueued">Remove</button></div></div><div class="composer"><textarea :value="draft" @input="editDraft" :placeholder="sessionUnavailable ? 'Start a new session to send a task…' : 'Describe the coding task…'" :disabled="sessionUnavailable"></textarea><div class="composer-row"><label><input type="checkbox" :checked="writeEnabled" @change="toggleWrite" /> Allow edits and checks</label><button :disabled="!draft.trim() || sessionUnavailable" @click="submit">{{ busy ? 'Queue task ↗' : 'Run task ↗' }}</button></div></div><small>{{ selectedSessionId ? 'Session ' + shortId(selectedSessionId) : 'New session' }} · {{ writeEnabled ? 'Edit access' : 'Read access' }}</small></footer>
+    </section>
+  </main>
+</template>
+<script lang="ts">
+  import { workspace as configuredWorkspace } from './agent-config.ts';
+  import { localHttp } from 'neiv/http';
+  type LocalHttpEvent = { streamId: string; kind: 'data' | 'error' | 'closed'; value: unknown };
+  type Session = { id: string; title: string; agent: { id: string; revision: string }; foregroundWorkId: string | null; updatedAt: number };
+  type Message = { id: string; author: 'human' | 'agent'; content: unknown; workId?: string };
+  type Activity = { id: string; icon: string; title: string; summary: string };
+  type RunSnapshot = { id: string; status: string; waitingFor?: string; usage?: { decisions: number; attempts: number; modelTurns: number; toolExecutions: number }; limits?: { maxDecisions: number; maxAttempts: number; maxModelTurns?: number; maxToolExecutions?: number } };
+  type ProcessStep = { id: string; icon: string; label: string; target: string; status: string; args: string; result: string; oldText?: string; newText?: string; note?: string };
+  type TimelineRow = { id: string; kind: 'message' | 'process'; author?: string; content?: unknown; workId?: string; summary?: string; steps?: ProcessStep[] };
+  type EffectResolution = { callId: string; toolId: string; path: string; oldText: string; newText: string; current: string };
+  type Interaction = { id: string; type: 'approval' | 'question'; title?: string; prompt?: string; details?: { path?: string; oldText?: string; newText?: string } };
+  let workspace = configuredWorkspace;
+  let projectName = workspace.split('/').filter(Boolean).at(-1) || 'Workspace';
+  document.body.style.margin = '0'; document.body.style.backgroundColor = '#101310';
+  let connection = 'Connected locally', status = 'Ready', errorText = '', selectedSessionId = '', selectedTitle = 'New session', selectedWorkId = '', activeWorkId = '', workStatus = 'Starting…', draft = '', steerDraft = '', questionDraft = '';
+  let sessions: Session[] = [], availableAgents: { id: string; revision: string; availability: string }[] = [], messages: Message[] = [], activity: Activity[] = [], interactions: Interaction[] = [], timeline: TimelineRow[] = [], queuedWorkIds: string[] = [];
+  let sessionUnavailable = false;
+  let runSnapshot: RunSnapshot | null = null;
+  let effectResolution: EffectResolution | null = null, resolutionValue = '', resolutionReason = '';
+  let modelTokens: { input: number; output: number } | null = null;
+  const activityCache = new Map<string, { entries: any[]; cursor: string }>();
+  let busy = false, writeEnabled = false, monitorGeneration = 0;
+  let streamedWorkId = '', streamRefreshPending = false, streamFailed = false;
+  let stopStream: (() => void) | null = null;
+  let rightTab = 'activity', files: string[] = [], gitBranch = '', gitChanges: string[] = [], selectedFile = '', filePreview = '', fileTruncated = false;
+  const shortId = (id: string) => id ? id.slice(0, 12) : '';
+  const displayContent = (value: unknown) => typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  const formatDetails = (value: unknown) => typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  const queuedLabel = (id: string) => displayContent(messages.find(message => message.workId === id && message.author === 'human')?.content || id);
+  function editDraft(event: Event) { draft = (event.target as HTMLTextAreaElement).value; }
+  function editSteer(event: Event) { steerDraft = (event.target as HTMLInputElement).value; }
+  function editQuestion(event: Event) { questionDraft = (event.target as HTMLInputElement).value; }
+  function editResolutionValue(event: Event) { resolutionValue = (event.target as HTMLInputElement).value; }
+  function editResolutionReason(event: Event) { resolutionReason = (event.target as HTMLInputElement).value; }
+  async function selectRightTab(event: Event) { rightTab = (event.currentTarget as HTMLElement).dataset.tab || 'activity'; if (rightTab === 'files') await loadFiles(); if (rightTab === 'git') await loadGit(); }
+  async function loadFiles() { try { const result = await api('/workspace/files'); files = result.files || []; } catch (error) { fail(error); } }
+  async function loadGit() { try { const result = await api('/workspace/git'); gitBranch = result.branch || ''; gitChanges = result.changes || []; } catch (error) { fail(error); } }
+  async function selectFile(event: Event) { const path = (event.currentTarget as HTMLElement).dataset.path; if (!path) return; try { const result = await api(`/workspace/file?path=${encodeURIComponent(path)}`); selectedFile = result.path; filePreview = result.content; fileTruncated = result.truncated; } catch (error) { fail(error); } }
+  function toggleWrite(event: Event) {
+    writeEnabled = (event.target as HTMLInputElement).checked;
+    if (selectedSessionId && sessions.find(item => item.id === selectedSessionId)?.agent.id !== (writeEnabled ? 'coding.workspace-write' : 'coding.workspace-read')) {
+      selectedSessionId = ''; selectedTitle = 'New session'; sessionUnavailable = false; messages = []; activity = []; timeline = []; interactions = []; queuedWorkIds = []; runSnapshot = null; effectResolution = null; selectedWorkId = ''; activeWorkId = ''; busy = false; stopWorkStream(); streamFailed = false; monitorGeneration++;
+    }
+  }
+  function api(path: string, method: 'GET' | 'POST' = 'GET', body?: object): Promise<any> { return localHttp.request(path, method, body); }
+  function fail(error: unknown) { errorText = error instanceof Error ? error.message : String(error); status = 'Error'; }
+  async function refreshSessions() { const [listing, definitions] = await Promise.all([api('/sessions'), api('/definitions?kind=agent&availability=available&limit=100')]); availableAgents = definitions.definitions; sessions = (listing.sessions as Session[]).filter(item => item.agent.id.startsWith('coding.workspace-')).sort((a,b) => b.updatedAt - a.updatedAt); }
+  async function refresh() { try { errorText = ''; await refreshSessions(); if (selectedSessionId) await loadSession(selectedSessionId); else if (sessions[0]) await loadSession(sessions[0].id); connection = 'Connected locally'; } catch (error) { connection = 'Connection lost'; fail(error); } }
+  async function newSession() {
+    try { errorText = ''; const definitions = await api('/definitions?kind=agent&availability=available&limit=100'); availableAgents = definitions.definitions; const id = writeEnabled ? 'coding.workspace-write' : 'coding.workspace-read'; const agent = availableAgents.find(item => item.id === id); if (!agent) throw new Error('Coding agent unavailable'); const created = await api('/sessions', 'POST', { agent, title: writeEnabled ? 'New edit session' : 'New read session' }); await refreshSessions(); await loadSession(created.id); }
+    catch (error) { fail(error); }
+  }
+  async function selectSession(event: Event) { const id = (event.currentTarget as HTMLElement).dataset.sessionId; if (id) await loadSession(id); }
+  async function loadSession(id: string) {
+    stopWorkStream(); streamFailed = false; monitorGeneration++; const generation = monitorGeneration;
+    try { errorText = ''; interactions = []; effectResolution = null; const session = await api(`/sessions/${id}`); const history = await api(`/sessions/${id}/messages`); selectedSessionId = id; selectedTitle = session.title; sessionUnavailable = !availableAgents.some(agent => agent.id === session.agent.id && agent.revision === session.agent.revision && agent.availability === 'available'); writeEnabled = session.agent.id === 'coding.workspace-write'; queuedWorkIds = session.queuedWorkIds || []; messages = history as Message[]; await loadTimeline(); const works = await api(`/works?sessionId=${id}`); selectedWorkId = session.foregroundWorkId || works.works?.[0]?.id || ''; runSnapshot = selectedWorkId ? await api(`/works/${selectedWorkId}`) : null; activity = []; modelTokens = null; if (selectedWorkId) await loadActivity(selectedWorkId); activeWorkId = session.foregroundWorkId || ''; busy = !!activeWorkId; status = busy ? 'Working' : sessionUnavailable ? 'Archived revision' : 'Ready'; if (activeWorkId) { if (runSnapshot?.waitingFor === 'effect-resolution') await loadEffectResolution(activeWorkId); monitorWork(activeWorkId, generation); } }
+    catch (error) { fail(error); }
+  }
+  async function selectWork(event: Event) { const id = (event.currentTarget as HTMLElement).dataset.workId; if (id) { selectedWorkId = id; runSnapshot = await api(`/works/${id}`); await loadActivity(id); } }
+  async function loadActivity(id: string) {
+    const cached = activityCache.get(id) || { entries: [] as any[], cursor: '' };
+    activityCache.set(id, cached);
+    for (let pageNumber = 0; pageNumber < 20; pageNumber++) {
+      const after = cached.cursor;
+      const page = await api(`/works/${id}/inspect${after ? `?after=${encodeURIComponent(after)}` : ''}`);
+      if (cached.cursor !== after) break;
+      const known = new Set(cached.entries.map((entry: any) => entry.id));
+      cached.entries.push(...page.entries.filter((entry: any) => !known.has(entry.id)));
+      if (!page.next || page.next === cached.cursor) break;
+      cached.cursor = page.next;
+      if (!page.hasMore) break;
+    }
+    if (selectedWorkId !== id) return;
+    const totals = cached.entries.filter((entry: any) => entry.type === 'model.progress' && entry.phase === 'completed' && entry.usage).reduce((sum: { input: number; output: number }, entry: any) => ({ input: sum.input + (entry.usage.inputTokens || 0), output: sum.output + (entry.usage.outputTokens || 0) }), { input: 0, output: 0 });
+    modelTokens = totals.input || totals.output ? totals : null;
+    activity = cached.entries.filter((entry: any) => entry.type !== 'input').slice(-80).map((entry: any) => ({ id: entry.id, icon: entry.type === 'call' ? '⌘' : entry.type === 'model.progress' ? '◈' : entry.type === 'decision' ? '✦' : '•', title: entry.presentation?.title || entry.type, summary: entry.presentation?.summary || (entry.type === 'call' ? `${entry.tool?.id || 'Tool'} · ${entry.phase}` : entry.type === 'work.closed' ? entry.status : '') })) as Activity[];
+  }
+  function readableTool(call: any): ProcessStep {
+    const name = call.tool?.id || 'Tool';
+    const input = call.diagnostic?.input;
+    const outcome = call.diagnostic?.outcome;
+    const target = typeof input?.path === 'string' ? input.path : typeof input?.query === 'string' ? input.query : typeof input?.command === 'string' ? [input.command, ...(input.args || [])].join(' ') : '';
+    const label = name === 'coding.read' ? 'Read file' : name === 'coding.search' ? 'Search code' : name === 'coding.edit' ? 'Edit file' : name === 'coding.check' ? 'Run check' : name;
+    const args = input && typeof input === 'object' ? Object.entries(input).filter(([key]) => key !== 'path' && key !== 'query' && key !== 'oldText' && key !== 'newText').map(([key,value]) => `${key}: ${typeof value === 'string' ? value : displayContent(value)}`).join('\n') : '';
+    const result = outcome?.status === 'success' ? displayContent(outcome.value) : outcome?.reason?.message || '';
+    const failed = outcome?.status === 'failure' || (name === 'coding.check' && result.startsWith('Exit '));
+    return { oldText: name === 'coding.edit' ? input?.oldText : undefined, newText: name === 'coding.edit' ? input?.newText : undefined, id: call.callId, icon: name === 'coding.edit' ? '✎' : name === 'coding.search' ? '⌕' : name === 'coding.check' ? '›' : '◫', label, target, status: failed ? 'Failed' : outcome?.status === 'success' ? 'Done' : call.phase === 'rejected' ? 'Denied' : 'Running', args, result };
+  }
+  function traceRows(workId: string, entries: any[]): TimelineRow[] {
+    const calls = new Map<string, any>();
+    const order: Array<{ kind: 'call' | 'model'; id: string; entry?: any }> = [];
+    for (const entry of entries) {
+      if (entry.type === 'call') {
+        if (!calls.has(entry.callId)) order.push({ kind: 'call', id: entry.callId });
+        const previous = calls.get(entry.callId);
+        calls.set(entry.callId, { ...previous, ...entry, diagnostic: { ...previous?.diagnostic, ...entry.diagnostic } });
+      } else if (entry.type === 'model.progress') order.push({ kind: 'model', id: entry.id, entry });
+    }
+    const steps: ProcessStep[] = order.map(item => item.kind === 'call' ? readableTool(calls.get(item.id)) : {
+      id: item.id, icon: '◈', label: item.entry.phase === 'started' ? 'Model started' : item.entry.phase === 'completed' ? 'Model response ready' : 'Reasoning summary',
+      target: '', status: '', args: '', result: '', note: item.entry.text || (item.entry.usage ? `${item.entry.usage.inputTokens || 0} input · ${item.entry.usage.outputTokens || 0} output tokens` : ''),
+    });
+    if (!steps.length) return [];
+    const tools = calls.size;
+    return [{ id: `process:${workId}`, kind: 'process', workId, summary: `${tools} tool ${tools === 1 ? 'call' : 'calls'} · ${order.length - tools} model ${order.length - tools === 1 ? 'event' : 'events'}`, steps }];
+  }
+  async function workTrace(id: string): Promise<TimelineRow[]> {
+    const entries: any[] = []; let after = '';
+    for (let pageNumber = 0; pageNumber < 20; pageNumber++) {
+      const page = await api(`/works/${id}/inspect?detail=diagnostic${after ? `&after=${encodeURIComponent(after)}` : ''}`);
+      entries.push(...page.entries); if (!page.hasMore || !page.next || page.next === after) break; after = page.next;
+    }
+    return traceRows(id, entries);
+  }
+  async function loadTimeline() {
+    const seen = new Set<string>(); const rows: TimelineRow[] = [];
+    for (const message of messages.filter(item => item.author === 'human')) {
+      if (message.workId && queuedWorkIds.includes(message.workId)) continue;
+      rows.push({ id: message.id, kind: 'message', author: message.author, content: message.content, workId: message.workId });
+      if (message.author === 'human' && message.workId && !seen.has(message.workId)) { seen.add(message.workId); rows.push(...await workTrace(message.workId)); }
+      for (const answer of messages.filter(item => item.author === 'agent' && item.workId === message.workId))
+        rows.push({ id: answer.id, kind: 'message', author: answer.author, content: answer.content, workId: answer.workId });
+    }
+    timeline = rows;
+  }
+  function stopWorkStream() {
+    stopStream?.(); stopStream = null;
+    streamedWorkId = '';
+  }
+  function onWorkEvent(event: LocalHttpEvent) {
+    if (event.streamId !== streamedWorkId || !activeWorkId) return;
+    if (event.kind === 'closed' || event.kind === 'error') { stopWorkStream(); streamFailed = true; monitorWork(activeWorkId, monitorGeneration); return; }
+    if (streamRefreshPending) return;
+    streamRefreshPending = true;
+    setTimeout(async () => {
+      streamRefreshPending = false;
+      if (event.streamId !== streamedWorkId) return;
+      try { await refreshWork(event.streamId, monitorGeneration); } catch (error) { stopWorkStream(); streamFailed = true; monitorWork(event.streamId, monitorGeneration); }
+    }, 80);
+  }
+  async function refreshWork(id: string, generation: number) {
+    const snapshot = await api(`/works/${id}`);
+    if (generation !== monitorGeneration || activeWorkId !== id) return true;
+    weivUpdate(() => { workStatus = snapshot.status === 'waiting' ? `Waiting for ${snapshot.waitingFor || 'input'}` : snapshot.status === 'queued' ? 'Queued' : 'Agent working'; interactions = snapshot.interactions || []; if (selectedWorkId === id) runSnapshot = snapshot; });
+    if (selectedWorkId === id) await loadActivity(id);
+    if (snapshot.waitingFor === 'effect-resolution') await loadEffectResolution(id); else effectResolution = null;
+    await loadTimeline();
+    if (['completed', 'failed', 'canceled'].includes(snapshot.status)) {
+      stopWorkStream(); effectResolution = null;
+      weivUpdate(() => { busy = false; activeWorkId = ''; interactions = []; status = snapshot.status === 'completed' ? 'Ready' : snapshot.status; if (snapshot.error) errorText = snapshot.error.message; });
+      await refreshSessions(); await loadSession(selectedSessionId); return true;
+    }
+    return false;
+  }
+  async function monitorWork(id: string, generation: number) {
+    if (generation !== monitorGeneration || activeWorkId !== id) return;
+    if (!streamedWorkId && !streamFailed) {
+      try { streamedWorkId = id; stopStream = localHttp.subscribe(`/works/${id}/events`, id, onWorkEvent); return; }
+      catch { streamedWorkId = ''; streamFailed = true; }
+    }
+    while (generation === monitorGeneration && activeWorkId === id && !streamedWorkId) {
+      try { if (await refreshWork(id, generation)) return; await new Promise(resolve => setTimeout(resolve, 800)); }
+      catch (error) { if (generation === monitorGeneration) { busy = false; activeWorkId = ''; fail(error); } return; }
+    }
+  }
+  async function loadEffectResolution(id: string) {
+    let after = '', uncertain: any = null;
+    for (let pageNumber = 0; pageNumber < 20; pageNumber++) {
+      const page = await api(`/works/${id}/inspect?detail=diagnostic${after ? `&after=${encodeURIComponent(after)}` : ''}`);
+      for (const entry of page.entries) if (entry.type === 'call' && entry.phase === 'uncertain') uncertain = entry;
+      if (!page.hasMore || !page.next || page.next === after) break;
+      after = page.next;
+    }
+    if (!uncertain || activeWorkId !== id) return;
+    const input = uncertain.diagnostic?.input || {};
+    const path = typeof input.path === 'string' ? input.path : '';
+    let current = '';
+    if (path) try {
+      const file = await api(`/workspace/file?path=${encodeURIComponent(path)}`);
+      const content = file.content || '';
+      const position = Math.max(0, content.indexOf(input.newText || input.oldText || ''));
+      current = `${file.truncated ? 'Preview limited to 20 KB.\n' : ''}${content.slice(Math.max(0, position - 200), position + 600)}`;
+    } catch (error) { current = `File preview unavailable: ${String(error)}`; }
+    effectResolution = { callId: uncertain.callId, toolId: uncertain.tool?.id || 'Tool', path, oldText: input.oldText || '', newText: input.newText || '', current };
+    resolutionValue = path ? `Edited ${path}` : '';
+  }
+  async function resolveEffect(event: Event) {
+    if (!activeWorkId || !effectResolution) return;
+    const decision = (event.currentTarget as HTMLElement).dataset.resolution;
+    if (decision === 'success' && !resolutionValue.trim()) { errorText = 'Enter the actual Tool result.'; return; }
+    if (decision === 'not-applied' && !resolutionReason.trim()) { errorText = 'Enter evidence that the Tool had no effect.'; return; }
+    try {
+      const resolution = decision === 'success' ? { status: 'success', value: resolutionValue.trim() } : { status: 'not-applied', reason: { code: 'OPERATOR_NOT_APPLIED', message: resolutionReason.trim() } };
+      await api(`/works/${activeWorkId}/resolve-effect`, 'POST', { callId: effectResolution.callId, resolution, idempotencyKey: `desktop-${effectResolution.callId}-${decision}` });
+      effectResolution = null; errorText = ''; await refreshWork(activeWorkId, monitorGeneration);
+    } catch (error) { fail(error); }
+  }
+  async function submit() { const task = draft.trim(); if (!task || sessionUnavailable) return; try { errorText = ''; if (!selectedSessionId) await newSession(); if (!selectedSessionId || sessionUnavailable) return; const sent = await api(`/sessions/${selectedSessionId}/messages`, 'POST', { message: task }); draft = ''; messages = await api(`/sessions/${selectedSessionId}/messages`); const session = await api(`/sessions/${selectedSessionId}`); queuedWorkIds = session.queuedWorkIds || []; await loadTimeline(); if (sent.work.id === session.foregroundWorkId && !busy) { selectedWorkId = sent.work.id; runSnapshot = sent.work; activeWorkId = sent.work.id; busy = true; status = 'Working'; workStatus = 'Starting…'; activity = []; monitorGeneration++; streamFailed = false; monitorWork(activeWorkId, monitorGeneration); } } catch (error) { fail(error); } }
+  async function cancelQueued(event: Event) { const id = (event.currentTarget as HTMLElement).dataset.workId; if (!id) return; try { await api(`/works/${id}/cancel`, 'POST', {}); const session = await api(`/sessions/${selectedSessionId}`); queuedWorkIds = session.queuedWorkIds || []; messages = await api(`/sessions/${selectedSessionId}/messages`); await loadTimeline(); } catch (error) { fail(error); } }
+  async function steer() { const input = steerDraft.trim(); if (!activeWorkId || !input) return; try { await api(`/works/${activeWorkId}/steer`, 'POST', { input }); steerDraft = ''; workStatus = 'Steering accepted'; } catch (error) { fail(error); } }
+  async function cancelWork() { if (!activeWorkId) return; try { await api(`/works/${activeWorkId}/cancel`, 'POST', {}); workStatus = 'Stopping…'; } catch (error) { fail(error); } }
+  async function answerInteraction(event: Event) { const element = event.currentTarget as HTMLElement; const id = element.dataset.interactionId; if (!id || !activeWorkId) return; const interaction = interactions.find(item => item.id === id); const response = interaction?.type === 'approval' ? element.dataset.answer === 'true' : questionDraft.trim(); if (response === '') return; try { await api(`/works/${activeWorkId}/respond`, 'POST', { interactionId: id, response }); questionDraft = ''; interactions = interactions.filter(item => item.id !== id); } catch (error) { fail(error); } }
+  setTimeout(refresh, 0);
+</script>
+<style>
+  * { box-sizing: border-box; } main { display: grid; grid-template-columns: 240px minmax(0,1fr); height: 100vh; min-height: 600px; background: #101310; color: #e8e9e5; font: 14px -apple-system, sans-serif; } button, input, textarea { font: inherit; } button { cursor: pointer; } button:disabled { opacity: .5; cursor: default; }
+  .sidebar { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid #303a31; background: #171c18; } .brand { display: flex; align-items: center; gap: 10px; padding: 22px 16px; border-bottom: 1px solid #303a31; } .brand strong { display: block; font-size: 17px; } .brand small, .muted-label { display: block; color: #8fb392; font-size: 10px; font-weight: 700; letter-spacing: .12em; } .logo { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #a6d5ab; color: #152118; font-size: 19px; }
+  .project { padding: 17px 16px; border-bottom: 1px solid #303a31; } .project strong { display: block; margin: 9px 0 4px; } .project small { display: block; overflow: hidden; color: #8a998b; font: 10px Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; } .section-head { display: flex; justify-content: space-between; align-items: center; padding: 17px 14px 8px; } .section-head button { border: 1px solid #405145; border-radius: 6px; background: #253127; color: #d1e9d3; font-size: 19px; }
+  .session-list { flex: 1; min-height: 0; overflow: auto; padding: 0 8px; } .session { display: flex; width: 100%; align-items: center; gap: 8px; padding: 10px 7px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #cad4ca; text-align: left; } .session:hover, .session.active { background: #2b3b2e; } .session.active { border-color: #4d6d52; } .mode-icon { display: grid; place-items: center; flex: none; width: 25px; height: 25px; border-radius: 6px; background: #344737; color: #b7dab9; font-size: 16px; } .session-copy { min-width: 0; flex: 1; } .session-copy strong { display: block; overflow: hidden; font-size: 11px; white-space: nowrap; text-overflow: ellipsis; } .session-copy small { display: block; margin-top: 4px; color: #8d9c8f; font-size: 10px; } .live-dot { display: inline-block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: #a4d9aa; } .empty-list { padding: 8px; color: #849585; font-size: 11px; line-height: 1.5; } .connection { display: flex; align-items: center; gap: 8px; padding: 16px; border-top: 1px solid #303a31; color: #9eb29f; font-size: 11px; }
+  .main-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; } header { display: flex; justify-content: space-between; align-items: center; min-height: 80px; padding: 15px 26px; border-bottom: 1px solid #303a31; } h1 { margin: 5px 0 0; font-size: 22px; letter-spacing: -.04em; } .header-actions { display: flex; align-items: center; gap: 12px; } .header-actions button { border: 0; background: none; color: #a9bca9; font-size: 11px; } .state { border: 1px solid #466149; border-radius: 15px; padding: 6px 10px; color: #b4d4b7; font-size: 11px; } .state.running { border-color: #81683c; color: #e3c88f; } .error { padding: 10px 26px; background: #48282a; color: #ffd4d4; font-size: 12px; }
+  .revision-notice { display: flex; align-items: center; gap: 14px; padding: 12px 26px; border-bottom: 1px solid #695833; background: #30291b; color: #ead6a6; font-size: 12px; line-height: 1.5; } .revision-notice span { flex: 1; } .revision-notice button { flex: none; padding: 8px 11px; border: 1px solid #aa8a4b; border-radius: 6px; background: #4b3c22; color: #f3e1b9; }
+  .run-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 8px 24px; border-bottom: 1px solid #303a31; background: #19221b; color: #b6cbb8; font: 10px Menlo, monospace; } .run-strip span { padding: 4px 7px; border: 1px solid #405344; border-radius: 5px; } .run-strip .run-state { color: #d3e9d5; text-transform: capitalize; } .run-strip small { margin-left: auto; color: #829484; font: 10px Menlo, monospace; }
+  .body-grid { display: grid; grid-template-columns: minmax(0,1fr) 280px; flex: 1; min-height: 0; } .transcript { overflow: auto; padding: 26px 28px; } .welcome { max-width: 380px; margin: 15vh auto 0; color: #9baa9b; text-align: center; line-height: 1.6; } .welcome-mark { display: grid; place-items: center; margin: auto; width: 58px; height: 58px; border-radius: 16px; background: #293c2d; color: #b7deba; font-size: 30px; } .welcome h2 { color: #eaf0ea; font-size: 21px; } .message { margin: 0 auto 18px; max-width: 760px; padding: 18px; border: 1px solid #354137; border-radius: 12px; background: #1d2720; } .message.agent { background: #191e1a; } .message-head { display: flex; justify-content: space-between; color: #9ac6a0; font-size: 10px; font-weight: 700; letter-spacing: .12em; } .message-head button { border: 0; background: none; color: #829985; font: 10px Menlo, monospace; } .message pre { margin: 12px 0 0; color: #e0e9df; white-space: pre-wrap; word-break: break-word; font: 12px/1.65 Menlo, monospace; } .working { display: flex; align-items: center; gap: 10px; max-width: 760px; margin: auto; padding: 13px; border: 1px solid #75613e; border-radius: 9px; color: #e4cca0; background: #28261e; font-size: 11px; } .working span { margin-left: auto; color: #a89c82; font: 10px Menlo, monospace; }
+  .process { max-width: 760px; margin: 0 auto 18px; color: #a5b9a6; } .process > summary { width: fit-content; cursor: pointer; padding: 4px 0; color: #aac6ad; font-size: 11px; } .process-steps { margin: 7px 0 0 8px; border-left: 1px solid #455547; } .process-step { display: flex; gap: 10px; padding: 8px 0 8px 14px; } .step-icon { display: grid; place-items: center; width: 21px; height: 21px; flex: none; border: 1px solid #455547; border-radius: 5px; color: #b4d6b8; font-size: 12px; } .step-body { min-width: 0; flex: 1; } .step-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px; font-size: 11px; } .step-title strong { color: #d2e2d3; } .step-target { overflow: hidden; max-width: 100%; padding: 2px 5px; border: 1px solid #3c4c3f; border-radius: 4px; color: #b9cabb; text-overflow: ellipsis; white-space: nowrap; font: 10px Menlo, monospace; } .step-title small { margin-left: auto; color: #88a18b; font-size: 10px; } .step-note { margin: 7px 0 0; color: #b9caba; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.55 -apple-system, sans-serif; } .step-detail { margin-top: 7px; } .step-detail summary { cursor: pointer; color: #91a994; font-size: 10px; } .step-detail pre { overflow: auto; max-height: 280px; padding: 10px; border: 1px solid #344236; border-radius: 6px; background: #131a15; color: #cbd9cc; white-space: pre-wrap; overflow-wrap: anywhere; font: 10px/1.55 Menlo, monospace; }
+  .change-preview, .approval-preview { overflow: auto; max-height: 300px; margin-top: 9px; border: 1px solid #465449; border-radius: 6px; background: #151c17; font: 10px/1.5 Menlo, monospace; } .approval-path { padding: 7px 9px; border-bottom: 1px solid #465449; color: #cddfce; overflow-wrap: anywhere; } .removed, .added { padding: 7px 9px; white-space: pre-wrap; overflow-wrap: anywhere; } .removed { background: #362426; color: #f1b4b8; } .added { background: #203a29; color: #b7e8c3; }
+  .activity { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid #303a31; background: #151a16; } .activity-head { padding: 18px 15px; border-bottom: 1px solid #303a31; } .activity-head strong { display: block; margin-top: 7px; font: 11px Menlo, monospace; } .activity-list { flex: 1; overflow: auto; padding: 8px 12px; } .activity-item { display: flex; gap: 9px; padding: 10px 2px; border-bottom: 1px solid #283229; } .activity-icon { display: grid; place-items: center; flex: none; width: 23px; height: 23px; border-radius: 6px; background: #304332; color: #b5d9b9; } .activity-item strong { display: block; font-size: 11px; } .activity-item small { display: block; margin-top: 4px; color: #88988a; font-size: 10px; line-height: 1.45; } .work-controls, .interaction { padding: 14px; border-top: 1px solid #303a31; } .control-row { display: flex; gap: 5px; margin-top: 9px; } .control-row input { min-width: 0; flex: 1; padding: 7px; border: 1px solid #4a604e; border-radius: 6px; outline: 0; background: #202a22; color: #e8eee8; font-size: 11px; } .control-row button, .stop { padding: 7px 9px; border: 1px solid #638167; border-radius: 6px; background: #304633; color: #d7efda; font-size: 11px; } .stop { width: 100%; margin-top: 8px; border-color: #805052; background: #402a2b; color: #f4cacc; } .interaction { background: #25291f; } .interaction strong { display: block; margin-top: 8px; font-size: 12px; } .resolution p { color: #b7c3b3; font-size: 11px; line-height: 1.5; } .resolution label { display: block; margin-top: 9px; color: #b7c3b3; font-size: 10px; } .resolution label input { display: block; width: 100%; margin-top: 5px; padding: 7px; border: 1px solid #4a604e; border-radius: 6px; background: #202a22; color: #e8eee8; font-size: 11px; } .interaction pre { white-space: pre-wrap; color: #b5bea9; font-size: 10px; } .control-row .deny { border-color: #805052; background: #402a2b; color: #f4cacc; }
+  .right-tabs { display: flex; border-bottom: 1px solid #303a31; } .right-tabs button { flex: 1; padding: 12px 3px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #859b88; font-size: 11px; } .right-tabs button.active { border-bottom-color: #a6d5ab; color: #dcebdd; } .context-list { flex: 1; min-height: 0; overflow: auto; padding: 10px; } .context-head { display: flex; justify-content: space-between; align-items: center; padding: 5px 4px 10px; } .context-head button { border: 0; background: none; color: #b8d8bb; } .file-row { display: block; width: 100%; overflow: hidden; padding: 7px 5px; border: 0; border-bottom: 1px solid #263028; background: transparent; color: #b6c7b7; text-align: left; text-overflow: ellipsis; white-space: nowrap; font: 10px Menlo, monospace; } .file-row:hover { background: #29372b; } .file-preview { margin-top: 14px; padding: 9px; border: 1px solid #405444; border-radius: 7px; } .file-preview strong { display: block; overflow-wrap: anywhere; font: 10px Menlo, monospace; } .file-preview small { color: #c4aa76; font-size: 10px; } .file-preview pre { overflow: auto; max-height: 330px; color: #c8d6c9; white-space: pre-wrap; overflow-wrap: anywhere; font: 10px/1.5 Menlo, monospace; } .git-branch { margin: 3px 4px 13px; color: #b7ddb9; font: 11px Menlo, monospace; } .git-change { padding: 6px 4px; border-bottom: 1px solid #263028; color: #c5d0c4; white-space: pre-wrap; overflow-wrap: anywhere; font: 10px Menlo, monospace; }
+  footer { padding: 13px 24px 16px; border-top: 1px solid #303a31; } .composer { max-width: 840px; margin: auto; padding: 11px; border: 1px solid #526b56; border-radius: 12px; background: #202a22; } textarea { display: block; width: 100%; min-height: 65px; resize: vertical; border: 0; outline: 0; background: transparent; color: #e6eee6; } .composer-row { display: flex; justify-content: space-between; align-items: center; } .composer-row label { color: #b4c7b6; font-size: 11px; } .composer-row input { accent-color: #a6d5ab; } .composer-row button { padding: 9px 15px; border: 0; border-radius: 7px; background: #a6d5ab; color: #152118; font-size: 11px; font-weight: 700; } footer small { display: block; max-width: 840px; margin: 8px auto 0; color: #829383; font-size: 10px; }
+  .queue { max-width: 840px; max-height: 170px; overflow: auto; margin: 0 auto 9px; padding: 9px 12px; border: 1px solid #75613e; border-radius: 8px; background: #27251d; } .queue > strong { display: block; margin-bottom: 5px; color: #e2cca1; font-size: 10px; } .queue-row { display: flex; gap: 8px; align-items: center; padding: 5px 0; border-top: 1px solid #4c4534; } .queue-row span { overflow: hidden; flex: 1; color: #d9d4c8; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; } .queue-row button { border: 0; background: none; color: #d8ba92; font-size: 10px; }
+  @media (max-width: 850px) { main { grid-template-columns: 190px minmax(0,1fr); } .body-grid { grid-template-columns: minmax(0,1fr) 225px; } }
+</style>

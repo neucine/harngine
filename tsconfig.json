@@ -1,0 +1,41 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/harngine"
+    },
+    {
+      "path": "packages/http"
+    },
+    {
+      "path": "packages/codex-cli"
+    },
+    {
+      "path": "packages/codex-api"
+    },
+    {
+      "path": "packages/workbench"
+    },
+    {
+      "path": "apps/coding/agent"
+    },
+    {
+      "path": "apps/coding/cli"
+    },
+    {
+      "path": "apps/coding/demo"
+    },
+    {
+      "path": "apps/hearth"
+    },
+    {
+      "path": "apps/quest"
+    },
+    {
+      "path": "apps/roam"
+    },
+    {
+      "path": "apps/muse"
+    }
+  ]
+}

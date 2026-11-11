@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "apps/*/src/**/*.ts",
+    "apps/*/test/**/*.ts",
+    "apps/coding/*/src/**/*.ts",
+    "apps/coding/*/test/**/*.ts",
+    "vitest.config.ts"
+  ],
+  "compilerOptions": {
+    "paths": {
+      "harngine": ["./packages/harngine/src/index.ts"],
+      "harngine/internal": ["./packages/harngine/src/internal/index.ts"],
+      "@harngine/codex-cli": ["./packages/codex-cli/src/index.ts"],
+      "@harngine/codex-api": ["./packages/codex-api/src/index.ts"],
+      "@harngine/coding-agent": ["./apps/coding/agent/src/app.ts"],
+      "@harngine/coding-agent/server": ["./apps/coding/agent/src/server.ts"],
+      "@harngine/workbench": ["./packages/workbench/src/index.ts"]
+    }
+  }
+}

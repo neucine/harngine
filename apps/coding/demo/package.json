@@ -1,0 +1,10 @@
+{
+  "name": "@harngine/coding-session-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "harngine": "workspace:*",
+    "@harngine/codex-cli": "workspace:*"
+  }
+}
