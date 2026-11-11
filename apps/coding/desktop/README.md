@@ -19,7 +19,7 @@ The repository path is saved in the app at build time. Run the build command aga
 
 Type a task in the message box and select **Run task**. The app starts in read mode, suitable for questions and investigation. Select **Allow edits and checks** to let the agent propose file changes and run checks. The app asks you to approve each proposed edit and shows the text being replaced.
 
-The conversation includes agent replies and a collapsible record of tool calls. **Activity** shows detailed progress; **Files** previews repository files; **Git** shows the current branch and local changes. You can steer or stop a running task, answer its questions, and queue another task while it works.
+The conversation includes agent replies and a tool record that opens while the task runs, folds when it finishes, and can be reopened afterward. A live Thinking status appears during model work; available provider thinking summaries appear in the record. Tool and status updates stream as the task runs. With the current Codex CLI structured-output transport, answer text arrives after each model invocation finishes rather than token by token. **Activity** shows the detailed model and tool events, including token usage; **Files** previews repository files; **Git** shows the current branch and local changes. You can steer or stop a running task, answer its questions, and queue another task while it works.
 
 Sessions and their history are saved in the selected repository. An older session may use an Agent revision that is no longer in the current build. You can still read its history; choose **Start new session** to continue with the current Agent. Earlier messages do not carry into the new session.
 

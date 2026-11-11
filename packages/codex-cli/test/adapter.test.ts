@@ -52,7 +52,7 @@ function fixture(mode: string) {
     command,
     `#!${process.execPath}\nconst fs=require('node:fs');const args=process.argv.slice(2);if(args[0]==='--version'){console.log('codex-cli test');process.exit(0);}const mode=${JSON.stringify(mode)};const out=args[args.indexOf('--output-last-message')+1];let input='';process.stdin.on('data',s=>input+=s);process.stdin.on('end',()=>{
 fs.writeFileSync(${JSON.stringify(audit)},JSON.stringify({args,cwd:process.cwd(),input,schema:JSON.parse(fs.readFileSync(args[args.indexOf('--output-schema')+1],'utf8')),hasApiKey:Boolean(process.env.OPENAI_API_KEY||process.env.CODEX_API_KEY)}));
-if(mode==='timeout'){setInterval(()=>{},1000);return;}if(mode==='failure'){console.error('Bearer secret-do-not-persist');process.exit(1);}if(mode==='tool'){console.log(JSON.stringify({type:'item.started',item:{type:'command_execution'}}));setInterval(()=>{},1000);return;}if(mode==='overflow'){process.stdout.write('x'.repeat(1100000));return;}if(mode==='progress'){console.log(JSON.stringify({type:'turn.started'}));console.log(JSON.stringify({type:'item.completed',item:{type:'reasoning',text:'Checked the request and selected a response.'}}));}if(mode==='notice')console.log(JSON.stringify({type:'item.completed',item:{type:'error',message:'Optional feature unavailable'}}));if(mode==='turn-failure'){console.log(JSON.stringify({type:'turn.failed',error:{message:'failure'}}));return;}
+if(mode==='timeout'){setInterval(()=>{},1000);return;}if(mode==='failure'){console.error('Bearer secret-do-not-persist');process.exit(1);}if(mode==='tool'){console.log(JSON.stringify({type:'item.started',item:{type:'command_execution'}}));setInterval(()=>{},1000);return;}if(mode==='overflow'){process.stdout.write('x'.repeat(1100000));return;}if(mode==='progress'){console.log(JSON.stringify({type:'turn.started'}));console.log(JSON.stringify({type:'item.completed',item:{type:'reasoning',summary:[{type:'summary_text',text:'Checked the request and selected a response.'}]}}));}if(mode==='notice')console.log(JSON.stringify({type:'item.completed',item:{type:'error',message:'Optional feature unavailable'}}));if(mode==='turn-failure'){console.log(JSON.stringify({type:'turn.failed',error:{message:'failure'}}));return;}
 const response=mode==='adapter'?{items:[{type:'text',text:'live-shaped',providerCallId:null,tool:null,input:null,value:null}],finishReason:'stop'}:{response:{type:'complete',result:'live-shaped'}};
 fs.writeFileSync(out,mode==='invalid'?'garbage':JSON.stringify(response));console.log(JSON.stringify({type:'item.completed',item:{type:'agent_message',text:'done'}}));if(mode==='progress')console.log(JSON.stringify({type:'turn.completed',usage:{input_tokens:120,output_tokens:20}}));});`,
     { mode: 0o700 },
@@ -82,6 +82,7 @@ test('CLI model sends structured context over stdin, uses existing auth and clea
   expect(recorded.args).toContain('--ignore-user-config');
   expect(recorded.args).toContain('read-only');
   expect(recorded.args).toContain('forced_login_method="chatgpt"');
+  expect(recorded.args).toContain('model_reasoning_summary="auto"');
   expect(recorded.args).toContain('shell_tool');
   expect(recorded.args).toContain('chosen-model');
   expect(existsSync(recorded.cwd)).toBe(false);

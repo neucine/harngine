@@ -20,7 +20,7 @@
           <div #if="messages.length === 0" class="welcome"><div class="welcome-mark">⌘</div><h2>Work on this repository</h2><p>Inspect code, explain a failure, or make a focused edit. Sessions and tool activity are saved.</p></div>
           <div #for="row in timeline">
             <article #if="row.kind === 'message'" :class="row.author === 'human' ? 'message human' : 'message agent'"><div class="message-head"><span>{{ row.author === 'human' ? 'YOU' : 'AGENT' }}</span><button #if="row.workId" :data-work-id="row.workId" @click="selectWork">{{ shortId(row.workId) }}</button></div><pre>{{ displayContent(row.content) }}</pre></article>
-            <details #if="row.kind === 'process'" class="process"><summary>{{ row.summary }}</summary><div class="process-steps"><div #for="step in row.steps" class="process-step"><span class="step-icon">{{ step.icon }}</span><div class="step-body"><div class="step-title"><strong>{{ step.label }}</strong><span #if="step.target" class="step-target">{{ step.target }}</span><small>{{ step.status }}</small></div><p #if="step.note" class="step-note">{{ step.note }}</p><div #if="step.oldText" class="change-preview"><div class="removed">− {{ step.oldText }}</div><div class="added">+ {{ step.newText }}</div></div><details #if="step.args" class="step-detail"><summary>Arguments</summary><pre>{{ step.args }}</pre></details><details #if="step.result" class="step-detail"><summary>Result</summary><pre>{{ step.result }}</pre></details></div></div></div></details>
+            <details #if="row.kind === 'process'" class="process" :open="row.workId === activeWorkId"><summary>{{ row.summary }}</summary><div class="process-steps"><div #for="step in row.steps" class="process-step"><span class="step-icon">{{ step.icon }}</span><div class="step-body"><div class="step-title"><strong>{{ step.label }}</strong><span #if="step.target" class="step-target">{{ step.target }}</span><small>{{ step.status }}</small></div><p #if="step.note" class="step-note">{{ step.note }}</p><div #if="step.oldText" class="change-preview"><div class="removed">− {{ step.oldText }}</div><div class="added">+ {{ step.newText }}</div></div><details #if="step.args" class="step-detail"><summary>Arguments</summary><pre>{{ step.args }}</pre></details><details #if="step.result" class="step-detail"><summary>Result</summary><pre>{{ step.result }}</pre></details></div></div></div></details>
           </div>
           <div #if="busy" class="working"><i class="live-dot"></i>{{ workStatus }} <span>{{ shortId(activeWorkId) }}</span></div>
         </section>
@@ -93,7 +93,7 @@
   async function selectSession(event: Event) { const id = (event.currentTarget as HTMLElement).dataset.sessionId; if (id) await loadSession(id); }
   async function loadSession(id: string) {
     stopWorkStream(); streamFailed = false; monitorGeneration++; const generation = monitorGeneration;
-    try { errorText = ''; interactions = []; effectResolution = null; const session = await api(`/sessions/${id}`); const history = await api(`/sessions/${id}/messages`); selectedSessionId = id; selectedTitle = session.title; sessionUnavailable = !availableAgents.some(agent => agent.id === session.agent.id && agent.revision === session.agent.revision && agent.availability === 'available'); writeEnabled = session.agent.id === 'coding.workspace-write'; queuedWorkIds = session.queuedWorkIds || []; messages = history as Message[]; await loadTimeline(); const works = await api(`/works?sessionId=${id}`); selectedWorkId = session.foregroundWorkId || works.works?.[0]?.id || ''; runSnapshot = selectedWorkId ? await api(`/works/${selectedWorkId}`) : null; activity = []; modelTokens = null; if (selectedWorkId) await loadActivity(selectedWorkId); activeWorkId = session.foregroundWorkId || ''; busy = !!activeWorkId; status = busy ? 'Working' : sessionUnavailable ? 'Archived revision' : 'Ready'; if (activeWorkId) { if (runSnapshot?.waitingFor === 'effect-resolution') await loadEffectResolution(activeWorkId); monitorWork(activeWorkId, generation); } }
+    try { errorText = ''; interactions = []; effectResolution = null; const session = await api(`/sessions/${id}`); const history = await api(`/sessions/${id}/messages`); selectedSessionId = id; selectedTitle = session.title; sessionUnavailable = !availableAgents.some(agent => agent.id === session.agent.id && agent.revision === session.agent.revision && agent.availability === 'available'); writeEnabled = session.agent.id === 'coding.workspace-write'; queuedWorkIds = session.queuedWorkIds || []; activeWorkId = session.foregroundWorkId || ''; busy = !!activeWorkId; messages = history as Message[]; await loadTimeline(); const works = await api(`/works?sessionId=${id}`); selectedWorkId = session.foregroundWorkId || works.works?.[0]?.id || ''; runSnapshot = selectedWorkId ? await api(`/works/${selectedWorkId}`) : null; activity = []; modelTokens = null; if (selectedWorkId) await loadActivity(selectedWorkId); status = busy ? 'Working' : sessionUnavailable ? 'Archived revision' : 'Ready'; if (activeWorkId) { if (runSnapshot?.waitingFor === 'effect-resolution') await loadEffectResolution(activeWorkId); monitorWork(activeWorkId, generation); } }
     catch (error) { fail(error); }
   }
   async function selectWork(event: Event) { const id = (event.currentTarget as HTMLElement).dataset.workId; if (id) { selectedWorkId = id; runSnapshot = await api(`/works/${id}`); await loadActivity(id); } }
@@ -114,6 +114,14 @@
     const totals = cached.entries.filter((entry: any) => entry.type === 'model.progress' && entry.phase === 'completed' && entry.usage).reduce((sum: { input: number; output: number }, entry: any) => ({ input: sum.input + (entry.usage.inputTokens || 0), output: sum.output + (entry.usage.outputTokens || 0) }), { input: 0, output: 0 });
     modelTokens = totals.input || totals.output ? totals : null;
     activity = cached.entries.filter((entry: any) => entry.type !== 'input').slice(-80).map((entry: any) => ({ id: entry.id, icon: entry.type === 'call' ? '⌘' : entry.type === 'model.progress' ? '◈' : entry.type === 'decision' ? '✦' : '•', title: entry.presentation?.title || entry.type, summary: entry.presentation?.summary || (entry.type === 'call' ? `${entry.tool?.id || 'Tool'} · ${entry.phase}` : entry.type === 'work.closed' ? entry.status : '') })) as Activity[];
+    if (activeWorkId === id) {
+      const latest = cached.entries.filter((entry: any) => entry.type === 'call' || entry.type === 'model.progress').at(-1);
+      if (latest?.type === 'model.progress') workStatus = latest.phase === 'completed' ? 'Preparing next step…' : 'Thinking…';
+      else if (latest?.type === 'call') {
+        const step = readableTool(latest);
+        workStatus = step.status === 'Running' ? `${step.label}${step.target ? ` · ${step.target}` : ''}` : 'Thinking…';
+      }
+    }
   }
   function readableTool(call: any): ProcessStep {
     const name = call.tool?.id || 'Tool';
@@ -128,21 +136,32 @@
   }
   function traceRows(workId: string, entries: any[]): TimelineRow[] {
     const calls = new Map<string, any>();
-    const order: Array<{ kind: 'call' | 'model'; id: string; entry?: any }> = [];
+    const order: Array<{ kind: 'call' | 'reasoning'; id: string; entry?: any }> = [];
+    let modelRunning = false;
     for (const entry of entries) {
       if (entry.type === 'call') {
         if (!calls.has(entry.callId)) order.push({ kind: 'call', id: entry.callId });
         const previous = calls.get(entry.callId);
         calls.set(entry.callId, { ...previous, ...entry, diagnostic: { ...previous?.diagnostic, ...entry.diagnostic } });
-      } else if (entry.type === 'model.progress') order.push({ kind: 'model', id: entry.id, entry });
+      } else if (entry.type === 'model.progress') {
+        if (entry.phase === 'started') modelRunning = true;
+        if (entry.phase === 'completed') modelRunning = false;
+        if (entry.phase === 'reasoning' && entry.text) order.push({ kind: 'reasoning', id: entry.id, entry });
+      }
     }
     const steps: ProcessStep[] = order.map(item => item.kind === 'call' ? readableTool(calls.get(item.id)) : {
-      id: item.id, icon: '◈', label: item.entry.phase === 'started' ? 'Model started' : item.entry.phase === 'completed' ? 'Model response ready' : 'Reasoning summary',
-      target: '', status: '', args: '', result: '', note: item.entry.text || (item.entry.usage ? `${item.entry.usage.inputTokens || 0} input · ${item.entry.usage.outputTokens || 0} output tokens` : ''),
+      id: item.id, icon: '◈', label: 'Thinking summary',
+      target: '', status: '', args: '', result: '', note: item.entry.text,
     });
+    if (workId === activeWorkId && modelRunning)
+      steps.push({ id: `thinking:${workId}`, icon: '◈', label: 'Thinking…', target: '', status: 'Running', args: '', result: '' });
     if (!steps.length) return [];
     const tools = calls.size;
-    return [{ id: `process:${workId}`, kind: 'process', workId, summary: `${tools} tool ${tools === 1 ? 'call' : 'calls'} · ${order.length - tools} model ${order.length - tools === 1 ? 'event' : 'events'}`, steps }];
+    const latest = steps.at(-1);
+    const summary = workId === activeWorkId && latest?.status === 'Running'
+      ? `${latest.label}${latest.target ? ` · ${latest.target}` : ''}`
+      : `${tools} tool ${tools === 1 ? 'call' : 'calls'}${order.length > tools ? ` · ${order.length - tools} thinking ${order.length - tools === 1 ? 'summary' : 'summaries'}` : ''}`;
+    return [{ id: `process:${workId}`, kind: 'process', workId, summary, steps }];
   }
   async function workTrace(id: string): Promise<TimelineRow[]> {
     const entries: any[] = []; let after = '';
@@ -181,7 +200,7 @@
   async function refreshWork(id: string, generation: number) {
     const snapshot = await api(`/works/${id}`);
     if (generation !== monitorGeneration || activeWorkId !== id) return true;
-    weivUpdate(() => { workStatus = snapshot.status === 'waiting' ? `Waiting for ${snapshot.waitingFor || 'input'}` : snapshot.status === 'queued' ? 'Queued' : 'Agent working'; interactions = snapshot.interactions || []; if (selectedWorkId === id) runSnapshot = snapshot; });
+    weivUpdate(() => { workStatus = snapshot.status === 'waiting' ? snapshot.waitingFor === 'external-result' ? 'Thinking…' : `Waiting for ${snapshot.waitingFor || 'input'}` : snapshot.status === 'queued' ? 'Queued' : 'Agent working'; interactions = snapshot.interactions || []; if (selectedWorkId === id) runSnapshot = snapshot; });
     if (selectedWorkId === id) await loadActivity(id);
     if (snapshot.waitingFor === 'effect-resolution') await loadEffectResolution(id); else effectResolution = null;
     await loadTimeline();

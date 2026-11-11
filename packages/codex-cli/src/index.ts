@@ -157,7 +157,14 @@ function execute(
                   ? item.text
                   : typeof item.summary === 'string'
                     ? item.summary
-                    : '';
+                    : Array.isArray(item.summary)
+                      ? item.summary
+                          .filter((part): part is { text: string } =>
+                            !!part && typeof part === 'object' && typeof part.text === 'string',
+                          )
+                          .map((part) => part.text)
+                          .join('\n')
+                      : '';
               if (summary.trim())
                 progress({ type: 'reasoning', text: summary.trim().slice(0, 2000) });
             }
@@ -223,7 +230,7 @@ export function createCodexCliModel(options: CodexCliOptions) {
   const artifactDigest = createHash('sha256')
     .update(
       JSON.stringify({
-        profile: 'structured-v1',
+        profile: 'structured-v2-reasoning-summary',
         version: options.cliVersion,
         model: options.model ?? 'cli-default',
         timeoutMs,
@@ -290,6 +297,8 @@ export function createCodexCliModel(options: CodexCliOptions) {
           'web_search="disabled"',
           '-c',
           'project_doc_max_bytes=0',
+          '-c',
+          'model_reasoning_summary="auto"',
           '-c',
           `model_instructions_file=${JSON.stringify(system)}`,
           ...disabled.flatMap((f) => ['--disable', f]),
