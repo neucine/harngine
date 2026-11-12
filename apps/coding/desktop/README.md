@@ -50,6 +50,19 @@ The check passes when the Work shows **Completed**, Activity records a conclusiv
 call for `README.md`, and the Agent replies `# Harngine`. A normal built app launched without these
 variables continues to use its Codex CLI configuration.
 
+To verify transient model streaming separately, choose a streaming-capable compatible model and
+submit a bounded prompt such as:
+
+```text
+Print the integers 1 through 120, one per line. Do not call tools.
+```
+
+While the Work is **Working**, the run strip must show a non-zero SSE count, non-zero model chunks
+and characters, and the working panel must show accumulating response text with **Streaming model
+response…**. When the Work reaches **Completed**, the final answer remains visible and the stream
+totals remain non-zero rather than resetting. Exact event, chunk and character counts vary by
+provider response.
+
 The headless equivalent is `bun run smoke:coding:magpie`. Keep it as a fallback for terminals and
 automation; the app run is the user-facing integration check.
 
