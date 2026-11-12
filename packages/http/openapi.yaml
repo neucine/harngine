@@ -1,0 +1,1196 @@
+openapi: 3.1.0
+info:
+  title: Harngine HTTP API
+  version: 0.1.0
+  license:
+    name: Mozilla Public License 2.0
+    identifier: MPL-2.0
+  description: |
+    HTTP contract implemented by `@harngine/http` for a Harngine App.
+
+    The adapter does not own the listener or define an authentication provider. The
+    host application owns both, and its `authenticate` callback establishes the
+    principal used for every request. The bearer-token scheme below is the common
+    integration shape used by the examples; a host may accept another credential
+    transport as long as it authenticates before the built-in routes run.
+
+    Host-defined routes run before these built-in routes and are not described by
+    this document.
+servers:
+  - url: /
+    description: The listener created and configured by the host application.
+tags:
+  - name: health
+    description: Authenticated listener health.
+  - name: definitions
+    description: Available definition revisions.
+  - name: sessions
+    description: Conversational continuity and message flow.
+  - name: works
+    description: Durable execution, control, inspection and streaming.
+  - name: audit
+    description: Principal-scoped operational evidence and export.
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: Check the authenticated HTTP adapter
+      responses:
+        "200":
+          description: The adapter is serving requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /definitions:
+    get:
+      tags: [definitions]
+      operationId: listAvailableAgents
+      summary: List available Agent definitions
+      description: Returns available Agent definitions that can be used to create a Session.
+      responses:
+        "200":
+          description: A bounded definition list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDefinitionList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /sessions:
+    get:
+      tags: [sessions]
+      operationId: listSessions
+      summary: List Sessions owned by the authenticated principal
+      responses:
+        "200":
+          description: A bounded Session list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [sessions]
+      operationId: createSession
+      summary: Create a Session from an Agent definition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          description: The newly created Session.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionSnapshot"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /sessions/{sessionId}:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [sessions]
+      operationId: getSession
+      summary: Get a Session snapshot
+      responses:
+        "200":
+          description: The current Session snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionSnapshot"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /sessions/{sessionId}/messages:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [sessions]
+      operationId: listSessionMessages
+      summary: List recent Session messages
+      responses:
+        "200":
+          description: Messages in their durable Session order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [sessions]
+      operationId: sendSessionMessage
+      summary: Send a message and start or queue Work
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendSessionMessageRequest"
+      responses:
+        "202":
+          description: The Session accepted the message and returned the associated Work.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionMessageAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /works:
+    get:
+      tags: [works]
+      operationId: listWorks
+      summary: List Work owned by the authenticated principal
+      parameters:
+        - name: sessionId
+          in: query
+          required: false
+          description: Restrict the result to Work belonging to one Session.
+          schema:
+            type: string
+            pattern: "^session_.+"
+      responses:
+        "200":
+          description: A bounded Work list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /works/{workId}:
+    parameters:
+      - $ref: "#/components/parameters/WorkId"
+    get:
+      tags: [works]
+      operationId: getWork
+      summary: Get a Work snapshot
+      responses:
+        "200":
+          description: The current Work snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkSnapshot"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /works/{workId}/inspect:
+    parameters:
+      - $ref: "#/components/parameters/WorkId"
+    get:
+      tags: [works]
+      operationId: inspectWork
+      summary: Read durable Work evidence
+      parameters:
+        - name: detail
+          in: query
+          required: false
+          description: Select the compact story view or payload-rich diagnostic view.
+          schema:
+            type: string
+            enum: [story, diagnostic]
+            default: story
+        - name: after
+          in: query
+          required: false
+          description: Cursor from which to continue inspection.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A page of durable inspection entries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InspectionPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /works/{workId}/events:
+    parameters:
+      - $ref: "#/components/parameters/WorkId"
+    get:
+      tags: [works]
+      operationId: watchWorkEvents
+      summary: Stream durable Work updates as Server-Sent Events
+      description: |
+        The first SSE data frame is the initial Work snapshot. Durable updates
+        include an `id` field containing their cursor; after reconnect, pass that
+        value as `after`. With `modelDeltas=1`, active model previews are emitted
+        as `event: model.delta` frames without an SSE ID and are not replayed.
+      parameters:
+        - name: after
+          in: query
+          required: false
+          description: Replay durable updates after this cursor.
+          schema:
+            type: string
+        - name: modelDeltas
+          in: query
+          required: false
+          description: Set to 1 to include transient model preview events.
+          schema:
+            type: string
+            enum: ["0", "1"]
+            default: "0"
+      responses:
+        "200":
+          description: |
+            SSE frames carrying WorkUpdate JSON. A frame may be preceded by
+            `event: model.delta`; terminal stream failures use `event: error`.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                contentMediaType: application/json
+                contentSchema:
+                  $ref: "#/components/schemas/WorkUpdate"
+              x-sse-events:
+                durable:
+                  - work.updated
+                transient:
+                  - model.delta
+                error:
+                  - error
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /works/{workId}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/WorkId"
+    post:
+      tags: [works]
+      operationId: cancelWork
+      summary: Cancel active Work
+      description: Cancellation is recorded durably. Aborting provider or Tool execution is best effort.
+      responses:
+        "200":
+          description: The current Work snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkSnapshot"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /works/{workId}/steer:
+    parameters:
+      - $ref: "#/components/parameters/WorkId"
+    post:
+      tags: [works]
+      operationId: steerWork
+      summary: Add steering input to active Work
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SteerWorkRequest"
+      responses:
+        "200":
+          description: The current Work snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkSnapshot"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /works/{workId}/respond:
+    parameters:
+      - $ref: "#/components/parameters/WorkId"
+    post:
+      tags: [works]
+      operationId: respondToInteraction
+      summary: Answer a pending question or approval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RespondRequest"
+      responses:
+        "200":
+          description: The current Work snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkSnapshot"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /works/{workId}/resolve-effect:
+    parameters:
+      - $ref: "#/components/parameters/WorkId"
+    post:
+      tags: [works]
+      operationId: resolveUncertainEffect
+      summary: Record the outcome of an uncertain external effect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveEffectRequest"
+      responses:
+        "200":
+          description: The current Work snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkSnapshot"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /audit:
+    get:
+      tags: [audit]
+      operationId: listAuditEntries
+      summary: List principal-scoped audit evidence
+      parameters:
+        - $ref: "#/components/parameters/AuditCategory"
+        - $ref: "#/components/parameters/AuditWorkId"
+        - $ref: "#/components/parameters/AuditSessionId"
+        - $ref: "#/components/parameters/AuditSince"
+        - $ref: "#/components/parameters/AuditUntil"
+        - $ref: "#/components/parameters/AuditAfter"
+        - $ref: "#/components/parameters/AuditLimit"
+      responses:
+        "200":
+          description: A payload-safe Audit page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /audit/export:
+    post:
+      tags: [audit]
+      operationId: exportAuditEntries
+      summary: Export audit evidence through the host-configured sink
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, otel]
+            default: json
+        - $ref: "#/components/parameters/AuditCategory"
+        - $ref: "#/components/parameters/AuditWorkId"
+        - $ref: "#/components/parameters/AuditSessionId"
+        - $ref: "#/components/parameters/AuditSince"
+        - $ref: "#/components/parameters/AuditUntil"
+        - $ref: "#/components/parameters/AuditAfter"
+        - $ref: "#/components/parameters/AuditLimit"
+      responses:
+        "200":
+          description: The export was accepted by the host sink.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditExport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "501":
+          description: The host did not configure an audit export sink.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Example authorization accepted by the host's `authenticate` callback.
+        The adapter itself delegates credential validation and may use another
+        host-defined transport.
+  parameters:
+    WorkId:
+      name: workId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^work_.+"
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^session_.+"
+    AuditCategory:
+      name: category
+      in: query
+      required: false
+      description: Filter by one or more categories. Repeat the parameter or use comma separation.
+      style: form
+      explode: true
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/AuditCategory"
+    AuditWorkId:
+      name: workId
+      in: query
+      required: false
+      schema:
+        type: string
+        pattern: "^work_.+"
+    AuditSessionId:
+      name: sessionId
+      in: query
+      required: false
+      schema:
+        type: string
+        pattern: "^session_.+"
+    AuditSince:
+      name: since
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+    AuditUntil:
+      name: until
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+    AuditAfter:
+      name: after
+      in: query
+      required: false
+      schema:
+        type: string
+    AuditLimit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+  responses:
+    BadRequest:
+      description: Invalid request syntax, structure, or schema validation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: The host authentication callback rejected the request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: The route, Work, or Session was not found for this principal.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: The requested transition conflicts with current durable state.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: An unexpected server or host failure.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    JsonValue:
+      oneOf:
+        - type: "null"
+        - type: boolean
+        - type: number
+        - type: string
+        - type: array
+          items:
+            $ref: "#/components/schemas/JsonValue"
+        - type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: ok
+    DefinitionReference:
+      type: object
+      required: [object, kind, id, revision]
+      properties:
+        object:
+          type: string
+          enum: [agent, workflow, tool]
+        kind:
+          type: string
+          enum: [agent, workflow, tool]
+        id:
+          type: string
+        revision:
+          type: string
+          pattern: "^rev_.+"
+    ExecutableDefinitionReference:
+      allOf:
+        - $ref: "#/components/schemas/DefinitionReference"
+        - type: object
+          properties:
+            object:
+              type: string
+              enum: [agent, workflow]
+            kind:
+              type: string
+              enum: [agent, workflow]
+    AgentReference:
+      allOf:
+        - $ref: "#/components/schemas/DefinitionReference"
+        - type: object
+          required: [object, kind]
+          properties:
+            object:
+              type: string
+              const: agent
+            kind:
+              type: string
+              const: agent
+    DefinitionDescription:
+      type: object
+      required: [object, kind, id, revision, availability]
+      properties:
+        object:
+          type: string
+          enum: [agent, workflow, tool]
+        kind:
+          type: string
+          enum: [agent, workflow, tool]
+        id:
+          type: string
+        revision:
+          type: string
+          pattern: "^rev_.+"
+        availability:
+          type: string
+          enum: [available, unavailable]
+      additionalProperties: true
+    AgentDefinitionList:
+      type: object
+      required: [object, definitions, next]
+      properties:
+        object:
+          type: string
+          const: list
+        definitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DefinitionDescription"
+        next:
+          type: [string, "null"]
+    WorkStatus:
+      type: string
+      enum: [queued, running, waiting, completed, failed, canceled]
+    WorkSummary:
+      type: object
+      required:
+        - object
+        - id
+        - definition
+        - objective
+        - status
+        - childWorkIds
+        - createdAt
+        - updatedAt
+      properties:
+        object:
+          type: string
+          const: work
+        id:
+          type: string
+          pattern: "^work_.+"
+        definition:
+          $ref: "#/components/schemas/ExecutableDefinitionReference"
+        objective:
+          $ref: "#/components/schemas/JsonValue"
+        status:
+          $ref: "#/components/schemas/WorkStatus"
+        sessionId:
+          type: string
+          pattern: "^session_.+"
+        parentId:
+          type: string
+          pattern: "^work_.+"
+        childWorkIds:
+          type: array
+          items:
+            type: string
+            pattern: "^work_.+"
+        createdAt:
+          type: integer
+        updatedAt:
+          type: integer
+      additionalProperties: true
+    Interaction:
+      oneOf:
+        - type: object
+          required: [object, id, type, prompt, response, blocking]
+          properties:
+            object:
+              type: string
+              const: interaction
+            id:
+              type: string
+            type:
+              type: string
+              const: question
+            prompt:
+              type: string
+            response:
+              $ref: "#/components/schemas/JsonValue"
+            blocking:
+              type: boolean
+        - type: object
+          required: [object, id, type, blocking, title, details]
+          properties:
+            object:
+              type: string
+              const: interaction
+            id:
+              type: string
+            type:
+              type: string
+              const: approval
+            blocking:
+              type: boolean
+            title:
+              type: string
+            details:
+              $ref: "#/components/schemas/JsonValue"
+            tool:
+              type: object
+              required: [id, revision]
+              properties:
+                id:
+                  type: string
+                revision:
+                  type: string
+    WorkSnapshot:
+      allOf:
+        - $ref: "#/components/schemas/WorkSummary"
+        - type: object
+          required: [interactions]
+          properties:
+            result:
+              $ref: "#/components/schemas/JsonValue"
+            error:
+              $ref: "#/components/schemas/Reason"
+            interactions:
+              type: array
+              items:
+                $ref: "#/components/schemas/Interaction"
+            usage:
+              type: object
+              required: [decisions, attempts, modelTurns, toolExecutions]
+              properties:
+                decisions:
+                  type: integer
+                  minimum: 0
+                attempts:
+                  type: integer
+                  minimum: 0
+                modelTurns:
+                  type: integer
+                  minimum: 0
+                toolExecutions:
+                  type: integer
+                  minimum: 0
+            limits:
+              type: object
+              additionalProperties:
+                type: integer
+            waitingFor:
+              type: string
+              enum:
+                - approval
+                - question
+                - timer
+                - effect-resolution
+                - external-result
+                - definition-unavailable
+          additionalProperties: true
+    WorkList:
+      type: object
+      required: [object, works, next]
+      properties:
+        object:
+          type: string
+          const: list
+        works:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkSummary"
+        next:
+          type: [string, "null"]
+    WorkUpdate:
+      type: object
+      required: [object, type, event, snapshot]
+      properties:
+        object:
+          type: string
+          const: work_update
+        type:
+          type: string
+          const: work.updated
+        event:
+          type: string
+        snapshot:
+          $ref: "#/components/schemas/WorkSnapshot"
+    Message:
+      type: object
+      required: [object, id, author, content, recordedAt]
+      properties:
+        object:
+          type: string
+          const: message
+        id:
+          type: string
+        author:
+          type: string
+          enum: [human, agent]
+        content:
+          $ref: "#/components/schemas/JsonValue"
+        recordedAt:
+          type: integer
+        workId:
+          type: string
+          pattern: "^work_.+"
+      additionalProperties: true
+    SessionState:
+      type: object
+      required:
+        - object
+        - id
+        - title
+        - status
+        - agent
+        - foregroundWorkId
+        - queuedWorkIds
+        - createdAt
+        - updatedAt
+      properties:
+        object:
+          type: string
+          const: session
+        id:
+          type: string
+          pattern: "^session_.+"
+        title:
+          type: string
+        status:
+          type: string
+          enum: [open, closed]
+        agent:
+          $ref: "#/components/schemas/AgentReference"
+        foregroundWorkId:
+          type: [string, "null"]
+          pattern: "^work_.+"
+        queuedWorkIds:
+          type: array
+          items:
+            type: string
+            pattern: "^work_.+"
+        createdAt:
+          type: integer
+        updatedAt:
+          type: integer
+      additionalProperties: true
+    SessionSnapshot:
+      allOf:
+        - $ref: "#/components/schemas/SessionState"
+        - type: object
+          required: [recentMessages, foregroundWork]
+          properties:
+            recentMessages:
+              type: array
+              items:
+                $ref: "#/components/schemas/Message"
+            foregroundWork:
+              oneOf:
+                - $ref: "#/components/schemas/WorkSnapshot"
+                - type: "null"
+    SessionList:
+      type: object
+      required: [object, sessions, next]
+      properties:
+        object:
+          type: string
+          const: list
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionState"
+        next:
+          type: [string, "null"]
+    CreateSessionRequest:
+      type: object
+      required: [agent, title]
+      properties:
+        agent:
+          $ref: "#/components/schemas/AgentReference"
+        title:
+          type: string
+          minLength: 1
+    SendSessionMessageRequest:
+      type: object
+      properties:
+        message:
+          $ref: "#/components/schemas/JsonValue"
+    SessionMessageAccepted:
+      type: object
+      required: [message, work]
+      properties:
+        message:
+          $ref: "#/components/schemas/Message"
+        work:
+          $ref: "#/components/schemas/WorkSnapshot"
+    SteerWorkRequest:
+      type: object
+      properties:
+        input:
+          $ref: "#/components/schemas/JsonValue"
+    RespondRequest:
+      type: object
+      required: [interactionId]
+      properties:
+        interactionId:
+          type: string
+          minLength: 1
+        response:
+          $ref: "#/components/schemas/JsonValue"
+    Reason:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    EffectResolution:
+      oneOf:
+        - type: object
+          required: [status, value]
+          properties:
+            status:
+              type: string
+              const: success
+            value:
+              $ref: "#/components/schemas/JsonValue"
+        - type: object
+          required: [status, reason]
+          properties:
+            status:
+              type: string
+              const: not-applied
+            reason:
+              $ref: "#/components/schemas/Reason"
+        - type: object
+          required: [status, effect, reason]
+          properties:
+            status:
+              type: string
+              const: failure
+            effect:
+              type: string
+              enum: [partial, occurred]
+            reason:
+              $ref: "#/components/schemas/Reason"
+    ResolveEffectRequest:
+      type: object
+      required: [callId, resolution]
+      properties:
+        callId:
+          type: string
+          minLength: 1
+        resolution:
+          $ref: "#/components/schemas/EffectResolution"
+        idempotencyKey:
+          type: string
+          minLength: 1
+    InspectionEntry:
+      type: object
+      required: [object, id, recordedAt, presentation, type]
+      properties:
+        object:
+          type: string
+          const: inspection_entry
+        id:
+          type: string
+          pattern: "^event_.+"
+        recordedAt:
+          type: [integer, "null"]
+        decisionSequence:
+          type: integer
+        type:
+          type: string
+          enum:
+            - work.started
+            - input
+            - decision
+            - model.progress
+            - guardrail
+            - call
+            - interaction
+            - child
+            - work.closed
+        presentation:
+          type: object
+          required: [title]
+          properties:
+            title:
+              type: string
+            summary:
+              type: string
+            data:
+              $ref: "#/components/schemas/JsonValue"
+      additionalProperties: true
+    InspectionPage:
+      type: object
+      required: [object, work, entries, next, hasMore]
+      properties:
+        object:
+          type: string
+          const: inspection
+        work:
+          $ref: "#/components/schemas/WorkSnapshot"
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/InspectionEntry"
+        next:
+          type: [string, "null"]
+        hasMore:
+          type: boolean
+    AuditCategory:
+      type: string
+      enum: [work, decision, authorization, guardrail, attempt, interaction, session]
+    AuditEntry:
+      type: object
+      required: [object, id, category, action, recordedAt, principal, correlation]
+      properties:
+        object:
+          type: string
+          const: audit_entry
+        id:
+          type: string
+        category:
+          $ref: "#/components/schemas/AuditCategory"
+        action:
+          type: string
+        recordedAt:
+          type: integer
+        principal:
+          type: string
+        correlation:
+          type: object
+          properties:
+            workId:
+              type: string
+              pattern: "^work_.+"
+            sessionId:
+              type: string
+              pattern: "^session_.+"
+            decisionSequence:
+              type: integer
+            callId:
+              type: string
+            attemptId:
+              type: string
+            interactionId:
+              type: string
+            authorizationId:
+              type: string
+        outcome:
+          type: string
+        reason:
+          $ref: "#/components/schemas/Reason"
+        policyRevision:
+          type: string
+        target:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+            kind:
+              type: string
+              enum: [agent, workflow, tool]
+            revision:
+              type: string
+        guardrail:
+          type: object
+          required: [id, revision]
+          properties:
+            id:
+              type: string
+            revision:
+              type: string
+              pattern: "^rev_.+"
+        definition:
+          $ref: "#/components/schemas/ExecutableDefinitionReference"
+      additionalProperties: false
+    AuditPage:
+      type: object
+      required: [object, entries, next]
+      properties:
+        object:
+          type: string
+          const: list
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEntry"
+        next:
+          type: [string, "null"]
+    AuditExport:
+      type: object
+      required: [object, format, exported, next]
+      properties:
+        object:
+          type: string
+          const: audit_export
+        format:
+          type: string
+          enum: [json, otel]
+        exported:
+          type: integer
+          minimum: 0
+        next:
+          type: [string, "null"]

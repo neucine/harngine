@@ -7,7 +7,8 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./openapi.yaml": "./openapi.yaml"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,6 +18,7 @@
   "files": [
     "dist",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "openapi.yaml"
   ]
 }

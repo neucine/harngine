@@ -8,6 +8,9 @@ Harngine provides the execution layer around language models. Applications defin
 Workflows, and Tools; Harngine runs them as durable, inspectable Work that can wait for people,
 accept steering, survive process restarts, and continue safely across external effects.
 
+For the runtime boundaries and durability model, read the [core architecture guide](architecture.md).
+For the optional HTTP server and its OpenAPI 3.1 contract, read the [HTTP API guide](api.md).
+
 Model providers answer a turn. Harngine runs the application around those turns.
 
 > Harngine is pre-release software. The public API may change before the first stable release.
@@ -573,6 +576,7 @@ packages/claude-messages  Claude Messages compatible model adapter
 packages/mcp        MCP catalog discovery and selected Tool bridge
 packages/retrieval  versioned retrieval Tools and citation checks
 packages/evaluation inspection-based Work-tree metrics, scorers and benchmark reports
+packages/http       authenticated Node HTTP adapter and OpenAPI contract
 apps/coding/agent        repository coding agent and local HTTP server
 apps/coding/cli          command line interface for the coding agent
 apps/coding/demo         fictional workspace coding showcase
@@ -635,6 +639,7 @@ Package documentation:
 - [MCP Tool bridge](../packages/mcp/README.md)
 - [Retrieval Tool bridge](../packages/retrieval/README.md)
 - [Evaluation companion](../packages/evaluation/README.md)
+- [HTTP adapter and OpenAPI contract](../packages/http/README.md)
 - [Coding agent](../apps/coding/agent/README.md)
 - [Coding application layout](../apps/coding/README.md)
 - [Coding CLI](../apps/coding/cli/README.md)

@@ -41,6 +41,17 @@ try {
   const mcpFiles = execFileSync('tar', ['-tzf', mcpTarball], { encoding: 'utf8' });
   assert(mcpFiles.includes('package/dist/index.js'));
   assert(mcpFiles.includes('package/dist/catalog.js'));
+  execFileSync('bun', ['pm', 'pack', '--destination', temp], {
+    cwd: join(root, 'packages/http'),
+    stdio: 'pipe',
+  });
+  const httpTarball = join(
+    temp,
+    readdirSync(temp).find((name) => name.includes('http') && name.endsWith('.tgz')),
+  );
+  const httpFiles = execFileSync('tar', ['-tzf', httpTarball], { encoding: 'utf8' });
+  assert(httpFiles.includes('package/dist/index.js'));
+  assert(httpFiles.includes('package/openapi.yaml'));
   writeFileSync(
     join(temp, 'package.json'),
     JSON.stringify({
@@ -49,6 +60,7 @@ try {
       trustedDependencies: [],
       dependencies: {
         harngine: tarball,
+        '@harngine/http': httpTarball,
         '@harngine/mcp': mcpTarball,
         '@harngine/workbench': workbenchTarball,
       },
@@ -58,10 +70,18 @@ try {
   execFileSync('bun', ['install'], { cwd: temp, stdio: 'pipe', env: environment });
   const source = `
     import assert from 'node:assert/strict';
+    import { readFileSync } from 'node:fs';
     import { join } from 'node:path';
     import { createApp, schema, tool, workflow } from 'harngine';
+    import { createHarngineHttpServer } from '@harngine/http';
     import { mcpToolCatalog, mcpToolFromCatalog } from '@harngine/mcp';
     import { serveWorkbench } from '@harngine/workbench';
+
+    const openapi = readFileSync(
+      new URL(import.meta.resolve('@harngine/http/openapi.yaml')),
+      'utf8',
+    );
+    assert.match(openapi, /^openapi: 3\\.1\\.0$/m);
 
     const number = schema({ id: 'smoke.number', version: '1', jsonSchema: { type: 'integer' } });
     const double = tool({ id: 'smoke.double', description: 'Double an integer.', input: number,
@@ -89,6 +109,7 @@ try {
       } },
     });
     assert.equal(remote.id, 'smoke.remote');
+    assert.equal(typeof createHarngineHttpServer, 'function');
     assert.deepEqual(await remote.execute({ id: 'record' }, {
       signal: new AbortController().signal,
       idempotencyKey: 'smoke-mcp',

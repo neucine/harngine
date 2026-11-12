@@ -2,6 +2,11 @@
 
 Optional Node.js HTTP adapter for a Harngine App. The host supplies authentication and owns the listener lifecycle.
 
+The package includes an [OpenAPI 3.1 contract](openapi.yaml). Import it from
+`@harngine/http/openapi.yaml`, or open it directly in Swagger UI, Redocly, Insomnia, Postman or
+another OpenAPI-compatible client. Read the [HTTP API guide](../../docs/api.md) for the request flow,
+streaming behavior, recovery operations and host boundaries.
+
 ```ts
 import { createHarngineHttpServer } from '@harngine/http';
 

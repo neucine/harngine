@@ -32,6 +32,10 @@ bun run build
 
 The [framework guide](docs/guide.md) covers creating Agents and Workflows, watching Work, using Sessions, handling uncertain tool effects, and inspecting execution. The [package reference](packages/harngine/README.md) and [Workbench guide](packages/workbench/README.md) cover the public APIs and development UI.
 
+The [core architecture guide](docs/architecture.md) explains the runtime boundaries and durability
+model. The [HTTP API guide](docs/api.md) covers the optional authenticated server and links to its
+[OpenAPI 3.1 contract](packages/http/openapi.yaml).
+
 Model adapters integrate [OpenAI Responses](packages/openai-responses/README.md) and [Claude Messages](packages/claude-messages/README.md) compatible endpoints, including streaming previews and unauthenticated local routers with an explicit base URL. Optional integration packages discover and bridge selected [MCP tools](packages/mcp/README.md) and expose [retrieval services](packages/retrieval/README.md) as Harngine Tools. [Evaluation](packages/evaluation/README.md) runs bounded Work-tree evidence and scorer benchmarks without entering the execution core. Large attachments and generated files cross Work and Model Context as content-addressed references; application storage retains the bytes. Work watchers and the HTTP adapter can forward transient model previews, while Workbench and HTTP expose the payload-safe `app.audit` projection. Audit evidence exports as JSON or OTLP/HTTP JSON.
 
 ## Applications
