@@ -18,6 +18,7 @@ import type {
   App,
   AppOptions,
   AppScope,
+  AuditOptions,
   Definition,
   DefinitionDescription,
   DefinitionKind,
@@ -298,6 +299,7 @@ class WorkManager implements Works {
 }
 
 class Scope implements AppScope {
+  readonly audit;
   readonly sessions: Sessions;
   readonly works: Works;
 
@@ -307,7 +309,9 @@ class Scope implements AppScope {
     private readonly schedulerError: () => unknown,
     protected readonly agents: ReadonlyMap<string, PublicAgent<any, any>>,
     protected readonly limitCeiling?: ExecutionLimits,
+    protected readonly auditOptions?: AuditOptions,
   ) {
+    this.audit = runtime.audit(caller, auditOptions);
     this.sessions = new SessionManager(runtime, caller, agents, limitCeiling);
     this.works = new WorkManager(runtime, caller);
   }
@@ -384,9 +388,10 @@ class Application extends Scope implements App {
     caller: Caller,
     agents: ReadonlyMap<string, PublicAgent<any, any>>,
     limits?: ExecutionLimits,
+    audit?: AuditOptions,
   ) {
     const state: { failure?: unknown } = {};
-    super(runtime, caller, () => state.failure, agents, limits);
+    super(runtime, caller, () => state.failure, agents, limits, audit);
     this.storage = runtime.stateStore;
     this.supervision = runtime.start().catch((error: unknown) => {
       state.failure = error;
@@ -458,6 +463,7 @@ class Application extends Scope implements App {
       () => this.failure,
       this.agents,
       this.limitCeiling,
+      this.auditOptions,
     );
   }
 
@@ -502,5 +508,6 @@ export function createApp(options: AppOptions): App {
     { principal: options.principal ?? 'local', source: 'harngine-app' },
     agents,
     options.limits,
+    options.audit,
   );
 }

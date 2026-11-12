@@ -12,8 +12,9 @@ node apps/support/dist/main.js
 ```
 
 The run prints the triage decision and its policy citation, the durable MCP and retrieval Calls,
-the handoff lineage, the pending refund approval, the final structured answer, and the complete
-conversation.
+the transient model previews observed through `work.watch()`, the handoff lineage, the pending
+refund approval, the final structured answer, the complete conversation, and a payload-safe
+OpenTelemetry export of retained audit evidence.
 
 The default model, MCP client and retriever are deterministic and require no provider credentials.
 The flow uses the real Harngine runtime: the account catalog, model turns, retrieval and refund are
@@ -33,6 +34,12 @@ operator approves it.
   operator after displaying the exact Tool and input.
 - **Lineage** remains on one Session. `session.handoffs()` reports exact from/to Agent revisions and
   `session.messages()` retains both specialists' published messages.
+- **Audit** reads committed Work, decisions, authorization, guardrails, Attempts, interactions, and
+  Session entries. The exported OTLP/JSON contains stable correlation IDs and safe status/reason
+  fields, never objectives, prompts, messages, Tool input/output, or model payloads.
+- **Live previews** are transient provider items delivered to an active Work watcher. They are not
+  replayable, are excluded from inspection and restart history, and stop when the watcher aborts.
+  Model-output guardrails suppress preview delivery so unvalidated output cannot bypass policy.
 
 The example intentionally leaves the customer channel, authentication, ticketing integration,
 payment provider and product UI to the application.

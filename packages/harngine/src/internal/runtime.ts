@@ -46,6 +46,9 @@ import { WorkService, type Start } from './work-service.js';
 import { ChildWorkManager } from './child-work-manager.js';
 import type { TelemetrySink } from '../telemetry.js';
 import type { StateStoreConfiguration, StateStoreContract } from '../state-store.js';
+import type { Audit, AuditOptions } from '../app.js';
+import type { ModelDelta } from '../model.js';
+import { AuditReader } from './audit.js';
 export type { RuntimeWorkRecord } from './inspection-service.js';
 export type { RuntimeAccessPolicy } from './policy-evaluator.js';
 export type { Start } from './work-service.js';
@@ -101,6 +104,7 @@ export class Runtime {
   private readonly inspection: InspectionService;
   private readonly workService: WorkService;
   private readonly childWorkManager: ChildWorkManager;
+  private readonly modelDeltaListeners = new Map<string, Set<(delta: ModelDelta) => void>>();
   readonly stateStore: StateStoreContract;
   /** Privileged, unstable storage inspection used only by the App diagnostics facade. */
   diagnosticRecords(workId: WorkId): readonly {
@@ -127,6 +131,35 @@ export class Runtime {
   }
   workRecords(caller: Caller): readonly RuntimeWorkRecord[] {
     return this.inspection.workRecords(caller);
+  }
+  audit(caller: Caller, options?: AuditOptions): Audit {
+    if (this.scheduler.closed) throw new RuntimeError('CLOSED', 'Runtime is closed');
+    return new AuditReader(this.store, caller.principal, options, this.clock);
+  }
+  subscribeModelDeltas(workId: WorkId, listener: (delta: ModelDelta) => void): () => void {
+    if (this.scheduler.closed) throw new RuntimeError('CLOSED', 'Runtime is closed');
+    let listeners = this.modelDeltaListeners.get(workId);
+    if (!listeners) {
+      listeners = new Set();
+      this.modelDeltaListeners.set(workId, listeners);
+    }
+    listeners.add(listener);
+    return () => {
+      const current = this.modelDeltaListeners.get(workId);
+      current?.delete(listener);
+      if (current?.size === 0) this.modelDeltaListeners.delete(workId);
+    };
+  }
+  private publishModelDelta(delta: ModelDelta): void {
+    const listeners = this.modelDeltaListeners.get(delta.workId);
+    if (!listeners) return;
+    for (const listener of listeners) {
+      try {
+        listener(delta);
+      } catch {
+        // Live delivery is advisory and cannot change model execution.
+      }
+    }
   }
   constructor(
     options: RuntimeOptions,
@@ -177,6 +210,7 @@ export class Runtime {
         checkpoint: this.checkpoint,
         clock: this.clock,
         fail: (row, problem) => this.executionEngine.fail(row, problem),
+        onModelDelta: (delta) => this.publishModelDelta(delta),
       });
       this.executionEngine = new ExecutionEngine({
         store: this.store,

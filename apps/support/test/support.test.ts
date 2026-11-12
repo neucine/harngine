@@ -9,6 +9,7 @@ import {
   waitForApproval,
   type SupportRequest,
 } from '../src/app.js';
+import type { AuditExportBatch } from 'harngine';
 
 for (const backend of ['better-sqlite3', 'node-sqlite'] as const)
   test(`support high-assurance flow with ${backend}`, async () => {
@@ -19,6 +20,18 @@ for (const backend of ['better-sqlite3', 'node-sqlite'] as const)
     const desk = createSupportDesk({
       directory,
       stateStore: { backend },
+      audit: {
+        retention: { maxEntries: 5_000 },
+        redact: (entry) =>
+          entry.reason?.code === 'SENSITIVE_DATA_REDACTED'
+            ? {
+                reason: {
+                  code: entry.reason.code,
+                  message: 'Sensitive support data was redacted',
+                },
+              }
+            : {},
+      },
       model: {
         ...demo,
         async generate(request, options) {
@@ -56,7 +69,13 @@ for (const backend of ['better-sqlite3', 'node-sqlite'] as const)
         ownership: 'exclusive',
         ownershipFencing: true,
       });
-      const routed = await routeSupportConversation(desk, request);
+      const previews: string[] = [];
+      const routed = await routeSupportConversation(desk, request, {
+        onModelDelta: (delta) => {
+          if (delta.item.type === 'text') previews.push(delta.item.text);
+        },
+      });
+      expect(previews).toContain('Checking account evidence and the duplicate-charge policy…');
       expect(mcpCalls).toEqual([{ name: 'account_status', arguments: { orderId: 'order-842' } }]);
       expect(routed.decision).toMatchObject({
         disposition: 'handoff',
@@ -149,6 +168,28 @@ for (const backend of ['better-sqlite3', 'node-sqlite'] as const)
       );
       expect(JSON.stringify(triageInspection.entries)).not.toContain('alice@example.com');
       expect(JSON.stringify(triageInspection.entries)).not.toContain('acct-demo-842');
+
+      const audit = await desk.app.audit.list({ limit: 100 });
+      expect(new Set(audit.entries.map((entry) => entry.category))).toEqual(
+        new Set([
+          'work',
+          'decision',
+          'authorization',
+          'guardrail',
+          'attempt',
+          'interaction',
+          'session',
+        ]),
+      );
+      const batches: AuditExportBatch[] = [];
+      await desk.app.audit.export({
+        format: 'otel',
+        sink: { write: (batch) => void batches.push(batch) },
+      });
+      expect(batches).toHaveLength(1);
+      expect(JSON.stringify(batches)).not.toContain('alice@example.com');
+      expect(JSON.stringify(batches)).not.toContain('acct-demo-842');
+      expect(JSON.stringify(batches)).not.toContain(request.request);
     } finally {
       await desk.app.close();
       rmSync(directory, { recursive: true, force: true });

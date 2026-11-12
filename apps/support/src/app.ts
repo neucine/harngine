@@ -7,10 +7,12 @@ import {
   schema,
   tool,
   type App,
+  type AuditOptions,
   type ContextItem,
   type Guardrail,
   type Json,
   type ModelAdapter,
+  type ModelDelta,
   type ModelRequest,
   type Session,
   type StateStoreConfiguration,
@@ -162,6 +164,10 @@ export interface RoutedSupportConversation {
   readonly triageWork: Work<SupportRequest, TriageDecision>;
   readonly billingWork: Work<SupportRequest, BillingResolution>;
   readonly decision: TriageDecision;
+}
+
+export interface SupportConversationOptions {
+  readonly onModelDelta?: (delta: ModelDelta) => void;
 }
 
 const supportRequest = schema<SupportRequest>({
@@ -378,8 +384,8 @@ function successfulToolOutcome(
 export function supportDemoModel(): ModelAdapter {
   return {
     id: 'support-demo-model',
-    capabilities: { tools: true, structuredOutput: true, streaming: false },
-    async generate(request) {
+    capabilities: { tools: true, structuredOutput: true, streaming: true },
+    async generate(request, { emit }) {
       const objective = request.context.objective as SupportRequest;
       const account = successfulToolOutcome(request, 'support.account.status');
       const knowledge = successfulToolOutcome(request, 'support.knowledge.search');
@@ -391,6 +397,12 @@ export function supportDemoModel(): ModelAdapter {
           item.outcome.status !== 'success',
       );
       if (anyRefund) throw new Error('Refund was blocked or failed');
+      emit({
+        type: 'text',
+        text: request.tools.some((definition) => definition.id === 'support.knowledge.search')
+          ? 'Checking account evidence and the duplicate-charge policy…'
+          : 'Preparing the approval-gated billing action…',
+      });
 
       if (request.tools.some((definition) => definition.id === 'support.knowledge.search')) {
         if (!account)
@@ -491,6 +503,7 @@ export function createSupportDesk(options: {
   readonly mcpClient?: McpToolClient;
   readonly stateStore?: StateStoreConfiguration;
   readonly onRefund?: (input: { orderId: string; amountCents: number }) => void;
+  readonly audit?: AuditOptions;
 }): SupportDesk {
   const model = options.model ?? supportDemoModel();
   const retriever =
@@ -532,6 +545,7 @@ export function createSupportDesk(options: {
     directory: options.directory,
     agents: [triage, billing],
     ...(options.stateStore ? { stateStore: options.stateStore } : {}),
+    ...(options.audit ? { audit: options.audit } : {}),
   });
   return {
     app,
@@ -547,13 +561,23 @@ export function createSupportDesk(options: {
 export async function routeSupportConversation(
   desk: SupportDesk,
   request: SupportRequest,
+  options: SupportConversationOptions = {},
 ): Promise<RoutedSupportConversation> {
   const triageSession = await desk.app.sessions.create({
     agent: desk.triage,
     title: `Order ${request.orderId}`,
   });
   const { work: triageWork } = await triageSession.send(request);
+  const triageWatch = await triageWork.watch({
+    ...(options.onModelDelta ? { onModelDelta: options.onModelDelta } : {}),
+  });
+  const consumingTriage = (async () => {
+    for await (const _update of triageWatch) {
+      // The callback carries transient previews; iteration advances durable state.
+    }
+  })();
   const decision = await triageWork.result();
+  await consumingTriage;
   const billingSession = await triageSession.handoff(desk.billing, {
     reason: decision.reason,
   });

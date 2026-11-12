@@ -91,6 +91,26 @@ specialist, an authorized application can call `session.handoff(exactAgent)` whi
 idle. The same conversation continues under the new Agent revision, `session.handoffs()` retains
 the lineage, and the older typed handle rejects further `send()` calls.
 
+An active Work watcher can receive ordered provider previews without putting token deltas into
+durable history:
+
+```ts
+const watching = await work.watch({
+  onModelDelta(delta) {
+    if (delta.item.type === "text") renderPreview(delta.item.text);
+  },
+});
+
+for await (const update of watching) renderDurableUpdate(update.value);
+const result = await work.result();
+```
+
+`ModelDelta` carries the Work, Call, and Attempt IDs plus an item sequence. The callback exists only
+while the watcher is being consumed, stops after `signal` aborts, and is not replayed after
+reconnect. The final validated `ModelResponse`, ordinary Work updates, snapshots, and inspection
+remain authoritative. A model-output guardrail suppresses live previews because partial provider
+output cannot be trusted ahead of the complete output decision.
+
 `app.close()` aborts an active provider or Tool invocation by default. Model turns interrupted by
 shutdown remain durable and retry when the App reopens. Use `app.close({ abortInFlight: false })`
 to wait for the current invocation instead.
@@ -112,6 +132,40 @@ epoch fencing, idempotent receipts, and inspectable history. `createApp()` defau
 `stateStore: { backend: "node-sqlite" }` to use Node's built-in SQLite implementation. Both run
 the same schema, migrations, and execution semantics, and `app.storage` exposes the active
 backend contract.
+
+Production hosts can read a payload-safe audit projection and export it without making telemetry
+the execution source of truth:
+
+```ts
+const app = createApp({
+  directory: ".harngine",
+  agents: [assistant],
+  audit: {
+    retention: { maxAgeMs: 30 * 24 * 60 * 60 * 1000, maxEntries: 100_000 },
+    redact: (entry) =>
+      entry.reason?.code === "ACCESS_DENIED"
+        ? { reason: { code: entry.reason.code, message: "Not authorized" } }
+        : {},
+  },
+});
+
+const page = await app.audit.list({ category: ["authorization", "guardrail"] });
+await app.audit.export({
+  format: "otel",
+  sink: {
+    async write(batch) {
+      await sendToCollector(batch); // OTLP/HTTP JSON traces payload
+    },
+  },
+});
+```
+
+Audit entries cover Work lifecycle, decisions, authorization, guardrails, Attempts, Interactions,
+and Session lineage. They expose stable correlation IDs, category, action, outcome, policy and
+guardrail identity, and safe reason fields; objectives, prompts, messages, Tool input/output, and
+model payloads are absent. Retention filters only the audit projection and never deletes execution
+authority required for restart. Export runs after the projection is read, applies the configured
+reason redactor, and cannot change Work state when a sink fails.
 
 Read the repository [README](https://github.com/neucine/harngine#readme) for Sessions, Workflows,
 access policy, context selection, UI watchers, and execution semantics.

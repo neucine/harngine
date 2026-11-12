@@ -1,5 +1,6 @@
 import type { Json, Schema, SessionId, WorkId } from '../types.js';
 import type { Guardrail } from '../guardrail.js';
+import type { ModelItem } from '../model.js';
 
 export type { Json, Schema, SessionId, WorkId } from '../types.js';
 declare const brand: unique symbol;
@@ -78,6 +79,8 @@ export interface Tool<I extends Json = Json, O extends Json = Json> extends Iden
         text?: string;
         usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number };
       }) => void;
+      /** Internal seam used by Agent-backed model turns for transient item delivery. */
+      emitModelItem?: (item: ModelItem) => void;
     }>,
   ) => Promise<Outcome<O>>;
   readonly reconcile?: (

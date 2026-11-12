@@ -1,4 +1,4 @@
-import type { Json } from './types.js';
+import type { Json, WorkId } from './types.js';
 import type { ArtifactReference } from './artifact.js';
 
 export type ModelItem =
@@ -162,6 +162,20 @@ export interface ModelProgress {
   readonly type: 'started' | 'reasoning' | 'completed';
   readonly text?: string;
   readonly usage?: ModelUsage;
+}
+
+/**
+ * An ordered provider item observed while a model turn is running.
+ * Deltas are ephemeral: they are not inspection history or restart evidence.
+ */
+export interface ModelDelta {
+  readonly object: 'model_delta';
+  readonly type: 'model.delta';
+  readonly workId: WorkId;
+  readonly callId: string;
+  readonly attemptId: string;
+  readonly sequence: number;
+  readonly item: ModelItem;
 }
 
 export interface ModelAdapter {

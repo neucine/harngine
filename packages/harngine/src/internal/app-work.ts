@@ -666,7 +666,11 @@ export class WorkHandle<O extends Json, R extends Json> implements Work<O, R> {
   }
 
   async watch(
-    options: { after?: string; signal?: AbortSignal } = {},
+    options: {
+      after?: string;
+      signal?: AbortSignal;
+      onModelDelta?: (delta: import('../model.js').ModelDelta) => void;
+    } = {},
   ): Promise<Watch<WorkSnapshot<O, R>, WorkUpdate<O, R>>> {
     const api = this.runtime.forCaller(this.caller);
     const initial = await api.work.inspect(this.ref);
@@ -705,39 +709,50 @@ export class WorkHandle<O extends Json, R extends Json> implements Work<O, R> {
         return reset;
       },
       async *[Symbol.asyncIterator]() {
-        while (true) {
-          options.signal?.throwIfAborted();
-          const page = await api.work.history(thisRef, { after: sequence, limit: 100 });
-          if (!page.events.length) {
-            if ((await api.work.inspect(thisRef)).closure) return;
-            await new Promise((resolve) => setTimeout(resolve, 20));
-            continue;
-          }
-          for (const event of page.events) {
+        let active = true;
+        const unsubscribe = options.onModelDelta
+          ? thisRuntime.subscribeModelDeltas(thisRef.id, (delta) => {
+              if (active && !options.signal?.aborted) options.onModelDelta?.(delta);
+            })
+          : () => {};
+        try {
+          while (true) {
             options.signal?.throwIfAborted();
-            sequence = event.cursor;
-            value = projectionSnapshot<O, R>(
-              await api.work.projection(thisRef, event.id),
-              thisRuntime.workRecord(thisCaller, thisRef.id),
-            );
-            cursor = event.id;
-            yield {
-              durable: true,
-              id: event.id,
-              value: {
-                object: 'work_update',
-                type: 'work.updated',
-                event: event.kind,
-                snapshot: value,
-              },
-            };
+            const page = await api.work.history(thisRef, { after: sequence, limit: 100 });
+            if (!page.events.length) {
+              if ((await api.work.inspect(thisRef)).closure) return;
+              await new Promise((resolve) => setTimeout(resolve, 20));
+              continue;
+            }
+            for (const event of page.events) {
+              options.signal?.throwIfAborted();
+              sequence = event.cursor;
+              value = projectionSnapshot<O, R>(
+                await api.work.projection(thisRef, event.id),
+                thisRuntime.workRecord(thisCaller, thisRef.id),
+              );
+              cursor = event.id;
+              yield {
+                durable: true,
+                id: event.id,
+                value: {
+                  object: 'work_update',
+                  type: 'work.updated',
+                  event: event.kind,
+                  snapshot: value,
+                },
+              };
+            }
+            if (
+              value.status === 'completed' ||
+              value.status === 'failed' ||
+              value.status === 'canceled'
+            )
+              return;
           }
-          if (
-            value.status === 'completed' ||
-            value.status === 'failed' ||
-            value.status === 'canceled'
-          )
-            return;
+        } finally {
+          active = false;
+          unsubscribe();
         }
       },
     };

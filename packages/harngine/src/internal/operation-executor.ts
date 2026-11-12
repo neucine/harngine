@@ -13,7 +13,8 @@ import type {
   WorkId,
 } from './contracts.js';
 import { RuntimeError } from './contracts.js';
-import { frozen, key, validate } from '../schema.js';
+import { copy, frozen, key, validate } from '../schema.js';
+import type { ModelDelta, ModelItem } from '../model.js';
 import { checkedOutcome, checkedReconciliation, reason } from './core.js';
 import { OperationStore, type CallAuthorizationRecord } from './operation-store.js';
 import type { RequestRow, SqliteStore, WorkRow } from './store.js';
@@ -51,6 +52,7 @@ export interface OperationExecutorOptions {
   ) => void;
   readonly clock: () => number;
   readonly fail: (row: WorkRow, problem: Reason) => void;
+  readonly onModelDelta?: (delta: ModelDelta) => void;
 }
 
 /** Admits, invokes, and settles Tool operations without owning Work scheduling. */
@@ -334,87 +336,121 @@ export class OperationExecutor {
     this.options.checkpoint('admission');
     let outcome: Outcome;
     let outputGuardrails: readonly GuardrailDecision[] = Object.freeze([]);
+    let modelDeltaSequence = 0;
+    let modelDeltaActive = true;
+    const canStreamModelOutput =
+      modelTurn &&
+      !selectedTool.guardrails?.some((guardrail) => guardrail.stages.includes(outputStage));
     try {
       outcome = checkedOutcome(
         selectedTool,
-        await selectedTool.invoke(
-          Object.freeze({
-            input: frozen(effectiveInput),
-            operationId: request.id,
-            attemptId,
-            signal: controller.signal,
-            ...(modelTurn
-              ? {
-                  progress: (event: {
-                    type: string;
-                    text?: string;
-                    usage?: {
-                      inputTokens?: number;
-                      outputTokens?: number;
-                      totalTokens?: number;
-                      cost?: { amountMicros: number; currency: string };
-                    };
-                  }) => {
-                    if (
-                      controller.signal.aborted ||
-                      !['started', 'reasoning', 'completed'].includes(event.type)
-                    )
-                      return;
-                    const text =
-                      typeof event.text === 'string' ? event.text.slice(0, 2000) : undefined;
-                    const usage =
-                      event.usage &&
-                      [
-                        event.usage.inputTokens,
-                        event.usage.outputTokens,
-                        event.usage.totalTokens,
-                      ].every(
-                        (value) =>
-                          value === undefined || (Number.isSafeInteger(value) && value >= 0),
-                      ) &&
-                      (event.usage.cost === undefined ||
-                        (Number.isSafeInteger(event.usage.cost.amountMicros) &&
-                          event.usage.cost.amountMicros >= 0 &&
-                          typeof event.usage.cost.currency === 'string' &&
-                          event.usage.cost.currency.length > 0 &&
-                          event.usage.cost.currency.length <= 16))
-                        ? event.usage
-                        : undefined;
-                    const recordedUsage: Json | undefined = usage
+        await selectedTool
+          .invoke(
+            Object.freeze({
+              input: frozen(effectiveInput),
+              operationId: request.id,
+              attemptId,
+              signal: controller.signal,
+              ...(modelTurn
+                ? {
+                    ...(canStreamModelOutput
                       ? {
-                          ...(usage.inputTokens === undefined
-                            ? {}
-                            : { inputTokens: usage.inputTokens }),
-                          ...(usage.outputTokens === undefined
-                            ? {}
-                            : { outputTokens: usage.outputTokens }),
-                          ...(usage.totalTokens === undefined
-                            ? {}
-                            : { totalTokens: usage.totalTokens }),
-                          ...(usage.cost
-                            ? {
-                                cost: {
-                                  amountMicros: usage.cost.amountMicros,
-                                  currency: usage.cost.currency,
-                                },
-                              }
-                            : {}),
+                          emitModelItem: (item: ModelItem) => {
+                            if (
+                              !modelDeltaActive ||
+                              controller.signal.aborted ||
+                              !this.options.onModelDelta
+                            )
+                              return;
+                            try {
+                              this.options.onModelDelta({
+                                object: 'model_delta',
+                                type: 'model.delta',
+                                workId: row.id as WorkId,
+                                callId: request.id,
+                                attemptId,
+                                sequence: modelDeltaSequence++,
+                                item: frozen(copy(item)),
+                              });
+                            } catch {
+                              // A malformed or changing preview cannot alter provider execution.
+                            }
+                          },
                         }
-                      : undefined;
-                    this.options.store.write(() =>
-                      this.options.store.event(row.id, 'model.progress', {
-                        operationId: request.id,
-                        attemptId,
-                        type: event.type,
-                        ...(text ? { text } : {}),
-                        ...(recordedUsage ? { usage: recordedUsage } : {}),
-                      }),
-                    );
-                  },
-                }
-              : {}),
+                      : {}),
+                    progress: (event: {
+                      type: string;
+                      text?: string;
+                      usage?: {
+                        inputTokens?: number;
+                        outputTokens?: number;
+                        totalTokens?: number;
+                        cost?: { amountMicros: number; currency: string };
+                      };
+                    }) => {
+                      if (
+                        controller.signal.aborted ||
+                        !['started', 'reasoning', 'completed'].includes(event.type)
+                      )
+                        return;
+                      const text =
+                        typeof event.text === 'string' ? event.text.slice(0, 2000) : undefined;
+                      const usage =
+                        event.usage &&
+                        [
+                          event.usage.inputTokens,
+                          event.usage.outputTokens,
+                          event.usage.totalTokens,
+                        ].every(
+                          (value) =>
+                            value === undefined || (Number.isSafeInteger(value) && value >= 0),
+                        ) &&
+                        (event.usage.cost === undefined ||
+                          (Number.isSafeInteger(event.usage.cost.amountMicros) &&
+                            event.usage.cost.amountMicros >= 0 &&
+                            typeof event.usage.cost.currency === 'string' &&
+                            event.usage.cost.currency.length > 0 &&
+                            event.usage.cost.currency.length <= 16))
+                          ? event.usage
+                          : undefined;
+                      const recordedUsage: Json | undefined = usage
+                        ? {
+                            ...(usage.inputTokens === undefined
+                              ? {}
+                              : { inputTokens: usage.inputTokens }),
+                            ...(usage.outputTokens === undefined
+                              ? {}
+                              : { outputTokens: usage.outputTokens }),
+                            ...(usage.totalTokens === undefined
+                              ? {}
+                              : { totalTokens: usage.totalTokens }),
+                            ...(usage.cost
+                              ? {
+                                  cost: {
+                                    amountMicros: usage.cost.amountMicros,
+                                    currency: usage.cost.currency,
+                                  },
+                                }
+                              : {}),
+                          }
+                        : undefined;
+                      this.options.store.write(() =>
+                        this.options.store.event(row.id, 'model.progress', {
+                          operationId: request.id,
+                          attemptId,
+                          type: event.type,
+                          ...(text ? { text } : {}),
+                          ...(recordedUsage ? { usage: recordedUsage } : {}),
+                        }),
+                      );
+                    },
+                  }
+                : {}),
+            }),
+          )
+          .finally(() => {
+            modelDeltaActive = false;
           }),
-        ),
       );
       if (outcome.status === 'success' && selectedTool.guardrails?.length) {
         let guardrails: GuardrailRun;

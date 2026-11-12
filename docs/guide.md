@@ -251,6 +251,24 @@ for await (const update of watching) {
 const answer = await work.result();
 ```
 
+An Agent model adapter can expose ordered partial items without making them durable:
+
+```ts
+const watching = await work.watch({
+  onModelDelta(delta) {
+    if (delta.item.type === "text") renderPreview(delta.item.text);
+  },
+});
+
+for await (const update of watching) renderUpdate(update.value);
+```
+
+The callback is active only while the watcher is being consumed and stops on iteration end or
+abort. `ModelDelta` includes Work, Call, and Attempt correlation plus an item sequence. It is not
+replayable, does not advance the durable cursor, and never appears in inspection. The final
+validated model response remains authoritative. Model-output guardrails suppress previews so a
+partial response cannot bypass the complete output decision.
+
 Durable updates carry `event_...` IDs. A disconnected client can reopen Work by its `work_...` ID
 and resume watching from its last cursor:
 
@@ -500,6 +518,13 @@ Story inspection explains execution using Work, decisions, Calls, Interactions, 
 Diagnostic inspection adds normalized model requests and responses plus validated Tool details.
 Model responses may include normalized input, output, and total token usage plus cost in
 currency-denominated micros. Inspection does not expose hidden model reasoning.
+
+For a principal-scoped operational projection, `app.audit.list()` reads committed Work,
+decision, authorization, guardrail, Attempt, Interaction, and Session evidence without payloads.
+Configure retention and safe-reason redaction in `createApp({ audit })`, then export JSON or an
+OTLP/HTTP JSON traces payload through an application sink. Retention is read-time projection
+policy: it never removes execution authority needed for restart. An unavailable collector rejects
+the explicit export call and leaves Work unchanged.
 
 Hosts may provide access policy for four decisions: who may start a definition, call a Tool, respond
 to an Interaction, and hand off Session ownership. Authorization and human approval are separate

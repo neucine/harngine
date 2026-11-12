@@ -325,11 +325,13 @@ export function agent<O extends Json, R extends Json>(
     effect: 'read',
     category: 'model',
     ...(guardrails.length ? { guardrails } : {}),
-    async invoke({ input, signal, progress }) {
+    async invoke({ input, signal, progress, emitModelItem }) {
       try {
         const generated = await configured.model.generate(input as unknown as ModelRequest, {
           signal,
-          emit: () => {},
+          emit: (item) => {
+            if (definition.model.capabilities.streaming) emitModelItem?.(item);
+          },
           ...(progress ? { progress } : {}),
         });
         const response = normalizedModelResponse(generated);
