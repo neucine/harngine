@@ -31,7 +31,7 @@ image or PDF input with an application resolver; Harngine verifies each selected
 and SHA-256 digest before provider I/O.
 
 ```ts
-import { agent, createApp, schema, tool, type ModelAdapter } from "harngine";
+import { agent, createApp, guardrail, schema, tool, type ModelAdapter } from "harngine";
 
 declare const model: ModelAdapter;
 const text = schema<string>({
@@ -47,12 +47,31 @@ const search = tool({
   effect: "read",
   execute: async (query) => `Found: ${query}`,
 });
+const residentPii = guardrail({
+  id: "example.redact-email",
+  revision: "rev_example_redact_email_v1",
+  stages: ["model-input"],
+  check({ value }) {
+    const redacted = JSON.stringify(value).replace(
+      /[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g,
+      "[redacted-email]",
+    );
+    return redacted === JSON.stringify(value)
+      ? { action: "allow" }
+      : {
+          action: "redact",
+          value: JSON.parse(redacted),
+          reason: { code: "PII_REDACTED", message: "Email redacted" },
+        };
+  },
+});
 const assistant = agent({
   id: "example.assistant",
   instructions: "Search when evidence is needed, then answer.",
   objective: text,
   model,
   tools: [search],
+  guardrails: [residentPii],
 });
 
 const app = createApp({
@@ -79,6 +98,20 @@ to wait for the current invocation instead.
 Harngine records Tool calls before execution, separates model choice from execution authority, and
 restores accepted Work from SQLite after process failure. Bun generates immutable definition
 revisions and drives development; installed framework code runs on Node.js.
+
+Guardrails are immutable policy attached to an Agent or Tool definition. Agent guardrails run
+around model input and output; Tool guardrails run before invocation and after a successful result.
+They return `allow`, `redact`, or `block`. Redacted values are validated against the boundary
+schema before use, failures and malformed results fail closed, and inspection records only the
+guardrail identity, action, stage, and safe reason. A blocked Tool input creates no Attempt or
+external effect. A blocked write result records `effect: "occurred"` and is never retried.
+
+The state-store contract provides atomic transactions, exclusive runtime ownership, ownership
+epoch fencing, idempotent receipts, and inspectable history. `createApp()` defaults to the
+`better-sqlite3` backend; pass
+`stateStore: { backend: "node-sqlite" }` to use Node's built-in SQLite implementation. Both run
+the same schema, migrations, and execution semantics, and `app.storage` exposes the active
+backend contract.
 
 Read the repository [README](https://github.com/neucine/harngine#readme) for Sessions, Workflows,
 access policy, context selection, UI watchers, and execution semantics.

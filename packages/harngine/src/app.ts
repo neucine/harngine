@@ -4,6 +4,8 @@ import type { Tool as PublicTool } from './tool.js';
 import type { Agent as PublicAgent } from './agent.js';
 import type { ModelContext, ModelRequest, ModelResponse, ModelUsage } from './model.js';
 import type { TelemetrySink } from './telemetry.js';
+import type { GuardrailStage } from './guardrail.js';
+import type { StateStoreConfiguration, StateStoreContract } from './state-store.js';
 
 export type Definition = PublicWorkflow<any, any> | PublicAgent<any, any>;
 export type RegisteredDefinition = Definition | PublicTool<any, any>;
@@ -160,6 +162,14 @@ export interface ModelProgressInspectionEntry extends InspectionEntryBase {
   readonly usage?: ModelUsage;
 }
 
+export interface GuardrailInspectionEntry extends InspectionEntryBase {
+  readonly type: 'guardrail';
+  readonly stage: GuardrailStage;
+  readonly guardrail: { readonly id: string; readonly revision: `rev_${string}` };
+  readonly action: 'allow' | 'redact' | 'block';
+  readonly reason?: { readonly code: string; readonly message: string };
+}
+
 export interface CallInspectionEntry extends InspectionEntryBase {
   readonly type: 'call';
   readonly callId: string;
@@ -218,6 +228,7 @@ export type InspectionEntry =
   | DecisionInspectionEntry
   | CallInspectionEntry
   | ModelProgressInspectionEntry
+  | GuardrailInspectionEntry
   | InteractionInspectionEntry
   | ChildInspectionEntry
   | WorkClosedInspectionEntry;
@@ -322,6 +333,7 @@ export interface App extends AppScope {
   readonly works: Works;
   readonly definitions: Definitions;
   readonly diagnostics: Diagnostics;
+  readonly storage: StateStoreContract;
   describe(definition: RegisteredDefinition): DefinitionDescription;
   forPrincipal(principal: string): AppScope;
   /**
@@ -368,6 +380,7 @@ export interface AgentDescription extends DefinitionDescriptionBase {
   readonly delegates: readonly ExecutableDefinitionReference[];
   readonly context: Json;
   readonly limits: Json;
+  readonly guardrails: readonly GuardrailDescription[];
 }
 
 export interface WorkflowDescription extends DefinitionDescriptionBase {
@@ -391,6 +404,13 @@ export interface ToolDescription extends DefinitionDescriptionBase {
   readonly reconcilable: boolean;
   readonly approval?: Json;
   readonly retry: Json;
+  readonly guardrails: readonly GuardrailDescription[];
+}
+
+export interface GuardrailDescription {
+  readonly id: string;
+  readonly revision: `rev_${string}`;
+  readonly stages: readonly GuardrailStage[];
 }
 
 export type DefinitionDescription = AgentDescription | WorkflowDescription | ToolDescription;
@@ -531,6 +551,7 @@ export interface AppOptions {
   readonly access?: AccessPolicy | { readonly allowAuthenticated: true };
   readonly limits?: ExecutionLimits;
   readonly telemetry?: TelemetrySink;
+  readonly stateStore?: StateStoreConfiguration;
 }
 
 export interface AccessPolicy {

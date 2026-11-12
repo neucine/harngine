@@ -3,13 +3,17 @@ import { retrievalTool, type Retriever, type RetrievedPassage } from '@harngine/
 import {
   agent,
   createApp,
+  guardrail,
   schema,
   tool,
   type App,
   type ContextItem,
+  type Guardrail,
+  type Json,
   type ModelAdapter,
   type ModelRequest,
   type Session,
+  type StateStoreConfiguration,
   type Work,
 } from 'harngine';
 
@@ -17,6 +21,8 @@ export type SupportRequest = {
   readonly request: string;
   readonly orderId: string;
   readonly amountCents: number;
+  readonly customerEmail?: string;
+  readonly customerPhone?: string;
 };
 
 export type Citation = {
@@ -47,12 +53,108 @@ export type BillingResolution = {
 
 export interface SupportDesk {
   readonly app: App;
+  readonly storage: App['storage'];
   readonly triage: ReturnType<typeof defineTriageAgent>;
   readonly billing: ReturnType<typeof defineBillingAgent>;
   readonly accountStatus: ReturnType<typeof defineAccountStatusTool>;
   readonly knowledge: ReturnType<typeof defineKnowledgeTool>;
   readonly refund: ReturnType<typeof defineRefundTool>;
 }
+
+function redactJson(
+  value: Json,
+  replace: (text: string) => string,
+): { readonly value: Json; readonly changed: boolean } {
+  if (typeof value === 'string') {
+    const redacted = replace(value);
+    return { value: redacted, changed: redacted !== value };
+  }
+  if (Array.isArray(value)) {
+    let changed = false;
+    const result = value.map((item) => {
+      const redacted = redactJson(item, replace);
+      changed ||= redacted.changed;
+      return redacted.value;
+    });
+    return { value: changed ? result : value, changed };
+  }
+  if (value && typeof value === 'object') {
+    let changed = false;
+    const result = Object.fromEntries(
+      Object.entries(value).map(([name, item]) => {
+        const redacted = redactJson(item, replace);
+        changed ||= redacted.changed;
+        return [name, redacted.value];
+      }),
+    ) as Json;
+    return { value: changed ? result : value, changed };
+  }
+  return { value, changed: false };
+}
+
+function redactingGuardrail(input: {
+  readonly id: string;
+  readonly revision: `rev_${string}`;
+  readonly stages: readonly ('model-input' | 'tool-output')[];
+  readonly replace: (text: string) => string;
+}): Guardrail {
+  return guardrail({
+    id: input.id,
+    revision: input.revision,
+    stages: input.stages,
+    check({ value }) {
+      const redacted = redactJson(value, input.replace);
+      return redacted.changed
+        ? {
+            action: 'redact',
+            value: redacted.value,
+            reason: {
+              code: 'SENSITIVE_DATA_REDACTED',
+              message: 'Sensitive support data was removed before crossing the model boundary',
+            },
+          }
+        : { action: 'allow' };
+    },
+  });
+}
+
+const customerPiiGuardrail = redactingGuardrail({
+  id: 'support.customer-pii',
+  revision: 'rev_support_customer_pii_v1',
+  stages: ['model-input'],
+  replace: (text) =>
+    text
+      .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[redacted-email]')
+      .replace(/\+?\d{1,3}[ -]\d{3}[ -]\d{3}[ -]\d{4}/g, '[redacted-phone]'),
+});
+
+const accountIdentifierGuardrail = redactingGuardrail({
+  id: 'support.account-identifier',
+  revision: 'rev_support_account_identifier_v1',
+  stages: ['tool-output'],
+  replace: (text) => text.replace(/\bacct-[A-Za-z0-9-]+\b/g, '[redacted-account]'),
+});
+
+const refundLimitGuardrail = guardrail({
+  id: 'support.refund-limit',
+  revision: 'rev_support_refund_limit_v1',
+  stages: ['tool-input'],
+  check({ value }) {
+    const amount =
+      value && typeof value === 'object' && !Array.isArray(value)
+        ? (value as { amountCents?: unknown }).amountCents
+        : undefined;
+    return typeof amount === 'number' && amount > 10_000
+      ? {
+          action: 'block',
+          reason: {
+            code: 'REFUND_LIMIT',
+            message: 'Refunds above $100 require a different supervised process',
+          },
+        }
+      : { action: 'allow' };
+  },
+});
 
 export interface RoutedSupportConversation {
   readonly triageSession: Session<SupportRequest, TriageDecision>;
@@ -73,6 +175,8 @@ const supportRequest = schema<SupportRequest>({
       request: { type: 'string', minLength: 1 },
       orderId: { type: 'string', minLength: 1 },
       amountCents: { type: 'integer', minimum: 1 },
+      customerEmail: { type: 'string', minLength: 3, maxLength: 320 },
+      customerPhone: { type: 'string', minLength: 7, maxLength: 32 },
     },
   },
 });
@@ -179,6 +283,7 @@ function defineAccountStatusTool(client: McpToolClient) {
     description: 'Read the account charge state through the selected MCP catalog.',
     effect: 'read',
     client,
+    guardrails: [accountIdentifierGuardrail],
   });
 }
 
@@ -191,7 +296,7 @@ function defineKnowledgeTool(retriever: Retriever) {
   });
 }
 
-function defineRefundTool() {
+function defineRefundTool(onRefund?: (input: { orderId: string; amountCents: number }) => void) {
   return tool({
     id: 'support.billing.refund',
     description: 'Refund one duplicate charge after operator approval.',
@@ -200,7 +305,9 @@ function defineRefundTool() {
     effect: 'write',
     capabilities: { idempotency: 'operation-key', reversibility: 'reversible' },
     approval: { approvers: ['local'], timeoutMs: 60_000 },
+    guardrails: [refundLimitGuardrail],
     execute(input) {
+      onRefund?.(input);
       return Object.freeze({
         refundId: `refund_${input.orderId}`,
         orderId: input.orderId,
@@ -229,6 +336,7 @@ function defineTriageAgent(
     publish: (decision) => decision,
     model,
     tools: [accountStatus, knowledge],
+    guardrails: [customerPiiGuardrail],
   });
 }
 
@@ -244,6 +352,7 @@ function defineBillingAgent(model: ModelAdapter, refund: ReturnType<typeof defin
     publish: (resolution) => resolution,
     model,
     tools: [refund],
+    guardrails: [customerPiiGuardrail],
   });
 }
 
@@ -275,6 +384,13 @@ export function supportDemoModel(): ModelAdapter {
       const account = successfulToolOutcome(request, 'support.account.status');
       const knowledge = successfulToolOutcome(request, 'support.knowledge.search');
       const refund = successfulToolOutcome(request, 'support.billing.refund');
+      const anyRefund = request.context.items.find(
+        (item) =>
+          item.type === 'tool_outcome' &&
+          item.call.tool.id === 'support.billing.refund' &&
+          item.outcome.status !== 'success',
+      );
+      if (anyRefund) throw new Error('Refund was blocked or failed');
 
       if (request.tools.some((definition) => definition.id === 'support.knowledge.search')) {
         if (!account)
@@ -373,6 +489,8 @@ export function createSupportDesk(options: {
   readonly model?: ModelAdapter;
   readonly retriever?: Retriever;
   readonly mcpClient?: McpToolClient;
+  readonly stateStore?: StateStoreConfiguration;
+  readonly onRefund?: (input: { orderId: string; amountCents: number }) => void;
 }): SupportDesk {
   const model = options.model ?? supportDemoModel();
   const retriever =
@@ -399,7 +517,7 @@ export function createSupportDesk(options: {
           content: [
             {
               type: 'text',
-              text: `Order ${orderId} has two settled charges.`,
+              text: `Account acct-demo-842 shows order ${orderId} has two settled charges.`,
             },
           ],
         };
@@ -407,11 +525,17 @@ export function createSupportDesk(options: {
     } satisfies McpToolClient);
   const accountStatus = defineAccountStatusTool(mcpClient);
   const knowledge = defineKnowledgeTool(retriever);
-  const refund = defineRefundTool();
+  const refund = defineRefundTool(options.onRefund);
   const triage = defineTriageAgent(model, accountStatus, knowledge);
   const billing = defineBillingAgent(model, refund);
+  const app = createApp({
+    directory: options.directory,
+    agents: [triage, billing],
+    ...(options.stateStore ? { stateStore: options.stateStore } : {}),
+  });
   return {
-    app: createApp({ directory: options.directory, agents: [triage, billing] }),
+    app,
+    storage: app.storage,
     triage,
     billing,
     accountStatus,

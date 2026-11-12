@@ -45,6 +45,7 @@ import { InspectionService, type RuntimeWorkRecord } from './inspection-service.
 import { WorkService, type Start } from './work-service.js';
 import { ChildWorkManager } from './child-work-manager.js';
 import type { TelemetrySink } from '../telemetry.js';
+import type { StateStoreConfiguration, StateStoreContract } from '../state-store.js';
 export type { RuntimeWorkRecord } from './inspection-service.js';
 export type { RuntimeAccessPolicy } from './policy-evaluator.js';
 export type { Start } from './work-service.js';
@@ -55,6 +56,7 @@ export interface RuntimeOptions {
   tools?: readonly (AnyTool | PublicTool<any, any>)[];
   access?: RuntimeAccessPolicy;
   telemetry?: TelemetrySink;
+  stateStore?: StateStoreConfiguration;
 }
 export interface Caller {
   principal: string;
@@ -99,6 +101,7 @@ export class Runtime {
   private readonly inspection: InspectionService;
   private readonly workService: WorkService;
   private readonly childWorkManager: ChildWorkManager;
+  readonly stateStore: StateStoreContract;
   /** Privileged, unstable storage inspection used only by the App diagnostics facade. */
   diagnosticRecords(workId: WorkId): readonly {
     table: string;
@@ -132,12 +135,27 @@ export class Runtime {
   ) {
     if (
       Object.keys(options).some(
-        (k) => !['directory', 'definitions', 'agents', 'tools', 'access', 'telemetry'].includes(k),
+        (k) =>
+          ![
+            'directory',
+            'definitions',
+            'agents',
+            'tools',
+            'access',
+            'telemetry',
+            'stateStore',
+          ].includes(k),
       )
     )
       throw new RuntimeError('UNSUPPORTED', 'Unsupported runtime options');
+    if (options.stateStore && Object.keys(options.stateStore).some((key) => key !== 'backend'))
+      throw new RuntimeError('UNSUPPORTED', 'Unsupported state store configuration');
+    const backend = options.stateStore?.backend ?? 'better-sqlite3';
+    if (!['better-sqlite3', 'node-sqlite'].includes(backend))
+      throw new RuntimeError('INVALID_CONFIGURATION', 'Unsupported state store backend');
     this.policy = new PolicyEvaluator(options.access);
-    this.store = new SqliteStore(options.directory, this.clock, options.telemetry);
+    this.store = new SqliteStore(options.directory, this.clock, options.telemetry, backend);
+    this.stateStore = this.store.contract;
     try {
       this.waitManager = new WaitManager(this.store, this.clock, this.policy);
       this.registry = new DefinitionRegistry(this.store, options);

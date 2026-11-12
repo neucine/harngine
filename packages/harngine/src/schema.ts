@@ -227,6 +227,7 @@ export function tool<I extends Json, O extends Json>(definition: Tool<I, O>): To
           'retry',
           'unknownEffect',
           'category',
+          'guardrails',
           'reconcile',
         ].includes(k),
     )

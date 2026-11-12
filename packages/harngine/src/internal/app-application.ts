@@ -376,6 +376,7 @@ class Scope implements AppScope {
 class Application extends Scope implements App {
   readonly definitions: Definitions;
   readonly diagnostics: Diagnostics;
+  readonly storage;
   private failure: unknown;
   private readonly supervision: Promise<void>;
   constructor(
@@ -386,6 +387,7 @@ class Application extends Scope implements App {
   ) {
     const state: { failure?: unknown } = {};
     super(runtime, caller, () => state.failure, agents, limits);
+    this.storage = runtime.stateStore;
     this.supervision = runtime.start().catch((error: unknown) => {
       state.failure = error;
       this.failure = error;
@@ -490,6 +492,7 @@ export function createApp(options: AppOptions): App {
     ...(options.tools ? { tools: options.tools } : {}),
     access: runtimeAccess(options),
     ...(options.telemetry ? { telemetry: options.telemetry } : {}),
+    ...(options.stateStore ? { stateStore: options.stateStore } : {}),
   });
   const agents = new Map(
     (options.agents ?? []).map((agent) => [`${agent.id}@${agent.revision}`, agent] as const),

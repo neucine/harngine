@@ -3,6 +3,7 @@ import { RuntimeError } from './internal/contracts.js';
 import type { Json, Schema } from './types.js';
 import { frozen, identity, tool as coreTool } from './schema.js';
 import { definitionRevision } from './build/manifest.js';
+import { guardrailIdentity, type Guardrail } from './guardrail.js';
 
 export interface ToolContext {
   readonly signal: AbortSignal;
@@ -58,6 +59,8 @@ export interface ToolDefinition<I extends Json, O extends Json> {
   readonly capabilities?: WriteToolCapabilities;
   readonly approval?: ApprovalPolicy;
   readonly retry?: { readonly maxAttempts: number };
+  /** Deterministic checks applied before invocation and before success is recorded. */
+  readonly guardrails?: readonly Guardrail[];
   readonly execute: (input: I, context: ToolContext) => O | Promise<O>;
   /** Read-only lookup used to determine the outcome of an uncertain write. */
   readonly reconcile?: (
@@ -76,6 +79,7 @@ export interface Tool<I extends Json = Json, O extends Json = Json> {
   readonly capabilities: ToolCapabilities;
   readonly approval?: ApprovalPolicy;
   readonly retry: { readonly maxAttempts: number };
+  readonly guardrails: readonly Guardrail[];
   readonly execute: (input: I, context: ToolContext) => O | Promise<O>;
   readonly reconcile?: (
     input: I,
@@ -121,6 +125,7 @@ export function tool<I extends Json, O extends Json>(definition: ToolDefinition<
           'capabilities',
           'approval',
           'retry',
+          'guardrails',
           'execute',
           'reconcile',
         ].includes(name),
@@ -134,6 +139,15 @@ export function tool<I extends Json, O extends Json>(definition: ToolDefinition<
     throw new RuntimeError('INVALID_POLICY', 'Tool retry maxAttempts must be a positive integer');
   if (definition.reconcile && definition.effect !== 'write')
     throw new RuntimeError('INVALID_DEFINITION', 'Only write Tools can reconcile effects');
+  const guardrails = definition.guardrails ?? [];
+  if (
+    new Set(guardrails.map((item) => `${item.id}\0${item.revision}`)).size !== guardrails.length ||
+    guardrails.some((item) => item.stages.some((stage) => !stage.startsWith('tool-')))
+  )
+    throw new RuntimeError(
+      'INVALID_DEFINITION',
+      'Tool guardrails must be unique and use Tool input/output stages',
+    );
   if (definition.capabilities && definition.effect !== 'write')
     throw new RuntimeError('INVALID_DEFINITION', 'Only write Tools declare write capabilities');
   if (
@@ -160,6 +174,7 @@ export function tool<I extends Json, O extends Json>(definition: ToolDefinition<
     capabilities,
     approval: definition.approval ?? null,
     retry,
+    guardrails: guardrails.map(guardrailIdentity),
     reconcilable: Boolean(definition.reconcile),
   });
   const artifactDigest = revision.slice(4);
@@ -173,6 +188,7 @@ export function tool<I extends Json, O extends Json>(definition: ToolDefinition<
     capabilities: frozen(capabilities),
     ...(definition.approval === undefined ? {} : { approval: frozen(definition.approval) }),
     retry: frozen(retry),
+    guardrails: Object.freeze([...guardrails]),
     execute: definition.execute,
     ...(definition.reconcile === undefined ? {} : { reconcile: definition.reconcile }),
   });
@@ -186,6 +202,7 @@ export function tool<I extends Json, O extends Json>(definition: ToolDefinition<
     effect: result.effect,
     capabilities: result.capabilities,
     retry: result.retry,
+    ...(result.guardrails.length ? { guardrails: result.guardrails } : {}),
     unknownEffect: 'wait',
     ...(result.approval === undefined ? {} : { approval: result.approval }),
     ...(result.reconcile

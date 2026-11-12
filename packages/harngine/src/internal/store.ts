@@ -1,10 +1,11 @@
-import Database from 'better-sqlite3';
 import { mkdirSync, realpathSync, lstatSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { entityId } from './id.js';
 import { RuntimeError, type Json } from './contracts.js';
 import { canonical, digest } from '../schema.js';
 import type { TelemetryEvent, TelemetrySink } from '../telemetry.js';
+import type { StateStoreBackend, StateStoreContract } from '../state-store.js';
+import { openStateDatabase, type StateDatabase } from './database.js';
 
 import { migrations } from './migrations.js';
 
@@ -56,15 +57,17 @@ export interface AuthorizationDecision {
   readonly recordedAt: number;
 }
 export class SqliteStore {
-  readonly db: Database.Database;
+  readonly db: StateDatabase;
   readonly epoch: number;
-  private readonly lock: Database.Database;
+  readonly contract: StateStoreContract;
+  private readonly lock: StateDatabase;
   private closed = false;
   private telemetryCursor = 0;
   constructor(
     directory: string,
     private readonly clock: () => number = Date.now,
     private readonly telemetry?: TelemetrySink,
+    backend: StateStoreBackend = 'better-sqlite3',
   ) {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     const path = realpathSync(directory);
@@ -84,7 +87,18 @@ export class SqliteStore {
       if (stat && (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1))
         throw new RuntimeError('INVALID_DIRECTORY', 'Aliased database files are unsupported');
     }
-    this.lock = new Database(join(path, 'owner.sqlite'), { timeout: 0 });
+    this.contract = Object.freeze({
+      engine: 'sqlite',
+      backend,
+      durability: 'full',
+      transactions: 'atomic',
+      ownership: 'exclusive',
+      ownershipFencing: true,
+      idempotentReceipts: true,
+      inspectableHistory: true,
+      schemaVersion: migrations.length,
+    });
+    this.lock = openStateDatabase(join(path, 'owner.sqlite'), backend);
     try {
       this.lock.pragma('journal_mode=DELETE');
       this.lock.exec('BEGIN EXCLUSIVE');
@@ -92,9 +106,9 @@ export class SqliteStore {
       this.lock.close();
       throw new RuntimeError('OWNER_BUSY', `Cannot acquire runtime ownership: ${String(error)}`);
     }
-    let db: Database.Database | undefined;
+    let db: StateDatabase | undefined;
     try {
-      db = new Database(join(path, 'state.sqlite'));
+      db = openStateDatabase(join(path, 'state.sqlite'), backend);
       this.db = db;
       db.pragma('foreign_keys=ON');
       db.pragma('journal_mode=WAL');

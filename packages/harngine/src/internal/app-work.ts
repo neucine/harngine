@@ -32,6 +32,7 @@ import type {
   EffectResolution,
   ExecutableDefinitionReference,
   ExecutionLimits,
+  GuardrailInspectionEntry,
   InputInspectionEntry,
   InspectionEntry,
   InspectionPage,
@@ -93,6 +94,7 @@ export function definitionDescription(record: RuntimeDefinitionRecord): Definiti
       reconcilable: manifest.reconcilable === true,
       ...(manifest.approval === undefined ? {} : { approval: manifest.approval }),
       retry: manifest.retry ?? {},
+      guardrails: guardrailDescriptions(manifest.guardrails),
     });
   const policy = (manifest.policy ?? {}) as Record<string, Json>;
   if (record.kind === 'workflow')
@@ -157,7 +159,26 @@ export function definitionDescription(record: RuntimeDefinitionRecord): Definiti
       toolExecutions: policy.maxToolExecutions ?? policy.maxAttempts ?? null,
       childWork: policy.maxChildWork ?? null,
     },
+    guardrails: guardrailDescriptions(manifest.guardrails),
   });
+}
+
+function guardrailDescriptions(value: Json | undefined) {
+  if (!Array.isArray(value)) return Object.freeze([]);
+  return Object.freeze(
+    value.map((entry) => {
+      const guardrail = entry as unknown as {
+        id: string;
+        revision: `rev_${string}`;
+        stages: readonly string[];
+      };
+      return Object.freeze({
+        id: guardrail.id,
+        revision: guardrail.revision,
+        stages: Object.freeze([...guardrail.stages]) as GuardrailInspectionEntry['stage'][],
+      });
+    }),
+  );
 }
 
 export function runtimeDefinition(
@@ -1015,6 +1036,45 @@ export class WorkHandle<O extends Json, R extends Json> implements Work<O, R> {
                 ? `${usage.inputTokens ?? 0} input · ${usage.outputTokens ?? 0} output tokens`
                 : 'Response received'),
         },
+      });
+    }
+    if (event.kind === 'guardrail.decided') {
+      const stage = body.stage;
+      const guardrail = body.guardrail;
+      const action = body.action;
+      const recordedReason =
+        body.reason && typeof body.reason === 'object' && !Array.isArray(body.reason)
+          ? (body.reason as { code?: unknown; message?: unknown })
+          : undefined;
+      if (
+        !['model-input', 'model-output', 'tool-input', 'tool-output'].includes(String(stage)) ||
+        !guardrail ||
+        typeof guardrail !== 'object' ||
+        Array.isArray(guardrail) ||
+        typeof guardrail.id !== 'string' ||
+        typeof guardrail.revision !== 'string' ||
+        !guardrail.revision.startsWith('rev_') ||
+        !['allow', 'redact', 'block'].includes(String(action))
+      )
+        return null;
+      const reason =
+        typeof recordedReason?.code === 'string' && typeof recordedReason.message === 'string'
+          ? { code: recordedReason.code, message: recordedReason.message }
+          : undefined;
+      return Object.freeze({
+        ...base,
+        type: 'guardrail',
+        presentation: {
+          title: `Guardrail ${String(action)}`,
+          summary: reason?.message ?? `${String(stage)} policy applied by ${String(guardrail.id)}`,
+        },
+        stage: stage as GuardrailInspectionEntry['stage'],
+        guardrail: {
+          id: guardrail.id as string,
+          revision: guardrail.revision as `rev_${string}`,
+        },
+        action: action as GuardrailInspectionEntry['action'],
+        ...(reason ? { reason } : {}),
       });
     }
     if (event.kind === 'work.accepted')

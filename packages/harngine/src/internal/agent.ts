@@ -14,6 +14,7 @@ import {
 } from './contracts.js';
 import { digest, frozen, identity, key, schema, workflow, tool, validate } from '../schema.js';
 import { exact } from './core.js';
+import type { Guardrail } from '../guardrail.js';
 
 export interface AgentDefinition<O extends Json, R extends Json = string, I extends Json = Json> {
   readonly id: string;
@@ -30,6 +31,7 @@ export interface AgentDefinition<O extends Json, R extends Json = string, I exte
   readonly policy: Agent<O, R, I>['policy'];
   readonly context?: { readonly maxEntries: number };
   readonly reply?: Agent<O, R, I>['reply'];
+  readonly guardrails?: readonly Guardrail[];
 }
 
 type State = {
@@ -111,11 +113,17 @@ function modelTool<O extends Json>(
       adapter: definition.model.artifactDigest,
       response: response.jsonSchema,
       tools: tools.map((tool) => [tool.id, tool.version, tool.artifactDigest]),
+      guardrails: (definition.guardrails ?? []).map((item) => [
+        item.id,
+        item.revision,
+        item.stages,
+      ]),
     }),
     description: 'Invoke the configured model using Harngine’s generated Agent response contract.',
     input,
     output: response,
     effect: 'read',
+    ...((definition.guardrails?.length ?? 0) > 0 ? { guardrails: definition.guardrails! } : {}),
     invoke: async ({ input, operationId, attemptId, signal }) => {
       const call = input as unknown as ModelCall;
       const outcome = await definition.model.invoke({
@@ -263,6 +271,7 @@ export function agent<O extends Json, R extends Json, I extends Json = Json>(
           'policy',
           'context',
           'reply',
+          'guardrails',
         ].includes(k),
     )
   )
@@ -286,6 +295,15 @@ export function agent<O extends Json, R extends Json, I extends Json = Json>(
   )
     throw new RuntimeError('INVALID_POLICY', 'Agent context maxEntries must be from 0 to 100');
   const tools = definition.tools ?? [];
+  const guardrails = definition.guardrails ?? [];
+  if (
+    new Set(guardrails.map((item) => `${item.id}\0${item.revision}`)).size !== guardrails.length ||
+    guardrails.some((item) => item.stages.some((stage) => !stage.startsWith('model-')))
+  )
+    throw new RuntimeError(
+      'INVALID_DEFINITION',
+      'Agent guardrails must be unique and use model input/output stages',
+    );
   if (new Set(tools.map((tool) => key(identity(tool)))).size !== tools.length)
     throw new RuntimeError('REGISTRATION_CONFLICT', 'Agent tools must be unique');
   if (tools.some((tool) => !tool.description?.trim()))

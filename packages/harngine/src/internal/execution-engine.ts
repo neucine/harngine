@@ -27,6 +27,13 @@ import type { OperationExecutor } from './operation-executor.js';
 import type { CallAccessPolicy } from './operation-executor.js';
 import type { RequestRow, SqliteStore, WorkRow } from './store.js';
 import { validateWaitBindings, workflowWaits } from './wait.js';
+import {
+  runGuardrails,
+  type GuardrailDecision,
+  type GuardrailReason,
+  type GuardrailRun,
+  type GuardrailStage,
+} from '../guardrail.js';
 
 export interface ExecutionEngineOptions {
   readonly store: SqliteStore;
@@ -191,6 +198,62 @@ export class ExecutionEngine {
         this.fail(row, reason(error));
         continue;
       }
+      let guardrailDecisions: readonly GuardrailDecision[] | undefined;
+      let blockedCallReason: Reason | undefined;
+      if (proposal.type === 'call') {
+        const selectedTool = this.options.registry.tool(proposal.call.tool);
+        if (selectedTool?.guardrails?.length) {
+          const stage: GuardrailStage =
+            selectedTool.category === 'model' ? 'model-input' : 'tool-input';
+          let checked: GuardrailRun;
+          try {
+            checked = await runGuardrails(selectedTool.guardrails, {
+              stage,
+              value: proposal.call.input,
+              subject: {
+                kind: selectedTool.category === 'model' ? 'agent' : 'tool',
+                id: selectedTool.id,
+                revision: selectedTool.version as `rev_${string}`,
+              },
+              signal: new AbortController().signal,
+            });
+          } catch (error) {
+            this.fail(row, reason(error));
+            continue;
+          }
+          guardrailDecisions = checked.decisions;
+          const blocked = [...checked.decisions]
+            .reverse()
+            .find((decision) => decision.action === 'block');
+          if (!checked.allowed) {
+            blockedCallReason = blocked?.reason ?? {
+              code: 'GUARDRAIL_BLOCKED',
+              message: 'Tool input was blocked by a guardrail',
+            };
+          } else {
+            try {
+              const effectiveInput = validate(selectedTool.input, checked.value);
+              proposal = {
+                ...proposal,
+                call: { ...proposal.call, input: effectiveInput },
+              };
+            } catch {
+              guardrailDecisions = invalidGuardrailDecision(
+                checked,
+                'GUARDRAIL_INVALID_INPUT',
+                'Guardrail redacted input does not satisfy the Tool input contract',
+              );
+              blockedCallReason = [...guardrailDecisions]
+                .reverse()
+                .find((decision) => decision.action === 'block')?.reason ?? {
+                code: 'GUARDRAIL_INVALID_INPUT',
+                message: 'Guardrail redacted input does not satisfy the Tool input contract',
+              };
+            }
+          }
+        }
+      }
+      if (!this.options.shouldContinue()) return;
       this.options.checkpoint('proposal');
       let childAuthorizations: ChildCallAuthorization[] | undefined;
       if (childCalls) {
@@ -235,6 +298,8 @@ export class ExecutionEngine {
           inputBoundary,
           ...(childCalls === undefined ? {} : { childCalls }),
           ...(childAuthorizations === undefined ? {} : { childAuthorizations }),
+          ...(guardrailDecisions === undefined ? {} : { guardrailDecisions }),
+          ...(blockedCallReason === undefined ? {} : { blockedCallReason }),
         });
       } catch (error) {
         this.fail(row, reason(error));
@@ -374,4 +439,21 @@ function prepareChild(
     mode: mode ?? 'sequential',
     state: validate(child.state, child.initial(frozen(objective))),
   };
+}
+
+function invalidGuardrailDecision(
+  run: GuardrailRun,
+  code: string,
+  message: string,
+): readonly GuardrailDecision[] {
+  const redacted = [...run.decisions].reverse().find((decision) => decision.action === 'redact');
+  if (!redacted) return run.decisions;
+  const blocked: GuardrailDecision = Object.freeze({
+    object: 'guardrail_decision',
+    stage: redacted.stage,
+    guardrail: redacted.guardrail,
+    action: 'block',
+    reason: Object.freeze({ code, message } satisfies GuardrailReason),
+  });
+  return Object.freeze([...run.decisions, blocked]);
 }

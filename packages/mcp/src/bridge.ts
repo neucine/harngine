@@ -4,7 +4,14 @@ import {
   type Transport,
 } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
-import { schema, tool, type Json, type Tool, type WriteToolCapabilities } from 'harngine';
+import {
+  schema,
+  tool,
+  type Guardrail,
+  type Json,
+  type Tool,
+  type WriteToolCapabilities,
+} from 'harngine';
 
 export { Client, StdioClientTransport, StreamableHTTPClientTransport };
 
@@ -29,6 +36,7 @@ export interface McpToolDefinition {
   inputSchema: Json;
   effect: 'read' | 'write';
   writeCapabilities?: WriteToolCapabilities;
+  guardrails?: readonly Guardrail[];
 }
 
 export type McpTransportFactory = () => Transport | Promise<Transport>;
@@ -122,6 +130,7 @@ export function mcpTool(definition: McpToolDefinition): Tool {
     ...(definition.effect === 'write' && definition.writeCapabilities
       ? { capabilities: definition.writeCapabilities }
       : {}),
+    ...(definition.guardrails ? { guardrails: definition.guardrails } : {}),
     async execute(input, context) {
       if (!input || typeof input !== 'object' || Array.isArray(input))
         return context.fail({

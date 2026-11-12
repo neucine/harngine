@@ -111,6 +111,15 @@ export class DefinitionRegistry {
           reconcilable: Boolean(executable.reconcile),
           ...(executable.retry ? { retry: executable.retry } : {}),
           ...(executable.approval ? { approval: executable.approval } : {}),
+          ...(executable.guardrails?.length
+            ? {
+                guardrails: executable.guardrails.map((item) => ({
+                  id: item.id,
+                  revision: item.revision,
+                  stages: item.stages,
+                })),
+              }
+            : {}),
         },
       });
     }
@@ -213,6 +222,11 @@ export class DefinitionRegistry {
             : identity(value.model as Agent['model']),
           ...('modelResponse' in value ? { modelResponse: value.modelResponse } : {}),
           tools: value.tools.map(toolIdentity),
+          guardrails: ('guardrails' in value ? value.guardrails : []).map((item) => ({
+            id: item.id,
+            revision: item.revision,
+            stages: item.stages,
+          })),
           ...(definition.children
             ? {
                 delegates: definition.children.map((child) => ({

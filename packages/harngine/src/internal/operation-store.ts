@@ -16,6 +16,7 @@ import {
 import { canonical } from '../schema.js';
 import { exact } from './core.js';
 import type { RequestRow, SqliteStore } from './store.js';
+import type { GuardrailDecision } from '../guardrail.js';
 
 export interface CallAuthorizationRecord {
   readonly principal: string;
@@ -41,6 +42,7 @@ export interface AttemptSettlement {
   readonly outcome: Outcome;
   readonly retryMaxAttempts: number;
   readonly approvalRequired: boolean;
+  readonly guardrailDecisions?: readonly GuardrailDecision[];
 }
 
 export interface ReconciliationAdmission {
@@ -62,11 +64,121 @@ export interface ReconciliationSettlement {
   readonly now: number;
 }
 
+export function recordGuardrailDecisions(
+  store: SqliteStore,
+  workId: string,
+  operationId: string,
+  decisions: readonly GuardrailDecision[],
+): void {
+  if (!decisions.length) return;
+  const prior = new Set(
+    (
+      store.db
+        .prepare("SELECT body FROM progress WHERE work_id=? AND kind='guardrail.decided'")
+        .all(workId) as { body: string }[]
+    ).map((row) => {
+      const body = JSON.parse(row.body) as {
+        operationId?: string;
+        stage?: string;
+        guardrail?: { id?: string; revision?: string };
+        action?: string;
+      };
+      return [
+        body.operationId,
+        body.stage,
+        body.guardrail?.id,
+        body.guardrail?.revision,
+        body.action,
+      ].join('\0');
+    }),
+  );
+  for (const decision of decisions) {
+    const identity = [
+      operationId,
+      decision.stage,
+      decision.guardrail.id,
+      decision.guardrail.revision,
+      decision.action,
+    ].join('\0');
+    if (prior.has(identity)) continue;
+    store.event(workId, 'guardrail.decided', {
+      operationId,
+      stage: decision.stage,
+      guardrail: decision.guardrail,
+      action: decision.action,
+      ...(decision.reason ? { reason: decision.reason } : {}),
+    } as unknown as Json);
+    prior.add(identity);
+  }
+}
+
 /** Semantic transactions for the external-effect boundary. */
 export class OperationStore {
   constructor(private readonly store: SqliteStore) {}
 
-  denyCall(workId: string, operationId: string, authorized: CallAuthorizationRecord): boolean {
+  hasInputGuardrailDecisions(workId: string, operationId: string, stage: string): boolean {
+    const rows = this.store.db
+      .prepare("SELECT body FROM progress WHERE work_id=? AND kind='guardrail.decided'")
+      .all(workId) as { body: string }[];
+    return rows.some((row) => {
+      const body = JSON.parse(row.body) as { operationId?: string; stage?: string };
+      return body.operationId === operationId && body.stage === stage;
+    });
+  }
+
+  recordInputGuardrails(input: {
+    readonly workId: string;
+    readonly operationId: string;
+    readonly decisions: readonly GuardrailDecision[];
+    readonly effectiveInput: Json;
+  }): boolean {
+    return this.store.write(() => {
+      const operation = this.operation(input.workId, input.operationId);
+      if (!operation || operation.status !== 'planned') return false;
+      recordGuardrailDecisions(this.store, input.workId, input.operationId, input.decisions);
+      if (input.decisions.some((decision) => decision.action === 'redact'))
+        this.store.db
+          .prepare('UPDATE requests SET input=? WHERE id=?')
+          .run(canonical(input.effectiveInput), input.operationId);
+      return true;
+    });
+  }
+
+  blockCall(input: {
+    readonly workId: string;
+    readonly operationId: string;
+    readonly decisions: readonly GuardrailDecision[];
+    readonly reason: { readonly code: string; readonly message: string };
+  }): boolean {
+    return this.store.write(() => {
+      const operation = this.operation(input.workId, input.operationId);
+      if (!operation || operation.status !== 'planned') return false;
+      const outcome: Outcome = {
+        status: 'failure',
+        effect: 'none',
+        reason: input.reason,
+      };
+      recordGuardrailDecisions(this.store, input.workId, input.operationId, input.decisions);
+      this.store.db
+        .prepare("UPDATE requests SET status='settled',outcome=? WHERE id=?")
+        .run(canonical(outcome), input.operationId);
+      this.store.db
+        .prepare("UPDATE work SET status='active',eligible=1 WHERE id=? AND status!='closed'")
+        .run(input.workId);
+      this.store.event(input.workId, 'attempt.blocked', {
+        operationId: input.operationId,
+        reason: input.reason,
+      });
+      return true;
+    });
+  }
+
+  denyCall(
+    workId: string,
+    operationId: string,
+    authorized: CallAuthorizationRecord,
+    guardrailDecisions: readonly GuardrailDecision[] = [],
+  ): boolean {
     const outcome: Outcome = {
       status: 'failure',
       effect: 'none',
@@ -98,6 +210,7 @@ export class OperationStore {
         subject: authorized.tool,
         value: authorized.input,
       });
+      recordGuardrailDecisions(this.store, workId, operationId, guardrailDecisions);
       return true;
     });
   }
@@ -224,6 +337,12 @@ export class OperationStore {
         attempt: attempt.sequence,
         outcome: input.outcome as unknown as Json,
       });
+      recordGuardrailDecisions(
+        this.store,
+        input.workId,
+        input.operationId,
+        input.guardrailDecisions ?? [],
+      );
       if (retryPlanned)
         this.store.event(input.workId, 'attempt.retry_planned', {
           operationId: input.operationId,

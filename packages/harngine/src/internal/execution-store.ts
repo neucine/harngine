@@ -15,6 +15,8 @@ import { entityId } from './id.js';
 import { disposeInputs, incorporateInputs, inputCount } from './input.js';
 import type { SqliteStore, WorkRow } from './store.js';
 import { clearWakeCondition, planWait, withdrawWaits, workflowWaits } from './wait.js';
+import { recordGuardrailDecisions } from './operation-store.js';
+import type { GuardrailDecision } from '../guardrail.js';
 
 export interface ExecutionStoreOptions {
   readonly registry: DefinitionRegistry;
@@ -46,6 +48,8 @@ export interface DecisionCommit {
   readonly inputBoundary: number;
   readonly childCalls?: readonly PreparedChild[];
   readonly childAuthorizations?: readonly ChildCallAuthorization[];
+  readonly guardrailDecisions?: readonly GuardrailDecision[];
+  readonly blockedCallReason?: Reason;
 }
 
 /** Semantic, fenced transactions used by the Work execution engine. */
@@ -96,7 +100,15 @@ export class ExecutionStore {
         );
       incorporateInputs(this.store, row.id, sequence, proposal.dispositions ?? []);
       clearWakeCondition(this.store, row.id);
-      if (proposal.type === 'call') this.commitCall(row, proposal, sequence, inputBoundary);
+      if (proposal.type === 'call')
+        this.commitCall(
+          row,
+          proposal,
+          sequence,
+          inputBoundary,
+          input.guardrailDecisions,
+          input.blockedCallReason,
+        );
       else if (proposal.type === 'child' || proposal.type === 'children')
         this.commitChildren(
           row,
@@ -133,11 +145,20 @@ export class ExecutionStore {
     proposal: Extract<Proposal, { type: 'call' }>,
     sequence: number,
     inputBoundary: number,
+    guardrailDecisions: readonly GuardrailDecision[] = [],
+    blockedCallReason?: Reason,
   ): void {
     const operationId = entityId('call');
+    const blockedOutcome = blockedCallReason
+      ? {
+          status: 'failure' as const,
+          effect: 'none' as const,
+          reason: blockedCallReason,
+        }
+      : undefined;
     this.store.db
       .prepare(
-        "INSERT INTO requests(id,work_id,decision_sequence,slot,tool,input,status,outcome,objective_revision,control_token) VALUES(?,?,?,?,?,?,'planned',NULL,?,?)",
+        'INSERT INTO requests(id,work_id,decision_sequence,slot,tool,input,status,outcome,objective_revision,control_token) VALUES(?,?,?,?,?,?,?,?,?,?)',
       )
       .run(
         operationId,
@@ -146,11 +167,15 @@ export class ExecutionStore {
         proposal.call.slot,
         canonical(identity(proposal.call.tool)),
         canonical(proposal.call.input),
+        blockedOutcome ? 'settled' : 'planned',
+        blockedOutcome ? canonical(blockedOutcome) : null,
         row.objective_revision,
         row.control_token,
       );
     this.store.db.prepare('INSERT INTO operations VALUES(?)').run(operationId);
-    const approval = this.options.registry.tool(proposal.call.tool)!.approval;
+    const approval = blockedOutcome
+      ? undefined
+      : this.options.registry.tool(proposal.call.tool)!.approval;
     if (approval)
       planApproval(
         this.store,
@@ -173,9 +198,10 @@ export class ExecutionStore {
       },
       sequence,
     );
-    const plannedApproval = approvals(this.store, row.id).find(
-      (candidate) => candidate.operationId === operationId,
-    );
+    recordGuardrailDecisions(this.store, row.id, operationId, guardrailDecisions);
+    const plannedApproval = blockedOutcome
+      ? undefined
+      : approvals(this.store, row.id).find((candidate) => candidate.operationId === operationId);
     if (plannedApproval)
       this.store.event(
         row.id,
@@ -192,6 +218,11 @@ export class ExecutionStore {
         },
         sequence,
       );
+    if (blockedOutcome)
+      this.store.event(row.id, 'attempt.blocked', {
+        operationId,
+        reason: blockedOutcome.reason,
+      });
   }
 
   private commitWait(

@@ -17,6 +17,13 @@ import { frozen, key, validate } from '../schema.js';
 import { checkedOutcome, checkedReconciliation, reason } from './core.js';
 import { OperationStore, type CallAuthorizationRecord } from './operation-store.js';
 import type { RequestRow, SqliteStore, WorkRow } from './store.js';
+import {
+  runGuardrails,
+  type GuardrailDecision,
+  type GuardrailReason,
+  type GuardrailRun,
+  type GuardrailStage,
+} from '../guardrail.js';
 
 export interface CallAccessPolicy {
   readonly revision: string;
@@ -199,11 +206,92 @@ export class OperationExecutor {
       return true;
     }
     const input = validate(selectedTool.input, JSON.parse(request.input));
+    const inputStage: GuardrailStage = modelTurn ? 'model-input' : 'tool-input';
+    const outputStage: GuardrailStage = modelTurn ? 'model-output' : 'tool-output';
+    const toolRevision = selectedTool.version as `rev_${string}`;
+    const controller = new AbortController();
+    this.invocations.set(row.id, controller);
+    const inputAlreadyChecked = this.transactions.hasInputGuardrailDecisions(
+      row.id,
+      request.id,
+      inputStage,
+    );
+    let inputGuardrails: GuardrailRun = Object.freeze({
+      allowed: true,
+      value: input,
+      decisions: Object.freeze([]),
+    });
+    if (!inputAlreadyChecked && selectedTool.guardrails?.length) {
+      try {
+        inputGuardrails = await runGuardrails(selectedTool.guardrails ?? [], {
+          stage: inputStage,
+          value: input,
+          subject: {
+            kind: modelTurn ? 'agent' : 'tool',
+            id: selectedTool.id,
+            revision: toolRevision,
+          },
+          signal: controller.signal,
+        });
+      } catch (error) {
+        this.invocations.delete(row.id);
+        if (controller.signal.aborted) return true;
+        throw error;
+      }
+    }
+    if (!inputGuardrails.allowed) {
+      this.invocations.delete(row.id);
+      this.transactions.blockCall({
+        workId: row.id,
+        operationId: request.id,
+        decisions: inputGuardrails.decisions,
+        reason: [...inputGuardrails.decisions]
+          .reverse()
+          .find((decision) => decision.action === 'block')?.reason ?? {
+          code: 'GUARDRAIL_BLOCKED',
+          message: 'Tool input was blocked by a guardrail',
+        },
+      });
+      return true;
+    }
+    let effectiveInput: Json;
+    try {
+      effectiveInput = validate(selectedTool.input, inputGuardrails.value);
+    } catch {
+      const decisions = invalidGuardrailDecision(
+        inputGuardrails,
+        'GUARDRAIL_INVALID_INPUT',
+        'Guardrail redacted input does not satisfy the Tool input contract',
+      );
+      this.invocations.delete(row.id);
+      this.transactions.blockCall({
+        workId: row.id,
+        operationId: request.id,
+        decisions,
+        reason: [...decisions].reverse().find((decision) => decision.action === 'block')
+          ?.reason ?? {
+          code: 'GUARDRAIL_INVALID_INPUT',
+          message: 'Guardrail redacted input does not satisfy the Tool input contract',
+        },
+      });
+      return true;
+    }
+    if (
+      !this.transactions.recordInputGuardrails({
+        workId: row.id,
+        operationId: request.id,
+        decisions: inputGuardrails.decisions,
+        effectiveInput,
+      })
+    ) {
+      this.invocations.delete(row.id);
+      return true;
+    }
     const authorization: CallAuthorizationRecord = {
       principal: row.principal,
       policyRevision: this.options.access.revision,
       tool: JSON.parse(request.tool) as Identity & Json,
-      input,
+      input: effectiveInput,
     };
     const access = this.options.access.canCall({
       principal: row.principal,
@@ -214,12 +302,16 @@ export class OperationExecutor {
         version: authorization.tool.version,
       },
       tool: authorization.tool,
-      input,
+      input: effectiveInput,
     });
     const authorized = typeof access === 'boolean' ? access : await access;
-    if (!this.options.shouldContinue()) return true;
+    if (!this.options.shouldContinue()) {
+      this.invocations.delete(row.id);
+      return true;
+    }
     if (!authorized) {
-      this.transactions.denyCall(row.id, request.id, authorization);
+      this.invocations.delete(row.id);
+      this.transactions.denyCall(row.id, request.id, authorization, inputGuardrails.decisions);
       return true;
     }
 
@@ -234,18 +326,20 @@ export class OperationExecutor {
       authorized: authorization,
       now: this.options.clock(),
     });
-    if (!admission.admitted) return true;
+    if (!admission.admitted) {
+      this.invocations.delete(row.id);
+      return true;
+    }
 
-    const controller = new AbortController();
-    this.invocations.set(row.id, controller);
     this.options.checkpoint('admission');
     let outcome: Outcome;
+    let outputGuardrails: readonly GuardrailDecision[] = Object.freeze([]);
     try {
       outcome = checkedOutcome(
         selectedTool,
         await selectedTool.invoke(
           Object.freeze({
-            input: frozen(input),
+            input: frozen(effectiveInput),
             operationId: request.id,
             attemptId,
             signal: controller.signal,
@@ -322,6 +416,78 @@ export class OperationExecutor {
           }),
         ),
       );
+      if (outcome.status === 'success' && selectedTool.guardrails?.length) {
+        let guardrails: GuardrailRun;
+        try {
+          guardrails = await runGuardrails(selectedTool.guardrails, {
+            stage: outputStage,
+            value: outcome.value,
+            subject: {
+              kind: modelTurn ? 'agent' : 'tool',
+              id: selectedTool.id,
+              revision: toolRevision,
+            },
+            signal: controller.signal,
+          });
+        } catch (error) {
+          if (!controller.signal.aborted) throw error;
+          guardrails = {
+            allowed: false,
+            value: outcome.value,
+            decisions: Object.freeze([
+              Object.freeze({
+                object: 'guardrail_decision',
+                stage: outputStage,
+                guardrail: {
+                  id: selectedTool.id,
+                  revision: toolRevision,
+                },
+                action: 'block',
+                reason: {
+                  code: 'GUARDRAIL_INTERRUPTED',
+                  message: 'Guardrail evaluation was interrupted after invocation',
+                },
+              }),
+            ]),
+          };
+        }
+        outputGuardrails = guardrails.decisions;
+        if (!guardrails.allowed) {
+          outcome = {
+            status: 'failure',
+            effect: selectedTool.effect === 'read' ? 'none' : 'occurred',
+            reason: [...guardrails.decisions]
+              .reverse()
+              .find((decision) => decision.action === 'block')?.reason ?? {
+              code: 'GUARDRAIL_BLOCKED',
+              message: 'Tool output was blocked by a guardrail',
+            },
+          };
+        } else {
+          try {
+            outcome = {
+              status: 'success',
+              value: validate(selectedTool.output, guardrails.value),
+            };
+          } catch {
+            outputGuardrails = invalidGuardrailDecision(
+              guardrails,
+              'GUARDRAIL_INVALID_OUTPUT',
+              'Guardrail redacted output does not satisfy the Tool output contract',
+            );
+            outcome = {
+              status: 'failure',
+              effect: selectedTool.effect === 'read' ? 'none' : 'occurred',
+              reason: [...outputGuardrails]
+                .reverse()
+                .find((decision) => decision.action === 'block')?.reason ?? {
+                code: 'GUARDRAIL_INVALID_OUTPUT',
+                message: 'Guardrail redacted output does not satisfy the Tool output contract',
+              },
+            };
+          }
+        }
+      }
     } catch (error) {
       outcome = {
         status: 'unknown',
@@ -336,6 +502,7 @@ export class OperationExecutor {
       outcome,
       retryMaxAttempts: selectedTool.retry?.maxAttempts ?? 1,
       approvalRequired: Boolean(selectedTool.approval),
+      guardrailDecisions: outputGuardrails,
     });
     this.options.checkpoint('outcome');
     if (outcome.status === 'unknown' && selectedTool.unknownEffect === 'fail')
@@ -345,4 +512,21 @@ export class OperationExecutor {
       });
     return true;
   }
+}
+
+function invalidGuardrailDecision(
+  run: GuardrailRun,
+  code: string,
+  message: string,
+): readonly GuardrailDecision[] {
+  const redacted = [...run.decisions].reverse().find((decision) => decision.action === 'redact');
+  if (!redacted) return run.decisions;
+  const blocked: GuardrailDecision = Object.freeze({
+    object: 'guardrail_decision',
+    stage: redacted.stage,
+    guardrail: redacted.guardrail,
+    action: 'block',
+    reason: Object.freeze({ code, message } satisfies GuardrailReason),
+  });
+  return Object.freeze([...run.decisions, blocked]);
 }

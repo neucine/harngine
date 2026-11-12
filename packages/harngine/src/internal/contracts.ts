@@ -1,4 +1,5 @@
 import type { Json, Schema, SessionId, WorkId } from '../types.js';
+import type { Guardrail } from '../guardrail.js';
 
 export type { Json, Schema, SessionId, WorkId } from '../types.js';
 declare const brand: unique symbol;
@@ -64,6 +65,8 @@ export interface Tool<I extends Json = Json, O extends Json = Json> extends Iden
   readonly unknownEffect?: 'wait' | 'fail';
   /** Internal admission category used by layered execution limits. */
   readonly category?: 'model';
+  /** Split by the operation executor around invocation so blocked input creates no Attempt. */
+  readonly guardrails?: readonly Guardrail[];
   readonly invoke: (
     call: Readonly<{
       input: I;

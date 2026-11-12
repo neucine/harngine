@@ -21,6 +21,7 @@ import { toolIdentity } from './tool.js';
 import type { Workflow as PublicWorkflow } from './workflow.js';
 import { definitionRevision } from './build/manifest.js';
 import { ContextEngine } from './internal/context-engine.js';
+import { guardrailIdentity, type Guardrail } from './guardrail.js';
 
 type AgentTool<I extends Json = Json, O extends Json = Json> = CoreTool<I, O> | PublicTool<I, O>;
 export type AgentTarget<O extends Json = Json, R extends Json = Json> =
@@ -47,6 +48,7 @@ export interface AgentDefinition<O extends Json, R extends Json = string> {
     readonly childWork?: number;
   };
   readonly context?: ContextConfiguration;
+  readonly guardrails?: readonly Guardrail[];
   readonly publish?: false | ((result: R) => Json);
 }
 
@@ -66,6 +68,7 @@ export interface Agent<O extends Json = Json, R extends Json = Json> {
   };
   readonly context: Required<Pick<ContextConfiguration, 'reserveForOutput' | 'maxInputTokens'>> &
     Pick<ContextConfiguration, 'session' | 'policy'>;
+  readonly guardrails: readonly Guardrail[];
   readonly publish: false | ((result: R) => Json);
   readonly __objective?: O;
   readonly __result?: R;
@@ -189,6 +192,15 @@ export function agent<O extends Json, R extends Json>(
     );
   if (new Set(delegates.map((delegate) => delegate.target.id)).size !== delegates.length)
     throw new RuntimeError('REGISTRATION_CONFLICT', 'Agent delegates must be unique');
+  const guardrails = definition.guardrails ?? [];
+  if (
+    new Set(guardrails.map((item) => `${item.id}\0${item.revision}`)).size !== guardrails.length ||
+    guardrails.some((item) => item.stages.some((stage) => !stage.startsWith('model-')))
+  )
+    throw new RuntimeError(
+      'INVALID_DEFINITION',
+      'Agent guardrails must be unique and use model input/output stages',
+    );
   const callableIds = [
     ...tools.map((selected) => selected.id),
     ...delegates.map((selected) => selected.target.id),
@@ -271,6 +283,7 @@ export function agent<O extends Json, R extends Json>(
     result: definition.result?.jsonSchema ?? { type: 'string' },
     model: { id: definition.model.id, artifactDigest: modelArtifact },
     tools: tools.map(toolIdentity),
+    guardrails: guardrails.map(guardrailIdentity),
     delegates: delegates.map((delegate) => ({
       target: { id: delegate.target.id, version: delegate.target.revision },
       description: delegate.description,
@@ -311,6 +324,7 @@ export function agent<O extends Json, R extends Json>(
     output: modelOutput,
     effect: 'read',
     category: 'model',
+    ...(guardrails.length ? { guardrails } : {}),
     async invoke({ input, signal, progress }) {
       try {
         const generated = await configured.model.generate(input as unknown as ModelRequest, {
@@ -348,6 +362,7 @@ export function agent<O extends Json, R extends Json>(
     delegates: Object.freeze([...delegates]),
     limits: Object.freeze(limits),
     context: Object.freeze(context),
+    guardrails: Object.freeze([...guardrails]),
     publish:
       definition.publish === false ? false : (definition.publish ?? ((value: R) => value as Json)),
   });

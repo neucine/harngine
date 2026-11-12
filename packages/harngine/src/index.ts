@@ -87,6 +87,26 @@ export type {
 } from './workflow.js';
 export { agent } from './agent.js';
 export {
+  guardrail,
+  guardrailIdentity,
+  guardrailsForStage,
+  runGuardrails,
+} from './guardrail.js';
+export type {
+  Guardrail,
+  GuardrailDecision,
+  GuardrailReason,
+  GuardrailResult,
+  GuardrailRun,
+  GuardrailStage,
+  GuardrailSubject,
+} from './guardrail.js';
+export type {
+  StateStoreBackend,
+  StateStoreConfiguration,
+  StateStoreContract,
+} from './state-store.js';
+export {
   modelEnvelopeInstructions,
   modelOutputSchema,
   modelResponseContract,

@@ -50,6 +50,7 @@ export interface McpCatalogSelection {
   readonly effect: 'read' | 'write';
   readonly description?: string;
   readonly writeCapabilities?: McpToolDefinition['writeCapabilities'];
+  readonly guardrails?: McpToolDefinition['guardrails'];
 }
 
 export interface McpDiscoveryOptions {
@@ -283,5 +284,6 @@ export function mcpToolFromCatalog(catalog: McpToolCatalog, selection: McpCatalo
     effect: selection.effect,
     client: selection.client,
     ...(selection.writeCapabilities ? { writeCapabilities: selection.writeCapabilities } : {}),
+    ...(selection.guardrails ? { guardrails: selection.guardrails } : {}),
   });
 }
