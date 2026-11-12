@@ -8,6 +8,40 @@ import {
   waitForApproval,
 } from './app.js';
 
+function demoPdf(lines: readonly string[]): Uint8Array {
+  const escape = (text: string) =>
+    text.replaceAll('\\', '\\\\').replaceAll('(', '\\(').replaceAll(')', '\\)');
+  const commands = [
+    'BT',
+    '/F1 12 Tf',
+    '72 740 Td',
+    '16 TL',
+    ...lines.flatMap((line, index) => [
+      `(${escape(line)}) Tj`,
+      ...(index === lines.length - 1 ? [] : ['T*']),
+    ]),
+    'ET',
+  ].join('\n');
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Length ${Buffer.byteLength(commands, 'utf8')} >>\nstream\n${commands}\nendstream`,
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets: number[] = [];
+  for (const [index, body] of objects.entries()) {
+    offsets.push(Buffer.byteLength(pdf, 'utf8'));
+    pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
+  }
+  const xrefOffset = Buffer.byteLength(pdf, 'utf8');
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  pdf += offsets.map((offset) => `${String(offset).padStart(10, '0')} 00000 n \n`).join('');
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  return new TextEncoder().encode(pdf);
+}
+
 const root = realpathSync(mkdtempSync(join(tmpdir(), 'harngine-diligence-')));
 const library = new DocumentLibrary();
 const agreement = library.add(
@@ -15,10 +49,15 @@ const agreement = library.add(
   'The initial term ends on 31 March 2027. Renewal requires written notice 60 days before expiry.\n\nEither party may terminate for material breach after 30 days without cure.',
   'text/markdown',
 );
-const amendment = library.add(
-  'renewal-amendment.md',
+const amendment = library.addBinary(
+  'renewal-amendment.pdf',
+  demoPdf([
+    'Amendment 2 replaces the renewal notice period with 90 days.',
+    'The termination-for-breach clause is unchanged.',
+    'The amendment was signed on 14 May 2026.',
+  ]),
+  'application/pdf',
   'Amendment 2 replaces the renewal notice period with 90 days. The termination-for-breach clause is unchanged.\n\nThe amendment was signed on 14 May 2026.',
-  'text/markdown',
 );
 const desk = createDueDiligenceDesk({
   directory: join(root, 'harngine'),

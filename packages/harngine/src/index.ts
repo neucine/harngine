@@ -95,6 +95,15 @@ export {
 export type { Agent, AgentDefinition } from './agent.js';
 export { artifactReference, artifactReferences } from './artifact.js';
 export type { ArtifactReference, ArtifactReferenceInput } from './artifact.js';
+export {
+  DEFAULT_MODEL_ARTIFACT_LIMITS,
+  resolveModelArtifacts,
+} from './model-artifacts.js';
+export type {
+  ArtifactResolver,
+  ResolvedModelArtifact,
+  ResolveModelArtifactsOptions,
+} from './model-artifacts.js';
 export type {
   ContextCandidate,
   ContextConfiguration,
@@ -105,6 +114,7 @@ export type {
   ModelCapabilities,
   ModelContext,
   ModelFinishReason,
+  ModelInputModality,
   ModelItem,
   ModelProgress,
   ModelRequest,

@@ -26,7 +26,9 @@ evidence remains available through Work inspection. The optional `@harngine/eval
 turns that evidence into bounded benchmarks and usage metrics without adding an execution path.
 Large attachments and generated outputs use validated, content-addressed `ArtifactReference`
 records. The selected model turn receives these references through `ModelContext.artifacts`; the
-application retains and authorizes access to the bytes.
+application retains and authorizes access to the bytes. A provider adapter can opt into native
+image or PDF input with an application resolver; Harngine verifies each selected reference's size
+and SHA-256 digest before provider I/O.
 
 ```ts
 import { agent, createApp, schema, tool, type ModelAdapter } from "harngine";

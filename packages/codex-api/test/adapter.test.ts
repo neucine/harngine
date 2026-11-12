@@ -1,6 +1,7 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { createOpenAIResponsesAdapter } from '../src/index.js';
-import type { ModelRequest } from 'harngine';
+import { artifactReference, type ModelRequest } from 'harngine';
 import {
   describeModelAdapterConformance,
   type AdapterConformanceFactory,
@@ -27,6 +28,29 @@ function stream(parts: string[]) {
       controller.close();
     },
   });
+}
+
+function artifact(name: string, mediaType: string, bytes: Uint8Array) {
+  return artifactReference({
+    id: `attachment:${name}`,
+    name,
+    mediaType,
+    byteLength: bytes.byteLength,
+    digest: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+  });
+}
+
+function completedResponse() {
+  const output = JSON.stringify({
+    items: [{ type: 'text', text: 'Done' }],
+    finishReason: 'stop',
+  });
+  return new Response(
+    stream([
+      `data: ${JSON.stringify({ type: 'response.completed', response: { output: [{ content: [{ type: 'output_text', text: output }] }] } })}\n\n`,
+    ]),
+    { status: 200 },
+  );
 }
 
 const conformance: AdapterConformanceFactory = (reply, options) => {
@@ -77,6 +101,110 @@ const conformance: AdapterConformanceFactory = (reply, options) => {
 describeModelAdapterConformance('OpenAI Responses adapter', conformance);
 
 describe('Codex API adapter', () => {
+  it('encodes verified image and PDF references as native Responses input parts', async () => {
+    const imageBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
+    const pdfBytes = new TextEncoder().encode('%PDF-1.7\nfixture');
+    const image = artifact('diagram.png', 'image/png', imageBytes);
+    const pdf = artifact('agreement.pdf', 'application/pdf', pdfBytes);
+    const multimodalRequest: ModelRequest = {
+      ...request,
+      context: { ...request.context, artifacts: [image, pdf] },
+    };
+    const resolved: string[] = [];
+    let body: any;
+    const fetcher = async (_url: string | URL | Request, init?: RequestInit) => {
+      body = JSON.parse(String(init?.body));
+      return completedResponse();
+    };
+    const adapter = createOpenAIResponsesAdapter({
+      accessToken: 'magpie',
+      model: 'test-model',
+      fetch: fetcher as typeof fetch,
+      async resolveArtifact(reference) {
+        resolved.push(reference.id);
+        return reference.id === image.id ? imageBytes : pdfBytes;
+      },
+    });
+
+    await adapter.generate(multimodalRequest, {
+      signal: new AbortController().signal,
+      emit() {},
+    });
+
+    expect(resolved).toEqual([image.id, pdf.id]);
+    expect(adapter.capabilities.inputModalities).toEqual(['image', 'document']);
+    expect(body.input[0].content).toEqual([
+      { type: 'input_text', text: JSON.stringify(multimodalRequest) },
+      {
+        type: 'input_image',
+        image_url: `data:image/png;base64,${Buffer.from(imageBytes).toString('base64')}`,
+      },
+      {
+        type: 'input_file',
+        filename: 'agreement.pdf',
+        file_data: `data:application/pdf;base64,${Buffer.from(pdfBytes).toString('base64')}`,
+        detail: 'high',
+      },
+    ]);
+  });
+
+  it('keeps metadata-only artifacts when native resolution is not configured', () => {
+    const adapter = createOpenAIResponsesAdapter({
+      accessToken: 'magpie',
+      model: 'test-model',
+      fetch: (async () => completedResponse()) as typeof fetch,
+    });
+    expect(adapter.capabilities).not.toHaveProperty('inputModalities');
+  });
+
+  it('verifies Artifact bytes before starting provider I/O', async () => {
+    const expected = Uint8Array.from([1, 2, 3]);
+    const image = artifact('wrong.png', 'image/png', expected);
+    let fetches = 0;
+    const adapter = createOpenAIResponsesAdapter({
+      accessToken: 'magpie',
+      fetch: (async () => {
+        fetches++;
+        return completedResponse();
+      }) as typeof fetch,
+      resolveArtifact: async () => Uint8Array.from([1, 2, 4]),
+    });
+    await expect(
+      adapter.generate(
+        { ...request, context: { ...request.context, artifacts: [image] } },
+        { signal: new AbortController().signal, emit() {} },
+      ),
+    ).rejects.toThrow('failed SHA-256 content verification');
+    expect(fetches).toBe(0);
+  });
+
+  it('rejects excessive native input before model discovery or provider I/O', async () => {
+    const first = artifact('first.png', 'image/png', Uint8Array.from([1, 2]));
+    const second = artifact('second.webp', 'image/webp', Uint8Array.from([3, 4]));
+    let fetches = 0;
+    let resolutions = 0;
+    const adapter = createOpenAIResponsesAdapter({
+      accessToken: 'magpie',
+      maxTotalArtifactBytes: 3,
+      fetch: (async () => {
+        fetches++;
+        return completedResponse();
+      }) as typeof fetch,
+      async resolveArtifact(reference) {
+        resolutions++;
+        return reference.id === first.id ? Uint8Array.from([1, 2]) : Uint8Array.from([3, 4]);
+      },
+    });
+    await expect(
+      adapter.generate(
+        { ...request, context: { ...request.context, artifacts: [first, second] } },
+        { signal: new AbortController().signal, emit() {} },
+      ),
+    ).rejects.toThrow('3-byte total maximum');
+    expect(resolutions).toBe(0);
+    expect(fetches).toBe(0);
+  });
+
   it('uses bearer auth and accepts only a completed SSE response', async () => {
     const calls: { url: string; init?: RequestInit }[] = [];
     const fetcher = async (url: string | URL | Request, init?: RequestInit): Promise<Response> => {
@@ -118,6 +246,7 @@ describe('Codex API adapter', () => {
     expect(calls[0]?.init?.headers).toEqual({ Authorization: 'Bearer fixture-credential' });
     const body = JSON.parse(String(calls[1]?.init?.body));
     expect(body).toMatchObject({ model: 'test-model', store: false, stream: true });
+    expect(body.input[0].content).toBe(JSON.stringify(request));
     expect(body.text.format.type).toBe('json_schema');
   });
   it('ignores commentary output and parses only the final answer item', async () => {

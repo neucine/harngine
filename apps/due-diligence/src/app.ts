@@ -35,6 +35,7 @@ export type DueDiligenceAnswer = {
 
 type Document = {
   readonly artifact: ArtifactReference;
+  readonly bytes: Uint8Array;
   readonly text: string;
 };
 
@@ -42,35 +43,63 @@ type PublishReceipt = {
   readonly report: ArtifactReference;
 };
 
-const digestToken = (text: string) =>
-  `sha256:${createHash('sha256').update(Buffer.from(text, 'utf8')).digest('hex')}` as const;
+const digestBytes = (bytes: Uint8Array) =>
+  `sha256:${createHash('sha256').update(bytes).digest('hex')}` as const;
+const digestToken = (text: string) => digestBytes(Buffer.from(text, 'utf8'));
 
-/** Application-owned immutable text storage. Harngine records only the references. */
+/** Application-owned immutable content storage. Harngine records only the references. */
 export class DocumentLibrary implements Retriever {
   private readonly documents = new Map<string, Document>();
 
   add(name: string, text: string, mediaType = 'text/plain'): ArtifactReference {
-    const digest = digestToken(text);
+    return this.addBinary(name, Buffer.from(text, 'utf8'), mediaType, text);
+  }
+
+  addBinary(
+    name: string,
+    content: Uint8Array,
+    mediaType: string,
+    extractedText = '',
+  ): ArtifactReference {
+    const bytes = Uint8Array.from(content);
     const artifact = artifactReference({
       id: `attachment:${name}`,
       name,
       mediaType,
-      byteLength: Buffer.byteLength(text, 'utf8'),
-      digest,
+      byteLength: bytes.byteLength,
+      digest: digestBytes(bytes),
     });
-    this.documents.set(`${artifact.id}\0${artifact.digest}`, { artifact, text });
+    this.documents.set(`${artifact.id}\0${artifact.digest}`, {
+      artifact,
+      bytes,
+      text: extractedText,
+    });
     return artifact;
   }
 
   read(artifact: ArtifactReference): string {
+    return this.verify(artifact).text;
+  }
+
+  verify(artifact: ArtifactReference): Document {
     const document = this.documents.get(`${artifact.id}\0${artifact.digest}`);
     if (!document) throw new Error(`Artifact ${artifact.id} is unavailable at ${artifact.digest}`);
     if (
-      digestToken(document.text) !== artifact.digest ||
-      Buffer.byteLength(document.text, 'utf8') !== artifact.byteLength
+      digestBytes(document.bytes) !== artifact.digest ||
+      document.bytes.byteLength !== artifact.byteLength
     )
       throw new Error(`Artifact ${artifact.id} failed content verification`);
-    return document.text;
+    return document;
+  }
+
+  async resolve(
+    artifact: ArtifactReference,
+    options: { readonly signal: AbortSignal },
+  ): Promise<Uint8Array> {
+    options.signal.throwIfAborted();
+    const document = this.verify(artifact);
+    options.signal.throwIfAborted();
+    return Uint8Array.from(document.bytes);
   }
 
   async search(
@@ -371,7 +400,7 @@ export async function runDueDiligence(
   desk: DueDiligenceDesk,
   request: DueDiligenceRequest,
 ): Promise<Work<DueDiligenceRequest, DueDiligenceAnswer>> {
-  for (const attachment of request.attachments) desk.library.read(attachment);
+  for (const attachment of request.attachments) desk.library.verify(attachment);
   return desk.app.start(desk.reviewer, request);
 }
 

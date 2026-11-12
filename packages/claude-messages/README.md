@@ -13,6 +13,32 @@ const model = createClaudeMessagesAdapter({
 });
 ```
 
+Provider-native image and PDF input is opt-in because a compatible router may target a model
+without vision or document support:
+
+```ts
+const model = createClaudeMessagesAdapter({
+  accessToken: "magpie",
+  baseUrl: "http://127.0.0.1:3425/v1",
+  model: "vision-capable-model",
+  async resolveArtifact(reference, { signal }) {
+    return applicationStorage.readVerified(reference, { signal });
+  },
+});
+```
+
+When `resolveArtifact` is configured, the adapter resolves every reference already selected into
+`ModelContext.artifacts`, verifies its byte length and SHA-256 digest, and converts GIF, JPEG, PNG
+and WebP references into Messages `image` blocks and `application/pdf` references into `document`
+blocks. The complete `ModelRequest` remains in the user message as JSON text. Resolution failure
+occurs before the `/messages` request starts.
+
+The shared resolver defaults to at most 8 Artifacts, 20 MiB per Artifact and 20 MiB of raw bytes
+per model call. The raw bound leaves room for base64 expansion and request framing below the
+Messages 32 MB request limit. Override `maxArtifacts`, `maxArtifactBytes` or
+`maxTotalArtifactBytes` only after reviewing the router and upstream model limits. Without
+`resolveArtifact`, no native input capability is advertised and references remain metadata only.
+
 The adapter sends `POST /messages` with `x-api-key` and `anthropic-version` headers. It requests a
 Harngine structured response envelope, rejects truncated or incomplete messages, and normalizes
 token usage. A model ID is required. Harngine executes accepted Tool proposals; the adapter does

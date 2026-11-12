@@ -195,7 +195,8 @@ reconciliation still handles a write whose remote outcome remains uncertain.
 approvals, effects, recovery, and provenance; an adapter translates one provider protocol into
 Harngine's structured model request and response. Optional adapters can therefore target the
 OpenAI Responses or Claude Messages compatibility APIs without coupling the core runtime or
-application Agent to one vendor SDK.
+application Agent to one vendor SDK. Adapters may also advertise `inputModalities` and opt into
+provider-native Artifact transport through an application-owned `resolveArtifact` callback.
 
 Adapter packages share a conformance suite in
 [`model-adapter-conformance.ts`](../packages/harngine/test/model-adapter-conformance.ts). It covers
@@ -345,7 +346,20 @@ const review = await app.run(reviewer, {
 and deduplicates references found in the objective and selected Context Items, then exposes them
 through `ModelContext.artifacts`. The application owns storage, authorization, retention and
 resolution; a Tool that reads content verifies the digest and byte length before use. This supports
-document and code workflows without implying provider-native image, audio or voice transport.
+document and code workflows.
+
+The OpenAI Responses and Claude Messages adapters can opt into provider-native image and PDF input.
+Their `resolveArtifact` option receives only references already selected into
+`ModelContext.artifacts`. Harngine's shared resolver checks the media-type allowlist, count, byte
+bounds, exact byte length and SHA-256 digest before an adapter creates provider content parts or
+starts provider I/O. The default raw bound is 8 Artifacts and 20 MiB in total; applications and
+adapters can choose tighter or reviewed limits. GIF, JPEG, PNG and WebP map to images, and
+`application/pdf` maps to a document. The complete `ModelRequest` still travels as JSON text.
+
+Native input is opt-in because a compatible router may route to a model without that capability.
+Without a resolver, references remain metadata only. Harngine core does not store binary payloads,
+parse PDFs, run OCR, or transport audio, video or realtime voice. Applications own binary storage
+and extraction; adapter packages own provider wire encoding.
 
 ## Write a Workflow
 

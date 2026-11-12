@@ -1,5 +1,6 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import type { ModelRequest } from 'harngine';
+import { artifactReference, type ModelRequest } from 'harngine';
 import { createClaudeMessagesAdapter } from '../src/index.js';
 import {
   describeModelAdapterConformance,
@@ -19,6 +20,33 @@ const request: ModelRequest = {
   },
   tools: [],
 };
+
+function artifact(name: string, mediaType: string, bytes: Uint8Array) {
+  return artifactReference({
+    id: `attachment:${name}`,
+    name,
+    mediaType,
+    byteLength: bytes.byteLength,
+    digest: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+  });
+}
+
+function completedResponse() {
+  return Response.json({
+    type: 'message',
+    model: 'test-model',
+    stop_reason: 'end_turn',
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          items: [{ type: 'text', text: 'Done' }],
+          finishReason: 'stop',
+        }),
+      },
+    ],
+  });
+}
 
 const conformance: AdapterConformanceFactory = (reply, options) => {
   const fetcher: typeof fetch = async (_url, init) => {
@@ -66,6 +94,89 @@ const conformance: AdapterConformanceFactory = (reply, options) => {
 describeModelAdapterConformance('Claude Messages adapter', conformance);
 
 describe('Claude Messages adapter', () => {
+  it('encodes verified image and PDF references as native Messages content blocks', async () => {
+    const imageBytes = Uint8Array.from([0xff, 0xd8, 0xff, 1, 2]);
+    const pdfBytes = new TextEncoder().encode('%PDF-1.7\nfixture');
+    const image = artifact('photo.jpg', 'image/jpeg', imageBytes);
+    const pdf = artifact('agreement.pdf', 'application/pdf', pdfBytes);
+    const multimodalRequest: ModelRequest = {
+      ...request,
+      context: { ...request.context, artifacts: [image, pdf] },
+    };
+    const resolved: string[] = [];
+    let body: any;
+    const adapter = createClaudeMessagesAdapter({
+      accessToken: 'magpie',
+      model: 'test-model',
+      fetch: (async (_url, init) => {
+        body = JSON.parse(String(init?.body));
+        return completedResponse();
+      }) as typeof fetch,
+      async resolveArtifact(reference) {
+        resolved.push(reference.id);
+        return reference.id === image.id ? imageBytes : pdfBytes;
+      },
+    });
+
+    await adapter.generate(multimodalRequest, {
+      signal: new AbortController().signal,
+      emit() {},
+    });
+
+    expect(resolved).toEqual([image.id, pdf.id]);
+    expect(adapter.capabilities.inputModalities).toEqual(['image', 'document']);
+    expect(body.messages[0].content).toEqual([
+      { type: 'text', text: JSON.stringify(multimodalRequest) },
+      {
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: 'image/jpeg',
+          data: Buffer.from(imageBytes).toString('base64'),
+        },
+      },
+      {
+        type: 'document',
+        source: {
+          type: 'base64',
+          media_type: 'application/pdf',
+          data: Buffer.from(pdfBytes).toString('base64'),
+        },
+      },
+    ]);
+  });
+
+  it('keeps metadata-only artifacts when native resolution is not configured', () => {
+    const adapter = createClaudeMessagesAdapter({
+      accessToken: 'magpie',
+      model: 'test-model',
+      fetch: (async () => completedResponse()) as typeof fetch,
+    });
+    expect(adapter.capabilities).not.toHaveProperty('inputModalities');
+  });
+
+  it('rejects unsupported artifact media types before provider I/O', async () => {
+    const bytes = Uint8Array.from([1, 2, 3]);
+    const text = artifact('notes.txt', 'text/plain', bytes);
+    let fetches = 0;
+    const adapter = createClaudeMessagesAdapter({
+      accessToken: 'magpie',
+      model: 'test-model',
+      fetch: (async () => {
+        fetches++;
+        return completedResponse();
+      }) as typeof fetch,
+      resolveArtifact: async () => bytes,
+    });
+    await expect(
+      adapter.generate(
+        { ...request, context: { ...request.context, artifacts: [text] } },
+        { signal: new AbortController().signal, emit() {} },
+      ),
+    ).rejects.toThrow('does not support Artifact');
+    expect(fetches).toBe(0);
+  });
+
   it('uses Messages framing and normalizes a completed response', async () => {
     let url = '';
     let init: RequestInit | undefined;
@@ -112,10 +223,12 @@ describe('Claude Messages adapter', () => {
       'x-api-key': 'magpie',
       'anthropic-version': '2023-06-01',
     });
-    expect(JSON.parse(String(init?.body))).toMatchObject({
+    const body = JSON.parse(String(init?.body));
+    expect(body).toMatchObject({
       model: 'codex/gpt-6-sol',
       output_config: { format: { type: 'json_schema' } },
     });
+    expect(body.messages[0].content).toBe(JSON.stringify(request));
     expect(result.items).toEqual([{ type: 'text', text: 'OK' }]);
     expect(result.provider).toEqual({ name: 'claude-messages', model: 'codex/gpt-6-sol' });
     expect(result.usage?.totalTokens).toBe(15);

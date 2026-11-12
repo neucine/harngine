@@ -20,11 +20,19 @@ test('due diligence keeps attachments outside context and publishes only after a
     'The agreement renews automatically unless notice is given 60 days before expiry.',
     'text/markdown',
   );
-  const amendment = library.add(
-    'amendment.md',
-    'Amendment 2 changes the renewal notice period to 90 days.',
-    'text/markdown',
+  const amendmentBytes = new TextEncoder().encode(
+    '%PDF-1.7\nApplication-owned signed amendment fixture\n%%EOF\n',
   );
+  const amendment = library.addBinary(
+    'renewal-amendment.pdf',
+    amendmentBytes,
+    'application/pdf',
+    'Amendment 2 changes the renewal notice period to 90 days.',
+  );
+  expect(library.read(amendment)).toContain('notice period to 90 days');
+  await expect(
+    library.resolve(amendment, { signal: new AbortController().signal }),
+  ).resolves.toEqual(Uint8Array.from(amendmentBytes));
   const requests: ModelRequest[] = [];
   const demo = dueDiligenceDemoModel();
   const model = {
@@ -49,6 +57,7 @@ test('due diligence keeps attachments outside context and publishes only after a
     const approval = await waitForApproval(work);
     expect(requests[0]?.context.artifacts).toEqual([agreement, amendment]);
     expect(JSON.stringify(requests[0]?.context)).not.toContain('renews automatically');
+    expect(JSON.stringify(requests[0]?.context)).not.toContain('notice period to 90 days');
 
     expect(approval).toMatchObject({
       tool: { id: 'diligence.report.publish' },

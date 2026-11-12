@@ -13,10 +13,14 @@ export type ModelItem =
 
 export type ModelFinishReason = 'stop' | 'tool-calls' | 'length' | 'content-filter' | 'other';
 
+export type ModelInputModality = 'text' | 'image' | 'document' | 'audio' | 'video';
+
 export interface ModelCapabilities {
   readonly tools: boolean;
   readonly structuredOutput: boolean;
   readonly streaming: boolean;
+  /** Provider-native input modalities beyond text when present. */
+  readonly inputModalities?: readonly ModelInputModality[];
   readonly contextWindow?: number;
   readonly defaultOutputReserve?: number;
 }

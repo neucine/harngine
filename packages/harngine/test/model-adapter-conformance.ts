@@ -197,6 +197,16 @@ export function describeModelAdapterConformance(
         tools: true,
         structuredOutput: true,
       });
+      if (subject.adapter.capabilities.inputModalities) {
+        expect(
+          subject.adapter.capabilities.inputModalities.every((modality) =>
+            ['text', 'image', 'document', 'audio', 'video'].includes(modality),
+          ),
+        ).toBe(true);
+        expect(new Set(subject.adapter.capabilities.inputModalities).size).toBe(
+          subject.adapter.capabilities.inputModalities.length,
+        );
+      }
     });
   });
 }

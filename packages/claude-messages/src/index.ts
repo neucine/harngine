@@ -3,8 +3,15 @@ import {
   modelOutputSchema,
   modelResponseContract,
   normalizeModelEnvelope,
+  resolveModelArtifacts,
 } from 'harngine';
-import type { ModelAdapter, ModelRequest, ModelResponse } from 'harngine';
+import type {
+  ArtifactResolver,
+  ModelAdapter,
+  ModelRequest,
+  ModelResponse,
+  ResolvedModelArtifact,
+} from 'harngine';
 
 export interface ClaudeMessagesOptions {
   accessToken: string;
@@ -13,6 +20,11 @@ export interface ClaudeMessagesOptions {
   fetch?: typeof globalThis.fetch;
   timeoutMs?: number;
   maxOutputTokens?: number;
+  /** Resolve bytes owned by the application for Artifact References in Model Context. */
+  resolveArtifact?: ArtifactResolver;
+  maxArtifacts?: number;
+  maxArtifactBytes?: number;
+  maxTotalArtifactBytes?: number;
 }
 
 interface ClaudeMessage {
@@ -22,6 +34,21 @@ interface ClaudeMessage {
   content?: { type: string; text?: string }[];
   usage?: { input_tokens?: number; output_tokens?: number };
   error?: { type?: string; message?: string };
+}
+
+const NATIVE_IMAGE_TYPES = ['image/gif', 'image/jpeg', 'image/png', 'image/webp'] as const;
+const NATIVE_DOCUMENT_TYPES = ['application/pdf'] as const;
+
+function contentBlock(artifact: ResolvedModelArtifact): object {
+  const mediaType = artifact.reference.mediaType.toLowerCase();
+  const source = {
+    type: 'base64',
+    media_type: mediaType,
+    data: Buffer.from(artifact.bytes).toString('base64'),
+  };
+  if ((NATIVE_IMAGE_TYPES as readonly string[]).includes(mediaType))
+    return { type: 'image', source };
+  return { type: 'document', source };
 }
 
 export function createClaudeMessagesAdapter(options: ClaudeMessagesOptions): ModelAdapter {
@@ -37,6 +64,7 @@ export function createClaudeMessagesAdapter(options: ClaudeMessagesOptions): Mod
       tools: true,
       structuredOutput: true,
       streaming: false,
+      ...(options.resolveArtifact ? { inputModalities: ['image', 'document'] as const } : {}),
       contextWindow: 128_000,
       defaultOutputReserve: maxOutputTokens,
     },
@@ -50,6 +78,20 @@ export function createClaudeMessagesAdapter(options: ClaudeMessagesOptions): Mod
         timeoutMs,
       );
       try {
+        const artifacts = options.resolveArtifact
+          ? await resolveModelArtifacts(input.context.artifacts, {
+              resolve: options.resolveArtifact,
+              allowedMediaTypes: [...NATIVE_IMAGE_TYPES, ...NATIVE_DOCUMENT_TYPES],
+              signal: controller.signal,
+              ...(options.maxArtifacts === undefined ? {} : { maxArtifacts: options.maxArtifacts }),
+              ...(options.maxArtifactBytes === undefined
+                ? {}
+                : { maxArtifactBytes: options.maxArtifactBytes }),
+              ...(options.maxTotalArtifactBytes === undefined
+                ? {}
+                : { maxTotalArtifactBytes: options.maxTotalArtifactBytes }),
+            })
+          : [];
         const response = await request(`${baseUrl}/messages`, {
           method: 'POST',
           headers: {
@@ -61,7 +103,14 @@ export function createClaudeMessagesAdapter(options: ClaudeMessagesOptions): Mod
             model: options.model,
             max_tokens: maxOutputTokens,
             system: modelEnvelopeInstructions,
-            messages: [{ role: 'user', content: JSON.stringify(input) }],
+            messages: [
+              {
+                role: 'user',
+                content: artifacts.length
+                  ? [{ type: 'text', text: JSON.stringify(input) }, ...artifacts.map(contentBlock)]
+                  : JSON.stringify(input),
+              },
+            ],
             output_config: {
               format: {
                 type: 'json_schema',

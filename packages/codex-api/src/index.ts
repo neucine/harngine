@@ -3,8 +3,15 @@ import {
   modelOutputSchema,
   modelResponseContract,
   normalizeModelEnvelope,
+  resolveModelArtifacts,
 } from 'harngine';
-import type { ModelAdapter, ModelRequest, ModelResponse } from 'harngine';
+import type {
+  ArtifactResolver,
+  ModelAdapter,
+  ModelRequest,
+  ModelResponse,
+  ResolvedModelArtifact,
+} from 'harngine';
 
 export interface OpenAIResponsesOptions {
   accessToken: string;
@@ -12,7 +19,15 @@ export interface OpenAIResponsesOptions {
   baseUrl?: string;
   fetch?: typeof globalThis.fetch;
   timeoutMs?: number;
+  /** Resolve bytes owned by the application for Artifact References in Model Context. */
+  resolveArtifact?: ArtifactResolver;
+  maxArtifacts?: number;
+  maxArtifactBytes?: number;
+  maxTotalArtifactBytes?: number;
 }
+
+const NATIVE_IMAGE_TYPES = ['image/gif', 'image/jpeg', 'image/png', 'image/webp'] as const;
+const NATIVE_DOCUMENT_TYPES = ['application/pdf'] as const;
 
 function message(value: unknown): string {
   if (value && typeof value === 'object') {
@@ -20,6 +35,19 @@ function message(value: unknown): string {
     if (error?.code) return `OpenAI Responses API error: ${error.code}`;
   }
   return 'OpenAI Responses API request failed';
+}
+
+function inputFile(artifact: ResolvedModelArtifact): object {
+  const mediaType = artifact.reference.mediaType.toLowerCase();
+  const data = `data:${mediaType};base64,${Buffer.from(artifact.bytes).toString('base64')}`;
+  if ((NATIVE_IMAGE_TYPES as readonly string[]).includes(mediaType))
+    return { type: 'input_image', image_url: data };
+  return {
+    type: 'input_file',
+    filename: artifact.reference.name ?? `${artifact.reference.digest.slice(7, 19)}.pdf`,
+    file_data: data,
+    detail: 'high',
+  };
 }
 
 export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): ModelAdapter {
@@ -55,6 +83,7 @@ export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): M
       tools: true,
       structuredOutput: true,
       streaming: false,
+      ...(options.resolveArtifact ? { inputModalities: ['image', 'document'] as const } : {}),
       contextWindow: 128_000,
       defaultOutputReserve: 4_000,
     },
@@ -68,6 +97,23 @@ export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): M
         timeoutMs,
       );
       try {
+        const artifacts = options.resolveArtifact
+          ? await resolveModelArtifacts(input.context.artifacts, {
+              resolve: options.resolveArtifact,
+              allowedMediaTypes: [...NATIVE_IMAGE_TYPES, ...NATIVE_DOCUMENT_TYPES],
+              signal: controller.signal,
+              ...(options.maxArtifacts === undefined ? {} : { maxArtifacts: options.maxArtifacts }),
+              ...(options.maxArtifactBytes === undefined
+                ? {}
+                : { maxArtifactBytes: options.maxArtifactBytes }),
+              ...(options.maxTotalArtifactBytes === undefined
+                ? {}
+                : { maxTotalArtifactBytes: options.maxTotalArtifactBytes }),
+            })
+          : [];
+        const content = artifacts.length
+          ? [{ type: 'input_text', text: JSON.stringify(input) }, ...artifacts.map(inputFile)]
+          : JSON.stringify(input);
         const name = await model(controller.signal);
         const response = await request(`${baseUrl}/responses`, {
           method: 'POST',
@@ -78,7 +124,7 @@ export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): M
           body: JSON.stringify({
             model: name,
             instructions: modelEnvelopeInstructions,
-            input: [{ role: 'user', content: JSON.stringify(input) }],
+            input: [{ role: 'user', content }],
             text: {
               format: {
                 type: 'json_schema',
