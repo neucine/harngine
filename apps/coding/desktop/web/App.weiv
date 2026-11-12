@@ -40,7 +40,7 @@
 </template>
 <script lang="ts">
   import { workspace as configuredWorkspace } from './agent-config.ts';
-  import { localHttp, type LocalHttpEvent } from 'neiv/http';
+  import { localHttp, type LocalHttpEvent } from '@neucine/neiv/http';
   type Session = { id: string; title: string; agent: { id: string; revision: string }; foregroundWorkId: string | null; updatedAt: number };
   type Message = { id: string; author: 'human' | 'agent'; content: unknown; workId?: string };
   type Activity = { id: string; icon: string; title: string; summary: string };
