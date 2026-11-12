@@ -17,7 +17,7 @@
   "dependencies": {
     "harngine": "workspace:*",
     "@harngine/codex-cli": "workspace:*",
-    "@harngine/codex-api": "workspace:*",
+    "@harngine/openai-responses": "workspace:*",
     "@harngine/claude-messages": "workspace:*",
     "@harngine/http": "workspace:*"
   },

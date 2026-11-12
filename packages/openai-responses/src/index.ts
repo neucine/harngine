@@ -244,8 +244,3 @@ export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): M
     },
   };
 }
-
-/** @deprecated Use createOpenAIResponsesAdapter. */
-export const createCodexApiAdapter = createOpenAIResponsesAdapter;
-/** @deprecated Use OpenAIResponsesOptions. */
-export type CodexApiOptions = OpenAIResponsesOptions;

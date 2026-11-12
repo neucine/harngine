@@ -15,7 +15,7 @@
       "harngine/internal": ["./packages/harngine/src/internal/index.ts"],
       "@harngine/http": ["./packages/http/src/index.ts"],
       "@harngine/codex-cli": ["./packages/codex-cli/src/index.ts"],
-      "@harngine/codex-api": ["./packages/codex-api/src/index.ts"],
+      "@harngine/openai-responses": ["./packages/openai-responses/src/index.ts"],
       "@harngine/claude-messages": ["./packages/claude-messages/src/index.ts"],
       "@harngine/mcp": ["./packages/mcp/src/index.ts"],
       "@harngine/retrieval": ["./packages/retrieval/src/index.ts"],

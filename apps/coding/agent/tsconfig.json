@@ -4,7 +4,7 @@
   "references": [
     { "path": "../../../packages/harngine" },
     { "path": "../../../packages/codex-cli" },
-    { "path": "../../../packages/codex-api" },
+    { "path": "../../../packages/openai-responses" },
     { "path": "../../../packages/claude-messages" },
     { "path": "../../../packages/http" }
   ],

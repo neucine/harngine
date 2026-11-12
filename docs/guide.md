@@ -568,7 +568,7 @@ This is a Bun workspace:
 packages/harngine   public framework and embedded SQLite runtime
 packages/workbench  browser development and inspection application
 packages/codex-cli  development adapter using local Codex CLI authentication
-packages/codex-api  OpenAI Responses compatible model adapter
+packages/openai-responses   OpenAI Responses compatible model adapter
 packages/claude-messages  Claude Messages compatible model adapter
 packages/mcp        MCP catalog discovery and selected Tool bridge
 packages/retrieval  versioned retrieval Tools and citation checks
@@ -630,7 +630,7 @@ Package documentation:
 - [`harngine`](../packages/harngine/README.md)
 - [`@harngine/workbench`](../packages/workbench/README.md)
 - [Codex CLI development adapter](../packages/codex-cli/README.md)
-- [OpenAI Responses adapter](../packages/codex-api/README.md)
+- [OpenAI Responses adapter](../packages/openai-responses/README.md)
 - [Claude Messages adapter](../packages/claude-messages/README.md)
 - [MCP Tool bridge](../packages/mcp/README.md)
 - [Retrieval Tool bridge](../packages/retrieval/README.md)

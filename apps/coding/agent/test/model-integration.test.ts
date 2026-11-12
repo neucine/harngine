@@ -2,7 +2,7 @@ import { mkdtempSync, realpathSync, readFileSync, rmSync, writeFileSync } from '
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
-import { createOpenAIResponsesAdapter } from '@harngine/codex-api';
+import { createOpenAIResponsesAdapter } from '@harngine/openai-responses';
 import { captureWorkTrace, summarizeWorkTrace } from '@harngine/evaluation';
 import type { Json, ModelAdapter, ModelRequest } from 'harngine';
 import { createCodingApp } from '../src/app.js';

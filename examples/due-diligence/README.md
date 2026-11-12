@@ -20,7 +20,7 @@ To use provider-native PDF input instead of the deterministic demo model, connec
 to an opt-in adapter:
 
 ```ts
-import { createOpenAIResponsesAdapter } from "@harngine/codex-api";
+import { createOpenAIResponsesAdapter } from "@harngine/openai-responses";
 import { createDueDiligenceDesk, DocumentLibrary } from "./app.js";
 
 const library = new DocumentLibrary();

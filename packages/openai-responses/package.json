@@ -1,5 +1,5 @@
 {
-  "name": "@harngine/codex-api",
+  "name": "@harngine/openai-responses",
   "version": "0.1.0-alpha.0",
   "private": true,
   "license": "MPL-2.0",

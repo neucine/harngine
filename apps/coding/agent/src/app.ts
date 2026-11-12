@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 import { createCodexCliAdapter } from '@harngine/codex-cli';
-import { createOpenAIResponsesAdapter } from '@harngine/codex-api';
+import { createOpenAIResponsesAdapter } from '@harngine/openai-responses';
 import { createClaudeMessagesAdapter } from '@harngine/claude-messages';
 import { agent, createApp, schema, tool, workflow, type Json, type ModelAdapter } from 'harngine';
 

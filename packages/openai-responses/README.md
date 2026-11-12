@@ -1,11 +1,11 @@
 # OpenAI Responses model adapter
 
-`@harngine/codex-api` connects Harngine to the OpenAI Responses protocol. Set `baseUrl` for a
+`@harngine/openai-responses` connects Harngine to the OpenAI Responses protocol. Set `baseUrl` for a
 compatible router such as Magpie; the protocol remains OpenAI Responses regardless of which
 upstream model the router selects.
 
 ```ts
-import { createOpenAIResponsesAdapter } from "@harngine/codex-api";
+import { createOpenAIResponsesAdapter } from "@harngine/openai-responses";
 
 const model = createOpenAIResponsesAdapter({
   baseUrl: "http://127.0.0.1:3425/v1",
@@ -48,6 +48,3 @@ envelope with strict JSON Schema, verifies that the SSE stream reaches `response
 normalizes provider usage. It advertises streaming and extracts preview text only from complete
 `items[*].text` values in the structured response; tool inputs and nested fields are excluded.
 Harngine executes accepted Tool proposals; the adapter does not invoke tools itself.
-
-The deprecated `createCodexApiAdapter` and `CodexApiOptions` names remain as aliases for existing
-callers.

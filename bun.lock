@@ -18,7 +18,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@harngine/claude-messages": "workspace:*",
-        "@harngine/codex-api": "workspace:*",
+        "@harngine/openai-responses": "workspace:*",
         "@harngine/codex-cli": "workspace:*",
         "@harngine/http": "workspace:*",
         "harngine": "workspace:*",
@@ -107,8 +107,8 @@
         "harngine": "workspace:*",
       },
     },
-    "packages/codex-api": {
-      "name": "@harngine/codex-api",
+    "packages/openai-responses": {
+      "name": "@harngine/openai-responses",
       "version": "0.1.0-alpha.0",
       "dependencies": {
         "harngine": "workspace:*",
@@ -199,7 +199,7 @@
 
     "@harngine/claude-messages": ["@harngine/claude-messages@workspace:packages/claude-messages"],
 
-    "@harngine/codex-api": ["@harngine/codex-api@workspace:packages/codex-api"],
+    "@harngine/openai-responses": ["@harngine/openai-responses@workspace:packages/openai-responses"],
 
     "@harngine/codex-cli": ["@harngine/codex-cli@workspace:packages/codex-cli"],
 
