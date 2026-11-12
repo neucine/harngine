@@ -589,7 +589,12 @@ bun run check
 bun run test:package
 ```
 
-The coding Agent has an optional live Magpie smoke over both compatibility protocols:
+The Coding desktop app is the primary live end-to-end check. It exercises the desktop UI, provider
+adapter and stream, durable Work events and a real `coding.read` call. The launch procedure and
+expected result are in the [Coding desktop guide](../apps/coding/desktop/README.md#live-compatibility-router-check).
+
+The headless Magpie smoke remains a terminal and automation fallback for both compatibility
+protocols:
 
 ```bash
 bun run smoke:coding:magpie

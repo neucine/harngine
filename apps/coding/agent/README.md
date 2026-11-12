@@ -16,9 +16,16 @@ Use the bearer value required by your router in `HARNGINE_CODING_API_TOKEN`. Set
 
 For a Claude Messages compatible endpoint, use `HARNGINE_CODING_PROVIDER=claude-messages` with the same base URL, token, and model settings. That adapter sends `POST /messages` with Claude Messages headers and structured output. It requires an explicit `CODEX_MODEL`.
 
-## Live router smoke
+## Live router integration
 
-When Magpie is available at its default local URL, run the real coding Agent through the OpenAI Responses adapter:
+The Coding desktop app is the primary end-to-end check for a compatibility API. It exercises the
+real desktop UI, model adapter, provider stream, HTTP events and `coding.read` Tool in one run. See
+[Coding desktop](../desktop/README.md#live-compatibility-router-check) for the macOS launch and
+verification steps.
+
+The headless command remains an optional fallback for terminals and automation. When Magpie is
+available at its default local URL, it runs the same coding Agent path through the OpenAI Responses
+adapter:
 
 ```bash
 bun run smoke:coding:magpie

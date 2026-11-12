@@ -4,7 +4,8 @@ Harngine Coding is a macOS app for working with a repository through a coding ag
 
 ## Get started
 
-You need Bun, a local [Neiv](https://github.com/neucine/neiv) checkout, and a working Codex CLI login. From the Harngine repository root, run:
+You need Bun, a local [Neiv](https://github.com/neucine/neiv) checkout, and either a working Codex
+CLI login or a compatible model endpoint. From the Harngine repository root, run:
 
 ```bash
 bun install
@@ -14,6 +15,43 @@ bun run agent:desktop --repo /absolute/path/to/your/repository
 The command builds `apps/coding/desktop/build/NeivApp.app`. Double click that app in Finder. You can close the terminal after the build finishes. The app starts its local server when it opens and stops the server when it closes.
 
 The repository path is saved in the app at build time. Run the build command again to point the app at a different repository. If Neiv is outside `../neiv`, set `NEIV_ROOT` to its checkout path before building.
+
+## Live compatibility router check
+
+The desktop app is the canonical end-to-end Harngine check when a compatible router is available.
+It proves the actual desktop surface, provider request and stream, durable Work, HTTP event
+delivery, and Tool execution together.
+
+Build the current app, then pass the provider settings to macOS LaunchServices for the new process.
+This Magpie example uses its local development token and a routable model:
+
+```bash
+bun install
+bun run agent:desktop --repo $PWD --build-only
+
+launchctl setenv HARNGINE_CODING_PROVIDER openai-responses
+launchctl setenv HARNGINE_CODING_API_BASE_URL http://127.0.0.1:3425/v1
+launchctl setenv HARNGINE_CODING_API_TOKEN magpie
+launchctl setenv CODEX_MODEL opencode-go/deepseek-v4.1-flash
+open -n $PWD/apps/coding/desktop/build/NeivApp.app
+launchctl unsetenv HARNGINE_CODING_PROVIDER
+launchctl unsetenv HARNGINE_CODING_API_BASE_URL
+launchctl unsetenv HARNGINE_CODING_API_TOKEN
+launchctl unsetenv CODEX_MODEL
+```
+
+Start a new read session and submit:
+
+```text
+Read README.md and reply with the exact first Markdown heading only.
+```
+
+The check passes when the Work shows **Completed**, Activity records a conclusive `coding.read`
+call for `README.md`, and the Agent replies `# Harngine`. A normal built app launched without these
+variables continues to use its Codex CLI configuration.
+
+The headless equivalent is `bun run smoke:coding:magpie`. Keep it as a fallback for terminals and
+automation; the app run is the user-facing integration check.
 
 ## Work with the agent
 
