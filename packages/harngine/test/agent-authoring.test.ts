@@ -1,6 +1,9 @@
+import { fork, type ChildProcess } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, expect, test } from 'vitest';
 import {
   ConflictError,
@@ -9,15 +12,24 @@ import {
   createApp,
   schema,
   tool,
+  workflow,
   type App,
   type ModelAdapter,
   type ModelRequest,
+  type WorkId,
 } from '../src/index.js';
 
 const directories: string[] = [];
 const apps: App[] = [];
+const processes: ChildProcess[] = [];
 
 afterEach(async () => {
+  for (const child of processes.splice(0))
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit');
+      child.kill('SIGKILL');
+      await exited;
+    }
   for (const app of apps.splice(0)) await app.close();
   for (const directory of directories.splice(0))
     rmSync(directory, { recursive: true, force: true });
@@ -84,6 +96,237 @@ test('open-loop Agent accepts native Tool calls and completes with text', async 
   expect(requests[1]!.context.items.some((item) => item.type === 'tool_outcome')).toBe(true);
 });
 
+test('Agent delegates only explicitly exposed CallTargets and receives child Closure context', async () => {
+  const parentRequests: ModelRequest[] = [];
+  const parentModel: ModelAdapter = {
+    id: 'delegating-model',
+    capabilities: { tools: true, structuredOutput: false, streaming: false },
+    async generate(request) {
+      parentRequests.push(request);
+      if (parentRequests.length === 1)
+        return {
+          object: 'model_response',
+          items: [
+            {
+              type: 'tool-call',
+              providerCallId: 'research-1',
+              tool: 'specialist.researcher',
+              input: 'Collect the evidence',
+            },
+          ],
+          finishReason: 'tool-calls',
+        };
+      const outcome = request.context.items.find((item) => item.type === 'child_outcome');
+      return {
+        object: 'model_response',
+        items: [
+          {
+            type: 'text',
+            text:
+              outcome?.type === 'child_outcome' && outcome.closure.status === 'completed'
+                ? String(outcome.closure.result)
+                : 'missing child Closure',
+          },
+        ],
+        finishReason: 'stop',
+      };
+    },
+  };
+  const researcherModel: ModelAdapter = {
+    id: 'research-model',
+    capabilities: { tools: false, structuredOutput: false, streaming: false },
+    async generate(request) {
+      return {
+        object: 'model_response',
+        items: [{ type: 'text', text: `evidence for ${request.context.objective}` }],
+        finishReason: 'stop',
+      };
+    },
+  };
+  const researcher = agent({
+    id: 'specialist.researcher',
+    instructions: 'Collect evidence.',
+    objective: text,
+    model: researcherModel,
+  });
+  const registeredOnly = agent({
+    id: 'specialist.registered-only',
+    instructions: 'This Agent is registered but must not be exposed.',
+    objective: text,
+    model: researcherModel,
+  });
+  const orchestrator = agent({
+    id: 'orchestrator',
+    instructions: 'Delegate research when evidence is needed.',
+    objective: text,
+    model: parentModel,
+    delegates: [
+      {
+        target: researcher,
+        description: 'Research one bounded question and return evidence.',
+      },
+    ],
+  });
+  const app = createApp({
+    directory: directory(),
+    agents: [orchestrator, researcher, registeredOnly],
+  });
+  apps.push(app);
+
+  await expect(app.run(orchestrator, 'Answer with evidence')).resolves.toBe(
+    'evidence for Collect the evidence',
+  );
+  expect(parentRequests[0]!.tools).toEqual([
+    expect.objectContaining({ id: 'specialist.researcher', kind: 'agent' }),
+  ]);
+  expect(parentRequests[0]!.tools.some((item) => item.id === registeredOnly.id)).toBe(false);
+  expect((await app.works.list()).works).toHaveLength(2);
+  expect(
+    parentRequests[1]!.context.items.some(
+      (item) =>
+        item.type === 'child_outcome' &&
+        item.call.target.id === researcher.id &&
+        item.closure.status === 'completed',
+    ),
+  ).toBe(true);
+});
+
+test('concurrent Agent delegate lets the parent complete a Tool step before joining', async () => {
+  const child = workflow({
+    id: 'concurrent-researcher',
+    objective: text,
+    result: text,
+    run: async (objective, flow) => {
+      const evidence = await flow.ask('release', {
+        prompt: 'Release research evidence?',
+        response: text,
+      });
+      return `${objective}: ${evidence}`;
+    },
+  });
+  const parentRequests: ModelRequest[] = [];
+  let parentTurns = 0;
+  const parentModel: ModelAdapter = {
+    id: 'concurrent-orchestrator-model',
+    capabilities: { tools: true, structuredOutput: false, streaming: false },
+    async generate(request) {
+      parentRequests.push(request);
+      parentTurns++;
+      if (parentTurns === 1) {
+        expect(request.tools).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: child.id, kind: 'workflow' }),
+            expect.objectContaining({ id: 'record', kind: 'tool' }),
+          ]),
+        );
+        return {
+          object: 'model_response',
+          items: [
+            {
+              type: 'tool-call',
+              providerCallId: 'research-1',
+              tool: child.id,
+              input: 'Evaluate the design',
+            },
+            {
+              type: 'tool-call',
+              providerCallId: 'record-1',
+              tool: 'record',
+              input: 'parent-made-progress',
+            },
+          ],
+          finishReason: 'tool-calls',
+        };
+      }
+      const outcome = request.context.items.find((item) => item.type === 'child_outcome');
+      return {
+        object: 'model_response',
+        items: [
+          {
+            type: 'text',
+            text:
+              outcome?.type === 'child_outcome' && outcome.closure.status === 'completed'
+                ? String(outcome.closure.result)
+                : 'missing child Closure',
+          },
+        ],
+        finishReason: 'stop',
+      };
+    },
+  };
+  const record = tool({
+    id: 'record',
+    description: 'Record useful parent progress while the child runs.',
+    input: text,
+    output: text,
+    effect: 'read',
+    execute: (input) => input,
+  });
+  const orchestrator = agent({
+    id: 'concurrent-orchestrator',
+    instructions: 'Delegate concurrent research and make local progress.',
+    objective: text,
+    model: parentModel,
+    tools: [record],
+    delegates: [
+      {
+        target: child,
+        description: 'Research and return evidence.',
+        mode: 'concurrent',
+      },
+    ],
+  });
+  const app = createApp({
+    directory: directory(),
+    agents: [orchestrator],
+    workflows: [child],
+  });
+  apps.push(app);
+
+  const work = await app.start(orchestrator, 'Design review');
+  let snapshot = await work.snapshot();
+  for (let index = 0; index < 50; index++) {
+    if (snapshot.childWorkIds.length) {
+      const inspected = await work.inspect({ detail: 'diagnostic' });
+      if (
+        inspected.entries.some(
+          (entry) =>
+            entry.type === 'call' && entry.phase === 'settled' && entry.tool.id === record.id,
+        )
+      )
+        break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    snapshot = await work.snapshot();
+  }
+  expect(snapshot.childWorkIds).toHaveLength(1);
+  const childWork = await app.works.get(snapshot.childWorkIds[0]!);
+  let childSnapshot = await childWork.snapshot();
+  for (let index = 0; index < 50 && !childSnapshot.interactions.length; index++) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    childSnapshot = await childWork.snapshot();
+  }
+  expect(childSnapshot).toMatchObject({ status: 'waiting' });
+  expect((await work.snapshot()).status).toBe('waiting');
+  await childWork.respond(childSnapshot.interactions[0]!.id, 'approved evidence');
+  await expect(work.result()).resolves.toBe('Evaluate the design: approved evidence');
+  expect(parentTurns).toBe(2);
+  expect(parentRequests[1]!.context.items).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ type: 'tool_outcome' }),
+      expect.objectContaining({ type: 'child_outcome' }),
+    ]),
+  );
+  const childEntry = (await work.inspect()).entries.find(
+    (entry) => entry.type === 'child' && entry.phase === 'started',
+  );
+  expect(childEntry).toMatchObject({
+    callId: expect.stringMatching(/^call_/),
+    mode: 'concurrent',
+    definition: { kind: 'workflow', id: child.id },
+  });
+});
+
 test('Agent preserves a failed model call instead of proposing its slot again', async () => {
   const model: ModelAdapter = {
     id: 'failing-model',
@@ -116,6 +359,109 @@ test('Agent preserves a failed model call instead of proposing its slot again', 
       }),
     ]),
   );
+});
+
+test('closing aborts an active model request and restart retries that turn', async () => {
+  const directoryPath = directory();
+  let started!: () => void;
+  const entered = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  let aborted!: () => void;
+  const cancellationObserved = new Promise<void>((resolve) => {
+    aborted = resolve;
+  });
+  let calls = 0;
+  const model: ModelAdapter = {
+    id: 'interruptible-model',
+    capabilities: { tools: false, structuredOutput: false, streaming: true },
+    generate(_request, { signal }) {
+      calls++;
+      if (calls > 1)
+        return Promise.resolve({
+          object: 'model_response',
+          items: [{ type: 'text', text: 'resumed after restart' }],
+          finishReason: 'stop',
+        });
+      started();
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener(
+          'abort',
+          () => {
+            aborted();
+            reject(new Error('request aborted'));
+          },
+          { once: true },
+        );
+      });
+    },
+  };
+  const assistant = agent({
+    id: 'interruptible-agent',
+    instructions: 'Answer.',
+    objective: text,
+    model,
+  });
+  const first = createApp({ directory: directoryPath, agents: [assistant] });
+  apps.push(first);
+  const work = await first.start(assistant, 'continue after shutdown');
+  await entered;
+
+  const closed = await Promise.race([
+    first.close().then(() => true),
+    new Promise<false>((resolve) => setTimeout(() => resolve(false), 1_000)),
+  ]);
+  expect(closed).toBe(true);
+  await cancellationObserved;
+
+  const restored = createApp({ directory: directoryPath, agents: [assistant] });
+  apps.push(restored);
+  const restartedWork = await restored.works.get(work.id);
+  await expect(restartedWork.result({ signal: AbortSignal.timeout(2_000) })).resolves.toBe(
+    'resumed after restart',
+  );
+  expect(calls).toBe(2);
+});
+
+test('restart recovers a process killed during a model request', async () => {
+  const directoryPath = directory();
+  const child = fork(
+    fileURLToPath(new URL('./agent-model-worker.mjs', import.meta.url)),
+    [directoryPath],
+    { execPath: process.execPath, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] },
+  );
+  processes.push(child);
+  const message = (await once(child, 'message'))[0] as { readonly workId: string };
+  const exited = once(child, 'exit');
+  child.kill('SIGKILL');
+  await exited;
+
+  let calls = 0;
+  const model: ModelAdapter = {
+    id: 'crash-model',
+    capabilities: { tools: false, structuredOutput: false, streaming: true },
+    async generate() {
+      calls++;
+      return {
+        object: 'model_response',
+        items: [{ type: 'text', text: 'recovered after process failure' }],
+        finishReason: 'stop',
+      };
+    },
+  };
+  const assistant = agent({
+    id: 'crash-agent',
+    instructions: 'Answer.',
+    objective: text,
+    model,
+  });
+  const restored = createApp({ directory: directoryPath, agents: [assistant] });
+  apps.push(restored);
+  const work = await restored.works.get(message.workId as WorkId);
+  await expect(work.result({ signal: AbortSignal.timeout(2_000) })).resolves.toBe(
+    'recovered after process failure',
+  );
+  expect(calls).toBe(1);
 });
 
 test('structured Agent result is opt-in through a data model item', async () => {

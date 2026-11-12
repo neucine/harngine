@@ -31,12 +31,15 @@ export type {
   InteractionInspectionEntry,
   ChildInspectionEntry,
   WorkClosedInspectionEntry,
+  CloseOptions,
   Interaction,
   Message,
   Session,
   Sessions,
   SessionSnapshot,
   SessionState,
+  SessionHandoff,
+  SessionHandoffOptions,
   SessionUpdate,
   StartOptions,
   Watch,
@@ -83,7 +86,15 @@ export type {
   WorkflowDefinition,
 } from './workflow.js';
 export { agent } from './agent.js';
+export {
+  modelEnvelopeInstructions,
+  modelOutputSchema,
+  modelResponseContract,
+  normalizeModelEnvelope,
+} from './model-contract.js';
 export type { Agent, AgentDefinition } from './agent.js';
+export { artifactReference, artifactReferences } from './artifact.js';
+export type { ArtifactReference, ArtifactReferenceInput } from './artifact.js';
 export type {
   ContextCandidate,
   ContextConfiguration,

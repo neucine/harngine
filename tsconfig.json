@@ -14,6 +14,18 @@
       "path": "packages/codex-api"
     },
     {
+      "path": "packages/claude-messages"
+    },
+    {
+      "path": "packages/mcp"
+    },
+    {
+      "path": "packages/retrieval"
+    },
+    {
+      "path": "packages/evaluation"
+    },
+    {
       "path": "packages/workbench"
     },
     {
@@ -36,6 +48,12 @@
     },
     {
       "path": "apps/muse"
+    },
+    {
+      "path": "apps/support"
+    },
+    {
+      "path": "apps/due-diligence"
     }
   ]
 }

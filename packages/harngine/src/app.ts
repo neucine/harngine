@@ -2,7 +2,7 @@ import type { Json, SessionId, WorkId } from './types.js';
 import type { Workflow as PublicWorkflow } from './workflow.js';
 import type { Tool as PublicTool } from './tool.js';
 import type { Agent as PublicAgent } from './agent.js';
-import type { ModelContext, ModelRequest, ModelResponse } from './model.js';
+import type { ModelContext, ModelRequest, ModelResponse, ModelUsage } from './model.js';
 import type { TelemetrySink } from './telemetry.js';
 
 export type Definition = PublicWorkflow<any, any> | PublicAgent<any, any>;
@@ -58,6 +58,8 @@ export interface WorkSnapshot<O extends Json = Json, R extends Json = Json> exte
     readonly maxModelTurns?: number;
     readonly maxToolExecutions?: number;
     readonly maxOperations?: number;
+    readonly maxChildWork?: number;
+    readonly maxDepth?: number;
   };
   readonly waitingFor?:
     | 'approval'
@@ -142,7 +144,7 @@ export interface DecisionInspectionEntry extends InspectionEntryBase {
   readonly source: 'agent' | 'workflow';
   readonly disposition: 'committed' | 'rejected' | 'superseded';
   readonly inputIds: readonly string[];
-  readonly proposal: 'call' | 'child' | 'children' | 'wait' | 'complete' | 'fail';
+  readonly proposal: 'call' | 'child' | 'children' | 'join' | 'wait' | 'complete' | 'fail';
   readonly diagnostic?: {
     readonly context: ModelContext | Json | null;
     readonly modelRequest?: ModelRequest;
@@ -155,11 +157,7 @@ export interface ModelProgressInspectionEntry extends InspectionEntryBase {
   readonly type: 'model.progress';
   readonly phase: 'started' | 'reasoning' | 'completed';
   readonly text?: string;
-  readonly usage?: {
-    readonly inputTokens?: number;
-    readonly outputTokens?: number;
-    readonly totalTokens?: number;
-  };
+  readonly usage?: ModelUsage;
 }
 
 export interface CallInspectionEntry extends InspectionEntryBase {
@@ -197,9 +195,12 @@ export interface InteractionInspectionEntry extends InspectionEntryBase {
 
 export interface ChildInspectionEntry extends InspectionEntryBase {
   readonly type: 'child';
+  readonly callId: string;
   readonly childWorkId: WorkId;
   readonly slot: string;
-  readonly phase: 'started' | 'closed';
+  readonly phase: 'started' | 'joined' | 'closed';
+  readonly mode: 'sequential' | 'concurrent';
+  readonly joinSlot?: string;
   readonly definition: ExecutableDefinitionReference;
   readonly status?: 'completed' | 'failed' | 'canceled';
 }
@@ -235,10 +236,17 @@ export interface StartOptions {
   readonly limits?: ExecutionLimits;
 }
 
+export interface CloseOptions {
+  /** Abort current provider and Tool invocations instead of waiting for them. Defaults to true. */
+  readonly abortInFlight?: boolean;
+}
+
 export interface ExecutionLimits {
   readonly modelTurns?: number;
   readonly toolExecutions?: number;
   readonly operations?: number;
+  readonly childWork?: number;
+  readonly depth?: number;
 }
 
 export interface CancelOptions {
@@ -316,7 +324,11 @@ export interface App extends AppScope {
   readonly diagnostics: Diagnostics;
   describe(definition: RegisteredDefinition): DefinitionDescription;
   forPrincipal(principal: string): AppScope;
-  close(): Promise<void>;
+  /**
+   * Stop background execution and close storage. In-flight providers are aborted by default;
+   * set `abortInFlight` to false to wait for their current invocation.
+   */
+  close(options?: CloseOptions): Promise<void>;
 }
 
 export interface DiagnosticRecord {
@@ -353,6 +365,7 @@ export interface AgentDescription extends DefinitionDescriptionBase {
   readonly result: Json;
   readonly model: { readonly id: string; readonly capabilities: Json };
   readonly tools: readonly (DefinitionReference & { readonly kind: 'tool' })[];
+  readonly delegates: readonly ExecutableDefinitionReference[];
   readonly context: Json;
   readonly limits: Json;
 }
@@ -438,10 +451,25 @@ export interface SessionSnapshot extends SessionState {
   readonly foregroundWork: WorkSnapshot | null;
 }
 
+export interface SessionHandoff {
+  readonly object: 'session_handoff';
+  readonly id: `handoff_${string}`;
+  readonly from: DefinitionReference & { readonly kind: 'agent' };
+  readonly to: DefinitionReference & { readonly kind: 'agent' };
+  readonly reason?: string;
+  readonly recordedAt: number;
+  readonly sessionVersion: number;
+}
+
+export interface SessionHandoffOptions {
+  readonly reason?: string;
+  readonly idempotencyKey?: string;
+}
+
 export type SessionUpdate = {
   readonly object: 'session_update';
   readonly type: 'session.updated';
-  readonly event: 'message.appended' | 'work.updated' | 'session.closed';
+  readonly event: 'message.appended' | 'ownership.changed' | 'work.updated' | 'session.closed';
   readonly workId?: WorkId;
   readonly snapshot: SessionSnapshot;
 };
@@ -450,6 +478,20 @@ export interface Session<O extends Json = Json, R extends Json = Json> {
   readonly id: SessionId;
   snapshot(): Promise<SessionSnapshot>;
   messages(options?: { before?: string; limit?: number }): Promise<readonly Message[]>;
+  /** Return durable ownership transfers, newest first. */
+  handoffs(options?: { before?: string; limit?: number }): Promise<readonly SessionHandoff[]>;
+  /**
+   * Transfer future conversation ownership to an exact Agent revision after the Session is idle.
+   * The previous typed handle rejects `send()` after an accepted transfer.
+   */
+  handoff<NO extends Json, NR extends Json>(
+    agent: PublicAgent<NO, NR>,
+    options?: SessionHandoffOptions,
+  ): Promise<Session<NO, NR>>;
+  handoff(
+    agent: DefinitionReference & { readonly kind: 'agent' },
+    options?: SessionHandoffOptions,
+  ): Promise<Session>;
   send(
     message: O,
     options?: { readonly limits?: ExecutionLimits; readonly idempotencyKey?: string },
@@ -501,6 +543,12 @@ export interface AccessPolicy {
   canCall(input: {
     principal: string;
     workId: WorkId;
+    target: {
+      kind: 'tool' | 'agent' | 'workflow';
+      id: string;
+      revision: string;
+    };
+    /** Compatibility alias for Tool-only policies. It names the selected CallTarget. */
     tool: { id: string; revision: string };
     input: Json;
   }): boolean | Promise<boolean>;
@@ -508,6 +556,14 @@ export interface AccessPolicy {
     principal: string;
     workId: WorkId;
     interactionId: string;
+  }): boolean | Promise<boolean>;
+  /** Explicitly authorize an idle conversation ownership transfer between Agent revisions. */
+  canHandoff?(input: {
+    principal: string;
+    sessionId: SessionId;
+    fromAgent: { readonly id: string; readonly revision: string };
+    toAgent: { readonly id: string; readonly revision: string };
+    reason?: string;
   }): boolean | Promise<boolean>;
 }
 

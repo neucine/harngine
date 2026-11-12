@@ -44,7 +44,7 @@ export interface RequestRow {
 }
 export interface AuthorizationDecision {
   readonly id: string;
-  readonly action: 'start' | 'call' | 'respond';
+  readonly action: 'start' | 'call' | 'respond' | 'handoff';
   readonly principal: string;
   readonly policyRevision: string;
   readonly allowed: boolean;

@@ -1,4 +1,5 @@
 import type { Json } from './types.js';
+import type { ArtifactReference } from './artifact.js';
 
 export type ModelItem =
   | { readonly type: 'text'; readonly text: string }
@@ -24,6 +25,7 @@ export type ContextSource =
   | { readonly type: 'work_context'; readonly index: number }
   | { readonly type: 'work_input'; readonly id: string }
   | { readonly type: 'work_call'; readonly id: string }
+  | { readonly type: 'work_child'; readonly id: string }
   | { readonly type: 'reply'; readonly waitId: string };
 
 export type ContextItem =
@@ -60,6 +62,27 @@ export type ContextItem =
       readonly source: ContextSource;
     }
   | {
+      readonly type: 'child_outcome';
+      readonly call: {
+        readonly id: string;
+        readonly slot: string;
+        readonly target: {
+          readonly kind: 'agent' | 'workflow';
+          readonly id: string;
+          readonly version: string;
+        };
+        readonly objective: Json;
+        readonly mode: 'sequential' | 'concurrent';
+      };
+      readonly closure:
+        | { readonly status: 'completed'; readonly result: Json }
+        | {
+            readonly status: 'failed' | 'canceled';
+            readonly reason: { readonly code: string; readonly message: string };
+          };
+      readonly source: ContextSource;
+    }
+  | {
       readonly type: 'summary';
       readonly content: Json;
       readonly sources: readonly ContextSource[];
@@ -69,6 +92,8 @@ export interface ModelContext {
   readonly object: 'model_context';
   readonly objective: Json;
   readonly items: readonly ContextItem[];
+  /** Deduplicated references embedded in the selected objective and Context Items. */
+  readonly artifacts: readonly ArtifactReference[];
   readonly policy: string;
   readonly budget: {
     readonly inputTokens: number;
@@ -106,6 +131,7 @@ export interface ModelRequest {
   readonly context: ModelContext;
   readonly tools: readonly {
     readonly id: string;
+    readonly kind: 'tool' | 'agent' | 'workflow';
     readonly description: string;
     readonly inputSchema: Json;
     readonly outputSchema: Json;
@@ -142,6 +168,7 @@ export interface ModelAdapter {
   generate(
     request: ModelRequest,
     options: {
+      /** Aborted when Work is canceled or the App closes; stop provider work promptly. */
       readonly signal: AbortSignal;
       readonly emit: (item: ModelItem) => void;
       readonly progress?: (event: ModelProgress) => void;

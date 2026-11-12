@@ -1,13 +1,27 @@
-import type { Agent as CoreAgent, ProgressCursor, SessionCursor, WorkRef } from './contracts.js';
+import type {
+  Agent as CoreAgent,
+  ProgressCursor,
+  SessionCursor,
+  SessionVersion,
+  WorkRef,
+} from './contracts.js';
 import { Runtime, type Caller } from './runtime.js';
 import type { Json, SessionId, WorkId } from '../types.js';
-import { commandError, ConflictError, translateError, UnavailableError } from '../errors.js';
+import {
+  commandError,
+  ConflictError,
+  translateError,
+  UnavailableError,
+  ValidationError,
+} from '../errors.js';
 import type { Agent as PublicAgent } from '../agent.js';
 import type {
   DefinitionReference,
   ExecutionLimits,
   Message,
   Session,
+  SessionHandoff,
+  SessionHandoffOptions,
   Sessions,
   SessionSnapshot,
   SessionState,
@@ -27,9 +41,12 @@ import {
   decodeSessionCursor,
   encodeSessionCursor,
   generatedRequestId,
+  handoffId,
+  handoffSequence,
   messageId,
   messageSequence,
   parseSessionPageToken,
+  reference,
   sessionPageToken,
   type SessionWatchCursor,
 } from './app-codecs.js';
@@ -40,6 +57,8 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
     private readonly runtime: Runtime,
     private readonly caller: Caller,
     private readonly agent: PublicAgent<O, R> | undefined,
+    private readonly expectedAgent: DefinitionReference & { readonly kind: 'agent' },
+    private sessionVersion: SessionVersion,
     private readonly limitCeiling?: ExecutionLimits,
   ) {}
 
@@ -162,6 +181,119 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
     }
   }
 
+  async handoffs(
+    options: { before?: string; limit?: number } = {},
+  ): Promise<readonly SessionHandoff[]> {
+    try {
+      const api = this.runtime.forCaller(this.caller);
+      const snapshot = await api.session.inspect({ id: this.id });
+      const limit = options.limit ?? 50;
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
+        throw new ValidationError({
+          code: 'INVALID_LIMIT',
+          message: 'Handoff page limit must be between 1 and 100',
+        });
+      let before =
+        options.before === undefined
+          ? snapshot.cursor + 1
+          : handoffSequence(this.id, options.before);
+      const selected: SessionHandoff[] = [];
+      while (selected.length < limit && before > 1) {
+        const history = await api.session.history(
+          { id: this.id },
+          { before: before as SessionCursor, limit: 100 },
+        );
+        for (const entry of [...history.entries].reverse()) {
+          if (entry.entry.type !== 'handoff') continue;
+          selected.push(
+            Object.freeze({
+              object: 'session_handoff',
+              id: handoffId(this.id, entry.sequence),
+              from: reference(
+                'agent',
+                entry.entry.fromAgent.id,
+                entry.entry.fromAgent.version,
+              ) as DefinitionReference & { readonly kind: 'agent' },
+              to: reference(
+                'agent',
+                entry.entry.toAgent.id,
+                entry.entry.toAgent.version,
+              ) as DefinitionReference & { readonly kind: 'agent' },
+              ...(entry.entry.reason ? { reason: entry.entry.reason } : {}),
+              recordedAt: entry.recordedAt,
+              sessionVersion: entry.version,
+            }),
+          );
+          if (selected.length === limit) break;
+        }
+        if (!history.hasMore || !history.entries.length) break;
+        before = history.entries[0]!.sequence;
+      }
+      return Object.freeze(selected.reverse());
+    } catch (error) {
+      throw translateError(error);
+    }
+  }
+
+  async handoff<NO extends Json, NR extends Json>(
+    agent: PublicAgent<NO, NR>,
+    options?: SessionHandoffOptions,
+  ): Promise<Session<NO, NR>>;
+  async handoff(
+    agent: DefinitionReference & { readonly kind: 'agent' },
+    options?: SessionHandoffOptions,
+  ): Promise<Session>;
+  async handoff<NO extends Json, NR extends Json>(
+    selected: PublicAgent<NO, NR> | (DefinitionReference & { readonly kind: 'agent' }),
+    options: SessionHandoffOptions = {},
+  ): Promise<Session<NO, NR>> {
+    const api = this.runtime.forCaller(this.caller);
+    try {
+      const target =
+        'kind' in selected
+          ? (this.runtime.executable(selected) as PublicAgent<NO, NR> | undefined)
+          : selected;
+      if (!target)
+        throw new UnavailableError({
+          code: 'AGENT_UNAVAILABLE',
+          message: 'The exact target Agent revision is unavailable',
+        });
+      const current = await api.session.inspect({ id: this.id });
+      const currentMatches =
+        current.agent?.id === this.expectedAgent.id &&
+        current.agent.version === this.expectedAgent.revision;
+      if (!currentMatches && !options.idempotencyKey)
+        throw new ConflictError({
+          code: 'SESSION_HANDED_OFF',
+          message: 'Inspect the Session and use its current Agent handle',
+        });
+      const targetAgent = reference('agent', target.id, target.revision) as DefinitionReference & {
+        readonly kind: 'agent';
+      };
+      const receipt = await api.session.handoff(
+        { id: this.id },
+        {
+          requestId: generatedRequestId(options.idempotencyKey),
+          expectedVersion: currentMatches ? current.version : this.sessionVersion,
+          agent: { id: target.id, version: target.revision },
+          ...(options.reason ? { reason: options.reason } : {}),
+        },
+      );
+      if (receipt.status !== 'accepted') throw commandError(receipt.reason, receipt.status);
+      return new SessionHandle(
+        this.id,
+        this.runtime,
+        this.caller,
+        target,
+        targetAgent,
+        receipt.value.version,
+        this.limitCeiling,
+      );
+    } catch (error) {
+      throw translateError(error);
+    }
+  }
+
   async watch(
     options: { after?: string; signal?: AbortSignal } = {},
   ): Promise<Watch<SessionSnapshot, SessionUpdate>> {
@@ -275,7 +407,9 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
                 event:
                   entry.entry.type === 'input' || entry.entry.type === 'output'
                     ? 'message.appended'
-                    : 'work.updated',
+                    : entry.entry.type === 'handoff'
+                      ? 'ownership.changed'
+                      : 'work.updated',
                 ...('work' in entry.entry && entry.entry.work
                   ? { workId: entry.entry.work.id }
                   : {}),
@@ -346,6 +480,16 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
           code: 'AGENT_UNAVAILABLE',
           message: 'The Session Agent revision is unavailable',
         });
+      const current = await api.session.inspect({ id: this.id });
+      if (
+        !current.agent ||
+        current.agent.id !== this.expectedAgent.id ||
+        current.agent.version !== this.expectedAgent.revision
+      )
+        throw new ConflictError({
+          code: 'SESSION_HANDED_OFF',
+          message: 'Inspect the Session and use its current Agent handle',
+        });
       const limits = workLimits(this.agent, options.limits, this.limitCeiling);
       const receipt = await api.session.send(
         { id: this.id },
@@ -356,6 +500,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
         },
       );
       if (receipt.status !== 'accepted') throw commandError(receipt.reason, receipt.status);
+      this.sessionVersion = receipt.value.version;
       const page = await api.session.history(
         { id: this.id },
         { after: (receipt.value.sequence - 1) as SessionCursor },
@@ -449,11 +594,18 @@ export class SessionManager implements Sessions {
       agent: selected as unknown as CoreAgent,
     });
     if (receipt.status !== 'accepted') throw commandError(receipt.reason, receipt.status);
+    const currentAgent = reference(
+      'agent',
+      selected.id,
+      selected.revision,
+    ) as DefinitionReference & { readonly kind: 'agent' };
     return new SessionHandle(
       receipt.value.id,
       this.runtime,
       this.caller,
       selected,
+      currentAgent,
+      1 as SessionVersion,
       this.limitCeiling,
     );
   }
@@ -465,7 +617,20 @@ export class SessionManager implements Sessions {
     if (!snapshot.agent)
       throw new ConflictError({ code: 'SESSION_AGENT_MISSING', message: 'Session has no Agent' });
     const selected = this.agents.get(`${snapshot.agent.id}@${snapshot.agent.version}`);
-    return new SessionHandle(id, this.runtime, this.caller, selected, this.limitCeiling);
+    const currentAgent = reference(
+      'agent',
+      snapshot.agent.id,
+      snapshot.agent.version,
+    ) as DefinitionReference & { readonly kind: 'agent' };
+    return new SessionHandle(
+      id,
+      this.runtime,
+      this.caller,
+      selected,
+      currentAgent,
+      snapshot.version,
+      this.limitCeiling,
+    );
   }
 
   async list(options: { page?: string; limit?: number } = {}) {

@@ -464,6 +464,9 @@ test('migration from slice-one preserves receipt, state, admitted attempt and ca
     { version: 17 },
     { version: 18 },
     { version: 19 },
+    { version: 20 },
+    { version: 21 },
+    { version: 22 },
   ]);
   expect(query(dir, 'SELECT receipt FROM receipts')).toEqual([{ receipt: canonical(receipt) }]);
 });

@@ -4,6 +4,7 @@ export interface SchedulerOptions {
   readonly drive: () => Promise<void>;
   readonly expireDeadlines: () => void;
   readonly nextDeadline: () => number | null;
+  readonly abortInFlight: () => void;
   readonly clock: () => number;
 }
 
@@ -116,10 +117,11 @@ export class Scheduler {
     return this.driving;
   }
 
-  close(finalize: () => void): Promise<void> {
+  close(finalize: () => void, options: { readonly abortInFlight?: boolean } = {}): Promise<void> {
     if (this.closePromise) return this.closePromise;
     this.closedState = true;
     this.stop();
+    if (options.abortInFlight ?? true) this.options.abortInFlight();
     this.closePromise = (async () => {
       try {
         await this.driving;

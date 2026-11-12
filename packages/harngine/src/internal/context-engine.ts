@@ -1,5 +1,6 @@
 import type { ContextCandidate, ContextItem, ContextPolicy, ModelContext } from '../model.js';
 import type { Json } from '../types.js';
+import { artifactReferences } from '../artifact.js';
 import type { View } from './contracts.js';
 import { RuntimeError } from './contracts.js';
 
@@ -60,10 +61,12 @@ export class ContextEngine {
     const selectedTokens = selected.reduce((sum, candidate) => sum + candidate.estimatedTokens, 0);
     if (selectedTokens > available)
       throw new RuntimeError('CONTEXT_LIMIT', 'Required context exceeds the model input budget');
+    const items = Object.freeze(selected.map((candidate) => candidate.item));
     return Object.freeze({
       object: 'model_context',
       objective: view.objective,
-      items: Object.freeze(selected.map((candidate) => candidate.item)),
+      items,
+      artifacts: Object.freeze(artifactReferences([view.objective, ...items] as unknown as Json)),
       policy: this.options.policy?.id ?? 'harngine.default-context-v1',
       budget: {
         inputTokens: this.options.maxInputTokens,
@@ -152,6 +155,32 @@ export class ContextEngine {
           group: `turn:${turn}`,
         });
       }
+    }
+    for (const child of Object.values(view.children).sort((a, b) => a.slot.localeCompare(b.slot))) {
+      if (!child.closure) continue;
+      const item = {
+        type: 'child_outcome',
+        call: {
+          id: child.callId,
+          slot: child.slot,
+          target: {
+            kind: child.definitionKind,
+            id: child.work.definition.id,
+            version: child.work.definition.version,
+          },
+          objective: child.objective,
+          mode: child.mode,
+        },
+        closure: child.closure,
+        source: { type: 'work_child', id: child.callId },
+      } as ContextItem;
+      candidates.push({
+        ref: `child:${child.callId}`,
+        item,
+        required: true,
+        estimatedTokens: this.tokens(item),
+        group: `child:${child.callId}`,
+      });
     }
     return candidates;
   }

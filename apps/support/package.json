@@ -1,0 +1,14 @@
+{
+  "name": "@harngine/support",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@harngine/mcp": "workspace:*",
+    "@harngine/retrieval": "workspace:*",
+    "harngine": "workspace:*"
+  },
+  "scripts": {
+    "start": "node dist/main.js"
+  }
+}

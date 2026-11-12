@@ -216,6 +216,51 @@ CREATE TABLE child_work (
 ) STRICT;
 CREATE INDEX child_work_parent ON child_work(parent_work_id,decision_sequence);
 `;
+const executableCalls = `
+ALTER TABLE child_work ADD COLUMN call_id TEXT;
+ALTER TABLE child_work ADD COLUMN mode TEXT NOT NULL DEFAULT 'sequential' CHECK(mode IN ('sequential','concurrent'));
+ALTER TABLE child_work ADD COLUMN target_kind TEXT NOT NULL DEFAULT 'workflow' CHECK(target_kind IN ('agent','workflow'));
+ALTER TABLE child_work ADD COLUMN join_decision INTEGER;
+ALTER TABLE child_work ADD COLUMN join_slot TEXT;
+UPDATE child_work SET call_id='call_' || lower(hex(randomblob(12)));
+CREATE UNIQUE INDEX child_work_call ON child_work(call_id);
+`;
+const executableCallBackfill = `
+UPDATE child_work
+SET target_kind='agent'
+WHERE EXISTS (
+  SELECT 1
+  FROM work w
+  JOIN definitions d
+    ON d.kind='agent'
+   AND d.id=json_extract(w.definition,'$.id')
+   AND d.version=json_extract(w.definition,'$.version')
+  WHERE w.id=child_work.child_work_id
+);
+`;
+const sessionHandoff = `
+ALTER TABLE authorization_decisions RENAME TO authorization_decisions_previous;
+CREATE TABLE authorization_decisions (
+  id TEXT PRIMARY KEY,
+  action TEXT NOT NULL CHECK(action IN ('start','call','respond','handoff')),
+  principal TEXT NOT NULL,
+  policy_revision TEXT NOT NULL,
+  allowed INTEGER NOT NULL CHECK(allowed IN (0,1)),
+  work_id TEXT,
+  target_id TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  input_digest TEXT NOT NULL,
+  safe_reason TEXT NOT NULL,
+  recorded_at INTEGER NOT NULL,
+  UNIQUE(action,target_id)
+) STRICT;
+INSERT INTO authorization_decisions
+  SELECT id,action,principal,policy_revision,allowed,work_id,target_id,subject,input_digest,
+    safe_reason,recorded_at
+  FROM authorization_decisions_previous;
+DROP TABLE authorization_decisions_previous;
+CREATE INDEX authorization_work ON authorization_decisions(work_id,recorded_at,id);
+`;
 export const migrations = [
   initial,
   controls,
@@ -236,4 +281,7 @@ export const migrations = [
   effectResolutions,
   effectReconciliation,
   childWork,
+  executableCalls,
+  executableCallBackfill,
+  sessionHandoff,
 ] as const;

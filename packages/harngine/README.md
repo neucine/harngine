@@ -16,9 +16,17 @@ constrained durable replay, both direct durable **Work**, Work invokes typed **T
 optional **Session** carries user-facing continuity across several Work executions.
 
 Workflows may create first-class child Work with `flow.child()` or bounded durable fan-out/fan-in
-with `flow.all()`. Tool definitions expose explicit read/write, idempotency, reconciliation, and
-reversibility capabilities. `createApp()` also accepts an optional payload-free post-commit
-telemetry sink; durable execution evidence remains available through Work inspection.
+with `flow.all()`. `flow.call()` can target an explicitly declared Agent or Workflow, while
+`flow.start()` and `flow.join()` coordinate one concurrent child Call. Agents can expose explicit
+`delegates` with semantic descriptions; registration alone does not make another definition
+callable. A child cannot widen its principal, child-Work allowance, or depth. Tool definitions
+expose explicit read/write, idempotency, reconciliation, and reversibility capabilities.
+`createApp()` also accepts an optional payload-free post-commit telemetry sink; durable execution
+evidence remains available through Work inspection. The optional `@harngine/evaluation` companion
+turns that evidence into bounded benchmarks and usage metrics without adding an execution path.
+Large attachments and generated outputs use validated, content-addressed `ArtifactReference`
+records. The selected model turn receives these references through `ModelContext.artifacts`; the
+application retains and authorizes access to the bytes.
 
 ```ts
 import { agent, createApp, schema, tool, type ModelAdapter } from "harngine";
@@ -57,7 +65,14 @@ await app.close();
 Use `app.start()` for a Work handle with snapshots, watching, inspection, steering,
 interactions, cancellation, and an awaitable result. Use `app.sessions` for long-lived chat or task
 continuity. `session.send()` creates Work and queues it behind an active foreground Work;
-`work.steer()` directs new input to one exact active Work.
+`work.steer()` directs new input to one exact active Work. When a later objective needs another
+specialist, an authorized application can call `session.handoff(exactAgent)` while the Session is
+idle. The same conversation continues under the new Agent revision, `session.handoffs()` retains
+the lineage, and the older typed handle rejects further `send()` calls.
+
+`app.close()` aborts an active provider or Tool invocation by default. Model turns interrupted by
+shutdown remain durable and retry when the App reopens. Use `app.close({ abortInFlight: false })`
+to wait for the current invocation instead.
 
 Harngine records Tool calls before execution, separates model choice from execution authority, and
 restores accepted Work from SQLite after process failure. Bun generates immutable definition

@@ -1,5 +1,5 @@
 import { agentCompilation, type Agent as PublicAgent } from '../agent.js';
-import { canonical, copy, frozen, validate } from '../schema.js';
+import { canonical, copy, frozen, identity, validate } from '../schema.js';
 import {
   RuntimeError,
   requestId,
@@ -11,6 +11,8 @@ import {
   type Policy,
   type Reason,
   type SessionCursor,
+  type SessionHandoffAcceptance,
+  type SessionHandoffRequest,
   type SessionId,
   type SessionReceipt,
   type SessionRef,
@@ -169,8 +171,18 @@ export class SessionCoordinator {
               'maxOperations',
               'maxModelTurns',
               'maxToolExecutions',
+              'maxChildWork',
+              'maxDepth',
             ]);
             for (const [name, limit] of Object.entries(request.limits)) {
+              if (name === 'maxDepth') {
+                if (!Number.isSafeInteger(limit) || (limit as number) <= 0 || (limit as number) > 8)
+                  throw new RuntimeError(
+                    'INVALID_POLICY',
+                    'Session Work depth must be between 1 and the default',
+                  );
+                continue;
+              }
               const configured = definition.policy[name as keyof Policy];
               if (
                 !Number.isSafeInteger(limit) ||
@@ -293,6 +305,215 @@ export class SessionCoordinator {
     });
     this.checkpoint('session');
     if (receipt.status === 'accepted') this.wake();
+    return frozen(receipt);
+  }
+
+  async handoff(
+    caller: { readonly principal: string; readonly source: string },
+    session: SessionRef,
+    raw: SessionHandoffRequest,
+  ): Promise<SessionReceipt<SessionHandoffAcceptance>> {
+    if (this.isClosed()) throw new RuntimeError('CLOSED', 'Runtime is closed');
+    exact(session, ['id']);
+    let request = copy(raw);
+    requestId(request.requestId);
+    let invalid: Reason | undefined;
+    try {
+      exact(request, ['requestId', 'expectedVersion', 'agent', 'reason']);
+      identity(request.agent);
+      if (!Number.isSafeInteger(request.expectedVersion) || request.expectedVersion < 1)
+        throw new RuntimeError('INVALID_VERSION', 'Expected a Session version');
+      if (request.reason !== undefined) {
+        if (
+          typeof request.reason !== 'string' ||
+          !request.reason.trim() ||
+          request.reason.length > 500
+        )
+          throw new RuntimeError('INVALID_DATA', 'Handoff reason must contain 1–500 characters');
+        request = { ...request, reason: request.reason.trim() };
+      }
+    } catch (error) {
+      invalid = reason(error);
+    }
+    const scope = canonical([caller.principal, caller.source]);
+    const command = canonical({
+      type: 'session.handoff',
+      target: session,
+      request: {
+        requestId: request.requestId,
+        agent: request.agent,
+        ...(request.reason ? { reason: request.reason } : {}),
+      },
+    });
+    const prior = this.store.db
+      .prepare('SELECT command,receipt FROM receipts WHERE source_scope=? AND request_id=?')
+      .get(scope, request.requestId) as { command: string; receipt: string } | undefined;
+    if (prior)
+      return frozen(
+        prior.command === command
+          ? JSON.parse(prior.receipt)
+          : {
+              requestId: request.requestId,
+              status: 'conflict',
+              target: session.id,
+              reason: {
+                code: 'IDENTITY_CONFLICT',
+                message: 'Request identity has different content',
+              },
+            },
+      );
+    const preliminary = this.store.db
+      .prepare('SELECT principal,status,version,agent,foreground_work_id FROM sessions WHERE id=?')
+      .get(session.id) as
+      | {
+          principal: string;
+          status: string;
+          version: number;
+          agent: string | null;
+          foreground_work_id: string | null;
+        }
+      | undefined;
+    if (!preliminary) throw new RuntimeError('NOT_FOUND', 'Session not found');
+    if (preliminary.principal !== caller.principal)
+      throw new RuntimeError('ACCESS_DENIED', 'Session belongs to another principal');
+    const previousAgent = preliminary.agent ? JSON.parse(preliminary.agent) : null;
+    let allowed = false;
+    if (!invalid && previousAgent) {
+      const decision = this.policy.canHandoff({
+        principal: caller.principal,
+        sessionId: session.id,
+        fromAgent: previousAgent,
+        toAgent: request.agent,
+        reason: request.reason,
+      });
+      allowed = typeof decision === 'boolean' ? decision : await decision;
+      if (!allowed)
+        invalid = { code: 'ACCESS_DENIED', message: 'Session handoff is not authorized' };
+    } else if (!invalid && !previousAgent)
+      invalid = { code: 'AGENT_UNAVAILABLE', message: 'Session has no current Agent' };
+
+    const receipt = this.store.write((): SessionReceipt<SessionHandoffAcceptance> => {
+      const row = this.store.db.prepare('SELECT * FROM sessions WHERE id=?').get(session.id) as
+        | {
+            principal: string;
+            status: string;
+            version: number;
+            cursor: number;
+            max_entries: number;
+            agent: string | null;
+            foreground_work_id: string | null;
+          }
+        | undefined;
+      if (!row) throw new RuntimeError('NOT_FOUND', 'Session not found');
+      if (row.principal !== caller.principal)
+        throw new RuntimeError('ACCESS_DENIED', 'Session belongs to another principal');
+      const currentAgent = row.agent ? JSON.parse(row.agent) : null;
+      const queued = this.store.db
+        .prepare('SELECT 1 FROM session_queue WHERE session_id=? LIMIT 1')
+        .get(session.id);
+      let rejection = invalid;
+      if (row.version !== request.expectedVersion)
+        rejection = {
+          code: 'STALE_VERSION',
+          message: 'Inspect the Session before handing it off',
+        };
+      else if (row.status !== 'active')
+        rejection = { code: 'SESSION_CLOSED', message: 'Session is closed' };
+      else if (!currentAgent)
+        rejection = { code: 'AGENT_UNAVAILABLE', message: 'Session has no current Agent' };
+      else if (row.foreground_work_id || queued)
+        rejection = { code: 'SESSION_BUSY', message: 'Session still has pending Work' };
+      else if (
+        !rejection &&
+        currentAgent.id === request.agent.id &&
+        currentAgent.version === request.agent.version
+      )
+        rejection = {
+          code: 'HANDOFF_SAME_AGENT',
+          message: 'Session already uses the requested Agent revision',
+        };
+      else if (!this.registry.agent(request.agent))
+        rejection = {
+          code: 'AGENT_UNAVAILABLE',
+          message: 'The exact target Agent revision is unavailable',
+        };
+      else if (row.cursor >= row.max_entries)
+        rejection = { code: 'SESSION_CAPACITY', message: 'Session entry capacity is full' };
+
+      this.store.authorization({
+        action: 'handoff',
+        principal: caller.principal,
+        policyRevision: this.policy.revision,
+        allowed: !rejection,
+        targetId: `${scope}:${request.requestId}`,
+        subject: {
+          fromAgent: currentAgent
+            ? { id: String(currentAgent.id), version: String(currentAgent.version) }
+            : null,
+          toAgent: { id: request.agent.id, version: request.agent.version },
+        },
+        value: request.reason ?? null,
+        ...(rejection ? { safeReason: rejection.code } : {}),
+      });
+      let result: SessionReceipt<SessionHandoffAcceptance>;
+      if (rejection) {
+        result = {
+          requestId: request.requestId,
+          status: rejection.code === 'STALE_VERSION' ? 'conflict' : 'rejected',
+          target: session.id as SessionId,
+          cursor: row.cursor as SessionCursor,
+          reason: rejection,
+        };
+        this.store.db
+          .prepare('INSERT INTO receipts VALUES(?,?,?,?,?)')
+          .run(scope, request.requestId, command, null, canonical(result));
+        this.store.db
+          .prepare('INSERT INTO session_receipts VALUES(?,?,?)')
+          .run(scope, request.requestId, session.id);
+      } else {
+        const version = (row.version + 1) as SessionVersion;
+        const cursor = (row.cursor + 1) as SessionCursor;
+        result = {
+          requestId: request.requestId,
+          status: 'accepted',
+          target: session.id as SessionId,
+          cursor,
+          value: {
+            version,
+            sequence: cursor,
+            fromAgent: currentAgent,
+            toAgent: request.agent,
+            ...(request.reason ? { reason: request.reason } : {}),
+          },
+        };
+        this.store.db
+          .prepare('INSERT INTO receipts VALUES(?,?,?,?,?)')
+          .run(scope, request.requestId, command, null, canonical(result));
+        this.store.db
+          .prepare('INSERT INTO session_receipts VALUES(?,?,?)')
+          .run(scope, request.requestId, session.id);
+        this.store.db
+          .prepare('UPDATE sessions SET version=?,cursor=?,agent=? WHERE id=?')
+          .run(version, cursor, canonical(request.agent), session.id);
+        this.store.db.prepare('INSERT INTO session_entries VALUES(?,?,?,?,?,?,?,?)').run(
+          session.id,
+          cursor,
+          version,
+          caller.source,
+          this.clock(),
+          canonical({
+            type: 'handoff',
+            fromAgent: currentAgent,
+            toAgent: request.agent,
+            ...(request.reason ? { reason: request.reason } : {}),
+          }),
+          scope,
+          request.requestId,
+        );
+      }
+      return result;
+    });
+    this.checkpoint('session');
     return frozen(receipt);
   }
 

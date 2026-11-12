@@ -405,6 +405,311 @@ test('Workflow child delegation accepts an Agent definition on the same executio
   await expect(app.run(parent, 'delegate this')).resolves.toBe('delegated answer');
 });
 
+test('flow.start and flow.join keep one concurrent child Call while the parent does useful work', async () => {
+  let probes = 0;
+  const probe = tool({
+    id: 'progress-probe',
+    input: number,
+    output: number,
+    effect: 'read',
+    execute: (input) => {
+      probes++;
+      return input + 1;
+    },
+  });
+  const child = workflow({
+    id: 'joined-researcher',
+    objective: number,
+    result: number,
+    run: async (objective, flow) => {
+      const extra = await flow.ask('release', {
+        prompt: 'Release the result?',
+        response: number,
+      });
+      return objective + extra;
+    },
+  });
+  const parent = workflow({
+    id: 'joined-parent',
+    objective: number,
+    result: number,
+    tools: [probe],
+    children: [child],
+    async run(objective, flow) {
+      const pending = await flow.start('research', child, objective);
+      const progressed = await flow.call('probe', probe, objective);
+      const researched = await flow.join('joined', pending);
+      return progressed + researched;
+    },
+  });
+  const app = createApp({ directory: directory(), workflows: [parent, child] });
+  apps.push(app);
+
+  const work = await app.start(parent, 10);
+  let snapshot = await work.snapshot();
+  for (let index = 0; index < 50 && !snapshot.childWorkIds.length; index++) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    snapshot = await work.snapshot();
+  }
+  expect(snapshot.childWorkIds).toHaveLength(1);
+  expect(probes).toBe(1);
+  const childWork = await app.works.get(snapshot.childWorkIds[0]!);
+  let childSnapshot = await childWork.snapshot();
+  for (let index = 0; index < 50 && !childSnapshot.interactions.length; index++) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    childSnapshot = await childWork.snapshot();
+  }
+  await childWork.respond(childSnapshot.interactions[0]!.id, 7);
+  await expect(work.result()).resolves.toBe(28);
+
+  const inspection = await work.inspect();
+  const childEntries = inspection.entries.filter(
+    (entry): entry is Extract<(typeof inspection.entries)[number], { type: 'child' }> =>
+      entry.type === 'child',
+  );
+  expect(childEntries.map((entry) => entry.phase)).toEqual(
+    expect.arrayContaining(['started', 'joined', 'closed']),
+  );
+  expect(new Set(childEntries.map((entry) => entry.callId)).size).toBe(1);
+  expect(childEntries.find((entry) => entry.phase === 'joined')).toMatchObject({
+    mode: 'concurrent',
+    joinSlot: 'joined',
+    childWorkId: childWork.id,
+  });
+  expect(
+    inspection.entries.some(
+      (entry) =>
+        entry.type === 'decision' &&
+        entry.proposal === 'join' &&
+        entry.presentation.summary === 'Joined concurrent child Work',
+    ),
+  ).toBe(true);
+});
+
+test('a parent cannot complete successfully while its concurrent child remains active', async () => {
+  const child = workflow({
+    id: 'unjoined-child',
+    objective: number,
+    result: number,
+    run: async (objective, flow) => {
+      await flow.ask('hold', { prompt: 'Hold the child?', response: number });
+      return objective;
+    },
+  });
+  const parent = workflow({
+    id: 'unjoined-parent',
+    objective: number,
+    result: number,
+    children: [child],
+    async run(objective, flow) {
+      await flow.start('child', child, objective);
+      return objective;
+    },
+  });
+  const app = createApp({ directory: directory(), workflows: [parent, child] });
+  apps.push(app);
+
+  const work = await app.start(parent, 3);
+  await expect(work.result()).rejects.toMatchObject({ code: 'UNSETTLED' });
+  const snapshot = await work.snapshot();
+  expect(snapshot.childWorkIds).toHaveLength(1);
+  await expect((await app.works.get(snapshot.childWorkIds[0]!)).snapshot()).resolves.toMatchObject({
+    status: 'waiting',
+  });
+});
+
+test('Workflow calling an Agent survives restart with one durable child Work', async () => {
+  const location = directory();
+  let modelCalls = 0;
+  let entered!: () => void;
+  const modelEntered = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const model: ModelAdapter = {
+    id: 'restartable-child-model',
+    capabilities: { tools: false, structuredOutput: false, streaming: true },
+    async generate(_request, { signal }) {
+      modelCalls++;
+      if (modelCalls > 1)
+        return {
+          object: 'model_response',
+          items: [{ type: 'text', text: 'resumed child answer' }],
+          finishReason: 'stop',
+        };
+      entered();
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(new Error('interrupted')), { once: true });
+      });
+    },
+  };
+  const child = agent({
+    id: 'restartable-child',
+    instructions: 'Answer the parent objective.',
+    objective: text,
+    model,
+  });
+  const parent = workflow({
+    id: 'restartable-parent',
+    objective: text,
+    result: text,
+    children: [child],
+    run: (objective, flow) => flow.call('child-agent', child, objective),
+  });
+  const first = createApp({ directory: location, workflows: [parent], agents: [child] });
+  apps.push(first);
+  const work = await first.start(parent, 'survive restart');
+  await modelEntered;
+  let snapshot = await work.snapshot();
+  for (let index = 0; index < 50 && !snapshot.childWorkIds.length; index++) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    snapshot = await work.snapshot();
+  }
+  expect(snapshot.childWorkIds).toHaveLength(1);
+  const childWorkId = snapshot.childWorkIds[0]!;
+  await first.close();
+
+  const restored = createApp({ directory: location, workflows: [parent], agents: [child] });
+  apps.push(restored);
+  const restoredParent = await restored.works.get(work.id);
+  await expect(restoredParent.result()).resolves.toBe('resumed child answer');
+  expect(modelCalls).toBe(2);
+  const works = (await restored.works.list()).works;
+  expect(works).toHaveLength(2);
+  expect(works.filter((item) => item.definition.id === child.id)).toHaveLength(1);
+  await expect((await restored.works.get(childWorkId)).snapshot()).resolves.toMatchObject({
+    parentId: work.id,
+    status: 'completed',
+  });
+});
+
+test('executable child failure is catchable with the child Work identity', async () => {
+  const child = workflow({
+    id: 'failing-specialist',
+    objective: number,
+    result: number,
+    run: (_objective, flow) =>
+      flow.fail({ code: 'SPECIALIST_FAILED', message: 'specialist could not continue' }),
+  });
+  const parent = workflow({
+    id: 'catch-specialist-failure',
+    objective: number,
+    result: text,
+    children: [child],
+    async run(objective, flow) {
+      try {
+        await flow.call('specialist', child, objective);
+      } catch (error) {
+        if (error instanceof WorkFailedError)
+          return `${error.reason.code}:${error.workId ?? 'missing-work-id'}`;
+        throw error;
+      }
+      return 'unexpected success';
+    },
+  });
+  const app = createApp({ directory: directory(), workflows: [parent, child] });
+  apps.push(app);
+
+  const result = await app.run(parent, 1);
+  expect(result).toMatch(/^SPECIALIST_FAILED:work_/);
+  const childWork = (await app.works.list()).works.find((work) => work.definition.id === child.id)!;
+  expect(result).toBe(`SPECIALIST_FAILED:${childWork.id}`);
+});
+
+test('root child allowance and depth narrow descendants without widening principal', async () => {
+  const grandchild = workflow({
+    id: 'allowance-grandchild',
+    objective: number,
+    result: number,
+    run: (objective) => objective,
+  });
+  const middle = workflow({
+    id: 'allowance-middle',
+    objective: number,
+    result: number,
+    children: [grandchild],
+    run: (objective, flow) => flow.call('grandchild', grandchild, objective),
+  });
+  const parent = workflow({
+    id: 'allowance-parent',
+    objective: number,
+    result: number,
+    children: [middle],
+    run: (objective, flow) => flow.call('middle', middle, objective),
+  });
+  const app = createApp({
+    directory: directory(),
+    workflows: [parent, middle, grandchild],
+  });
+  apps.push(app);
+
+  const work = await app.start(parent, 5, { limits: { childWork: 1, depth: 3 } });
+  await expect(work.result()).rejects.toMatchObject({ code: 'LIMIT_EXCEEDED' });
+  const works = (await app.works.list()).works;
+  expect(works.map((item) => item.definition.id).sort()).toEqual([
+    'allowance-middle',
+    'allowance-parent',
+  ]);
+  const child = works.find((item) => item.definition.id === middle.id)!;
+  const records = await app.diagnostics.records(child.id, { limit: 100 });
+  const childRow = records.records.find(
+    (record) => record.table === 'work' && record.value !== null,
+  )!.value as { policy: string; principal: string };
+  const parentRow = (await app.diagnostics.records(work.id, { limit: 100 })).records.find(
+    (record) => record.table === 'work' && record.value !== null,
+  )!.value as { principal: string };
+  expect(JSON.parse(childRow.policy)).toMatchObject({ maxChildWork: 0, maxDepth: 2 });
+  expect(childRow.principal).toBe(parentRow.principal);
+});
+
+test('child Call authorization denial creates no child Work and records the exact target', async () => {
+  const child = workflow({
+    id: 'denied-child',
+    objective: number,
+    result: number,
+    run: (objective) => objective,
+  });
+  const parent = workflow({
+    id: 'denied-parent',
+    objective: number,
+    result: number,
+    children: [child],
+    run: (objective, flow) => flow.call('child', child, objective),
+  });
+  const app = createApp({
+    directory: directory(),
+    workflows: [parent, child],
+    access: {
+      revision: 'deny-child-calls-v1',
+      canStart: () => true,
+      canCall: ({ target }) => target.kind === 'tool',
+      canRespond: () => true,
+    },
+  });
+  apps.push(app);
+
+  const work = await app.start(parent, 1);
+  await expect(work.result()).rejects.toMatchObject({ code: 'ACCESS_DENIED' });
+  expect((await app.works.list()).works).toHaveLength(1);
+  const records = await app.diagnostics.records(work.id, { limit: 100 });
+  expect(records.records).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        table: 'authorization_decisions',
+        value: expect.objectContaining({
+          action: 'call',
+          allowed: 0,
+          policy_revision: 'deny-child-calls-v1',
+          subject: JSON.stringify({
+            id: child.id,
+            kind: 'workflow',
+            version: child.revision,
+          }),
+        }),
+      }),
+    ]),
+  );
+});
+
 test('child fan-out is atomically rejected when it exceeds the parent operation budget', async () => {
   const child = workflow({
     id: 'budget-child',
@@ -971,7 +1276,12 @@ test('Agent model progress is durable and visible in Work inspection', async () 
       progress?.({ type: 'reasoning', text: 'A visible model summary' });
       progress?.({
         type: 'completed',
-        usage: { inputTokens: 120, outputTokens: 20, totalTokens: 140 },
+        usage: {
+          inputTokens: 120,
+          outputTokens: 20,
+          totalTokens: 140,
+          cost: { amountMicros: 25, currency: 'USD' },
+        },
       });
       return {
         object: 'model_response',
@@ -997,7 +1307,12 @@ test('Agent model progress is durable and visible in Work inspection', async () 
     { phase: 'reasoning', text: 'A visible model summary' },
     {
       phase: 'completed',
-      usage: { inputTokens: 120, outputTokens: 20, totalTokens: 140 },
+      usage: {
+        inputTokens: 120,
+        outputTokens: 20,
+        totalTokens: 140,
+        cost: { amountMicros: 25, currency: 'USD' },
+      },
       presentation: { title: 'Model response ready', summary: '120 input · 20 output tokens' },
     },
   ]);

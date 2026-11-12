@@ -1,6 +1,7 @@
 import type {
   AnyTool,
   AnyWorkflow,
+  ChildWorkRecord,
   Identity,
   Outcome,
   Proposal,
@@ -24,6 +25,7 @@ export function checkedProposal(
   workflow: (reference: Identity) => AnyWorkflow | undefined,
   inputs: readonly InputRecord[] = [],
   hasMoreInputs = false,
+  children: Readonly<Record<string, ChildWorkRecord>> = {},
 ): Proposal {
   const proposal = copy(raw) as Proposal;
   if (!proposal || typeof proposal !== 'object')
@@ -48,7 +50,7 @@ export function checkedProposal(
     validate(tool.input, proposal.call.input);
   } else if (proposal.type === 'child') {
     exact(proposal, ['type', 'state', 'child', 'dispositions']);
-    exact(proposal.child, ['slot', 'definition', 'objective']);
+    exact(proposal.child, ['slot', 'definition', 'objective', 'mode']);
     validate(definition.state, proposal.state);
     if (!proposal.child.slot || typeof proposal.child.slot !== 'string')
       throw new RuntimeError('INVALID_PROPOSAL', 'A child Work slot is required');
@@ -58,6 +60,11 @@ export function checkedProposal(
     const child = workflow(proposal.child.definition);
     if (!child) throw new RuntimeError('UNAVAILABLE', 'Pinned child Workflow is missing');
     validate(child.objective, proposal.child.objective);
+    if (
+      proposal.child.mode !== undefined &&
+      !['sequential', 'concurrent'].includes(proposal.child.mode)
+    )
+      throw new RuntimeError('INVALID_PROPOSAL', 'Unsupported child Work mode');
   } else if (proposal.type === 'children') {
     exact(proposal, ['type', 'state', 'children', 'dispositions']);
     validate(definition.state, proposal.state);
@@ -69,7 +76,7 @@ export function checkedProposal(
       throw new RuntimeError('INVALID_PROPOSAL', 'A child batch requires 1–100 entries');
     const slots = new Set<string>();
     for (const planned of proposal.children) {
-      exact(planned, ['slot', 'definition', 'objective']);
+      exact(planned, ['slot', 'definition', 'objective', 'mode']);
       if (!planned.slot || typeof planned.slot !== 'string' || !slots.add(planned.slot))
         throw new RuntimeError('INVALID_PROPOSAL', 'Child Work slots must be unique');
       const target = key(planned.definition);
@@ -78,7 +85,21 @@ export function checkedProposal(
       const child = workflow(planned.definition);
       if (!child) throw new RuntimeError('UNAVAILABLE', 'Pinned child Workflow is missing');
       validate(child.objective, planned.objective);
+      if (planned.mode !== undefined && !['sequential', 'concurrent'].includes(planned.mode))
+        throw new RuntimeError('INVALID_PROPOSAL', 'Unsupported child Work mode');
     }
+  } else if (proposal.type === 'join') {
+    exact(proposal, ['type', 'state', 'join', 'dispositions']);
+    exact(proposal.join, ['slot', 'child']);
+    validate(definition.state, proposal.state);
+    if (typeof proposal.join.slot !== 'string' || !proposal.join.slot)
+      throw new RuntimeError('INVALID_PROPOSAL', 'A Workflow join slot is required');
+    if (typeof proposal.join.child !== 'string' || !proposal.join.child)
+      throw new RuntimeError('INVALID_PROPOSAL', 'A child Work slot is required for join');
+    const child = children[proposal.join.child];
+    if (!child) throw new RuntimeError('INVALID_PROPOSAL', 'Join target has not started');
+    if (child.mode !== 'concurrent')
+      throw new RuntimeError('INVALID_PROPOSAL', 'Only concurrent child Calls can be joined');
   } else if (proposal.type === 'wait') {
     exact(proposal, ['type', 'state', 'dispositions', 'until']);
     validate(definition.state, proposal.state);

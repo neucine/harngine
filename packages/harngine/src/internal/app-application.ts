@@ -57,6 +57,7 @@ function runtimeAccess(options: AppOptions): RuntimeAccessPolicy {
       canStart: () => true,
       canCall: () => true,
       canRespond: () => true,
+      canHandoff: () => true,
     };
   if (options.access) {
     const policy = options.access;
@@ -68,14 +69,27 @@ function runtimeAccess(options: AppOptions): RuntimeAccessPolicy {
           definition: { id: definition.id, revision: definition.version },
           objective,
         }),
-      canCall: ({ principal, workId, tool, input }) =>
+      canCall: ({ principal, workId, target, tool, input }) =>
         policy.canCall({
           principal,
           workId,
+          target: {
+            kind: target.kind,
+            id: target.id,
+            revision: target.version,
+          },
           tool: { id: tool.id, revision: tool.version },
           input,
         }),
       canRespond: (input) => policy.canRespond(input),
+      canHandoff: ({ principal, sessionId, fromAgent, toAgent, reason }) =>
+        policy.canHandoff?.({
+          principal,
+          sessionId,
+          fromAgent: { id: fromAgent.id, revision: fromAgent.version },
+          toAgent: { id: toAgent.id, revision: toAgent.version },
+          ...(reason === undefined ? {} : { reason }),
+        }) ?? false,
     };
   }
   const local = options.principal ?? 'local';
@@ -84,6 +98,7 @@ function runtimeAccess(options: AppOptions): RuntimeAccessPolicy {
     canStart: ({ principal }) => principal === local,
     canCall: ({ principal }) => principal === local,
     canRespond: ({ principal }) => principal === local,
+    canHandoff: ({ principal }) => principal === local,
   };
 }
 
@@ -456,9 +471,9 @@ class Application extends Scope implements App {
     return definitionDescription(record);
   }
 
-  async close(): Promise<void> {
+  async close(options: { readonly abortInFlight?: boolean } = {}): Promise<void> {
     try {
-      await this.runtime.close();
+      await this.runtime.close(options);
       await this.supervision;
       if (this.failure) throw this.failure;
     } catch (error) {

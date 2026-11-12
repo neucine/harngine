@@ -39,33 +39,51 @@ export function parseSessionPageToken(token: string): number {
   return value;
 }
 
-function messagePrefix(sessionId: SessionId): string {
+function entryPrefix(kind: 'message' | 'handoff', sessionId: SessionId): string {
   const scope = createHash('sha256')
     .update(sessionId)
     .digest()
     .subarray(0, 12)
     .toString('base64url');
-  return `message_${scope}_`;
+  return `${kind}_${scope}_`;
 }
 
 export function messageId(sessionId: SessionId, sequence: number): `message_${string}` {
-  return `${messagePrefix(sessionId)}${sequence.toString(36)}` as `message_${string}`;
+  return `${entryPrefix('message', sessionId)}${sequence.toString(36)}` as `message_${string}`;
 }
 
-export function messageSequence(sessionId: SessionId, id: string): number {
-  const prefix = messagePrefix(sessionId);
+function entrySequence(kind: 'message' | 'handoff', sessionId: SessionId, id: string): number {
+  const prefix = entryPrefix(kind, sessionId);
   if (!id.startsWith(prefix))
     throw new ValidationError({
       code: 'INVALID_PAGE',
-      message: 'Message cursor does not belong to this Session',
+      message: `${kind === 'message' ? 'Message' : 'Handoff'} cursor does not belong to this Session`,
     });
   const encoded = id.slice(prefix.length);
   if (!/^[0-9a-z]+$/.test(encoded))
-    throw new ValidationError({ code: 'INVALID_PAGE', message: 'Invalid Message cursor' });
+    throw new ValidationError({
+      code: 'INVALID_PAGE',
+      message: `Invalid ${kind === 'message' ? 'Message' : 'Handoff'} cursor`,
+    });
   const sequence = Number.parseInt(encoded, 36);
   if (!Number.isSafeInteger(sequence) || sequence < 1)
-    throw new ValidationError({ code: 'INVALID_PAGE', message: 'Invalid Message cursor' });
+    throw new ValidationError({
+      code: 'INVALID_PAGE',
+      message: `Invalid ${kind === 'message' ? 'Message' : 'Handoff'} cursor`,
+    });
   return sequence;
+}
+
+export function messageSequence(sessionId: SessionId, id: string): number {
+  return entrySequence('message', sessionId, id);
+}
+
+export function handoffId(sessionId: SessionId, sequence: number): `handoff_${string}` {
+  return `${entryPrefix('handoff', sessionId)}${sequence.toString(36)}` as `handoff_${string}`;
+}
+
+export function handoffSequence(sessionId: SessionId, id: string): number {
+  return entrySequence('handoff', sessionId, id);
 }
 
 export interface SessionWatchCursor {

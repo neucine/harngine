@@ -157,7 +157,7 @@ test('approval replies wake execution and consume authority once', async () => {
   await x.runtime.close();
   await running;
 });
-test('deadlines settle during a different in-flight invocation; close waits for its outcome', async () => {
+test('deadlines settle during a different invocation; drain close waits for its outcome', async () => {
   let release!: (o: Outcome<number>) => void;
   let entered = false;
   const slow = fixture(undefined, () => {
@@ -200,7 +200,7 @@ test('deadlines settle during a different in-flight invocation; close waits for 
   );
   expect((await owner.work.inspect(active)).calls[0]?.status).toBe('admitted');
   let closed = false;
-  const closing = runtime.close().then(() => {
+  const closing = runtime.close({ abortInFlight: false }).then(() => {
     closed = true;
   });
   await delay(10);

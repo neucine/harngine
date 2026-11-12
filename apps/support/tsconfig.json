@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "references": [
+    { "path": "../../packages/harngine" },
+    { "path": "../../packages/mcp" },
+    { "path": "../../packages/retrieval" }
+  ],
+  "include": ["src/**/*.ts"]
+}

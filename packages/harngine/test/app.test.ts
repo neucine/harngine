@@ -8,11 +8,14 @@ import {
   UnavailableError,
   ValidationError,
   WorkCanceledError,
+  agent,
   createApp,
   schema,
   workflow,
   tool,
   type App,
+  type ModelAdapter,
+  type ModelRequest,
   type TelemetryEvent,
 } from '../src/index.js';
 
@@ -84,6 +87,229 @@ test('Work exposes public state, result and idempotent terminal cancellation', a
     limits: { maxDecisions: expect.any(Number), maxAttempts: expect.any(Number) },
   });
   await expect(work.cancel()).resolves.toMatchObject({ status: 'completed', result: 12 });
+});
+
+test('Session handoff changes ownership only at an idle boundary and preserves lineage', async () => {
+  const requests: ModelRequest[] = [];
+  const model: ModelAdapter = {
+    id: 'support-handoff-model',
+    capabilities: { tools: false, structuredOutput: false, streaming: false },
+    async generate(request) {
+      requests.push(request);
+      const instructions = request.instructions.join('\n');
+      return {
+        object: 'model_response',
+        items: [
+          {
+            type: 'text',
+            text: instructions.includes('billing specialist')
+              ? 'Billing will review the duplicate charge.'
+              : 'route:billing',
+          },
+        ],
+        finishReason: 'stop',
+      };
+    },
+  };
+  const triage = agent({
+    id: 'support.triage',
+    instructions: 'Route the request.',
+    objective: schema<string>({
+      id: 'support.message',
+      version: '1',
+      jsonSchema: { type: 'string' },
+    }),
+    model,
+  });
+  const billing = agent({
+    id: 'support.billing',
+    instructions: 'You are the billing specialist.',
+    objective: schema<string>({
+      id: 'support.message',
+      version: '1',
+      jsonSchema: { type: 'string' },
+    }),
+    model,
+  });
+  const app = createApp({ directory: directory(), agents: [triage, billing] });
+  apps.push(app);
+  const session = await app.sessions.create({ agent: triage, title: 'Billing support' });
+  const first = await session.send('My card was charged twice.');
+  await expect(first.work.result()).resolves.toBe('route:billing');
+  expect((await session.snapshot()).agent).toMatchObject({
+    id: triage.id,
+    revision: triage.revision,
+  });
+
+  const watcher = await session.watch();
+  const iterator = watcher[Symbol.asyncIterator]();
+  const nextUpdate = iterator.next();
+  const billingSession = await session.handoff(billing, {
+    reason: 'Duplicate charge requires billing',
+    idempotencyKey: 'support-route-billing',
+  });
+  expect((await nextUpdate).value).toMatchObject({
+    value: {
+      event: 'ownership.changed',
+      snapshot: { agent: { id: billing.id, revision: billing.revision } },
+    },
+  });
+  await iterator.return?.();
+  expect((await billingSession.snapshot()).agent).toMatchObject({
+    id: billing.id,
+    revision: billing.revision,
+  });
+  const retried = await session.handoff(billing, {
+    reason: 'Duplicate charge requires billing',
+    idempotencyKey: 'support-route-billing',
+  });
+  expect(retried.id).toBe(session.id);
+  await expect(session.send('Use the stale handle')).rejects.toMatchObject({
+    code: 'SESSION_HANDED_OFF',
+  });
+
+  const followUp = await billingSession.send('Please refund the duplicate charge.');
+  await expect(followUp.work.result()).resolves.toBe('Billing will review the duplicate charge.');
+  expect(requests.at(-1)?.context.objective).toBe('Please refund the duplicate charge.');
+  expect(requests.at(-1)?.context.items).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        type: 'reference',
+        content: expect.objectContaining({
+          type: 'output',
+          content: 'route:billing',
+        }),
+      }),
+    ]),
+  );
+  expect(await billingSession.handoffs()).toEqual([
+    expect.objectContaining({
+      object: 'session_handoff',
+      from: expect.objectContaining({ id: triage.id, revision: triage.revision }),
+      to: expect.objectContaining({ id: billing.id, revision: billing.revision }),
+      reason: 'Duplicate charge requires billing',
+    }),
+  ]);
+  await billingSession.close();
+});
+
+test('Session handoff rejects active Work and unauthorized ownership transfer', async () => {
+  let release!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const model: ModelAdapter = {
+    id: 'held-support-model',
+    capabilities: { tools: false, structuredOutput: false, streaming: false },
+    async generate(request) {
+      if (request.instructions.join('\n').includes('Current owner')) await waiting;
+      return {
+        object: 'model_response',
+        items: [{ type: 'text', text: 'specialist answer' }],
+        finishReason: 'stop',
+      };
+    },
+  };
+  const text = schema<string>({
+    id: 'support-busy-message',
+    version: '1',
+    jsonSchema: { type: 'string' },
+  });
+  const owner = agent({
+    id: 'support.owner',
+    instructions: 'Current owner.',
+    objective: text,
+    model,
+  });
+  const specialist = agent({
+    id: 'support.specialist',
+    instructions: 'Specialist.',
+    objective: text,
+    model,
+  });
+  const app = createApp({
+    directory: directory(),
+    agents: [owner, specialist],
+    access: {
+      revision: 'deny-handoff-v1',
+      canStart: () => true,
+      canCall: () => true,
+      canRespond: () => true,
+      canHandoff: () => false,
+    },
+  });
+  apps.push(app);
+  const session = await app.sessions.create({ agent: owner, title: 'Busy support' });
+  const active = await session.send('Keep working');
+  await expect(session.handoff(specialist)).rejects.toMatchObject({ code: 'SESSION_BUSY' });
+  release();
+  await active.work.result();
+
+  await expect(session.handoff(specialist)).rejects.toMatchObject({ code: 'ACCESS_DENIED' });
+  await expect(session.handoff(owner)).rejects.toMatchObject({ code: 'ACCESS_DENIED' });
+});
+
+test('Session handoff and its conversation lineage survive App restart', async () => {
+  const location = directory();
+  const text = schema<string>({
+    id: 'restart-handoff-message',
+    version: '1',
+    jsonSchema: { type: 'string' },
+  });
+  const model: ModelAdapter = {
+    id: 'restart-handoff-model',
+    capabilities: { tools: false, structuredOutput: false, streaming: false },
+    async generate() {
+      return {
+        object: 'model_response',
+        items: [{ type: 'text', text: 'handled after restart' }],
+        finishReason: 'stop',
+      };
+    },
+  };
+  const triage = agent({
+    id: 'restart-support.triage',
+    instructions: 'Triage.',
+    objective: text,
+    model,
+  });
+  const billing = agent({
+    id: 'restart-support.billing',
+    instructions: 'Billing.',
+    objective: text,
+    model,
+  });
+  const firstApp = createApp({ directory: location, agents: [triage, billing] });
+  apps.push(firstApp);
+  const session = await firstApp.sessions.create({ agent: triage, title: 'Restart handoff' });
+  const initial = await session.send('charge');
+  await initial.work.result();
+  const billingSession = await session.handoff(billing, { reason: 'billing owns this' });
+  await firstApp.close();
+
+  const reopened = createApp({ directory: location, agents: [triage, billing] });
+  apps.push(reopened);
+  const restored = await reopened.sessions.get(session.id);
+  expect((await restored.snapshot()).agent).toMatchObject({
+    id: billing.id,
+    revision: billing.revision,
+  });
+  await expect(restored.handoffs()).resolves.toEqual([
+    expect.objectContaining({
+      from: expect.objectContaining({ id: triage.id, revision: triage.revision }),
+      to: expect.objectContaining({ id: billing.id, revision: billing.revision }),
+      reason: 'billing owns this',
+    }),
+  ]);
+  const followUp = await restored.send('refund');
+  await expect(followUp.work.result()).resolves.toBe('handled after restart');
+  expect((await restored.messages()).map((message) => message.author)).toEqual([
+    'human',
+    'agent',
+    'human',
+    'agent',
+  ]);
+  expect(billingSession.id).toBe(session.id);
 });
 
 test('Tool approval Interactions use the public Boolean response contract', async () => {

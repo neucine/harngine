@@ -206,6 +206,30 @@ test('startup recovery converts every admitted attempt to unknown without replay
   ).toHaveLength(1);
 });
 
+test('startup recovery makes an interrupted model read retryable', () => {
+  const { store, operations } = fixture();
+  admit(operations);
+
+  operations.recoverAdmittedAttempts(() => true);
+
+  const request = store.requests('work-1')[0];
+  expect(request?.status).toBe('settled');
+  expect(JSON.parse(request!.outcome!)).toMatchObject({
+    status: 'failure',
+    effect: 'none',
+    reason: { code: 'MODEL_INTERRUPTED' },
+  });
+  expect(store.db.prepare('SELECT status FROM attempts').get()).toEqual({ status: 'settled' });
+  expect(store.work('work-1')).toMatchObject({
+    status: 'active',
+    eligible: 1,
+    concern: null,
+  });
+  expect(
+    store.db.prepare("SELECT kind FROM progress WHERE kind='attempt.interrupted'").all(),
+  ).toHaveLength(1);
+});
+
 test('a late conclusive outcome settles evidence without reopening closed Work', () => {
   const { store, operations } = fixture();
   admit(operations);

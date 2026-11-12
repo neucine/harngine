@@ -22,13 +22,30 @@ export interface ExecutionStoreOptions {
   readonly publishClosure: (workId: WorkId, closure: Closure) => void;
 }
 
+export interface PreparedChild {
+  readonly callId: string;
+  readonly slot: string;
+  readonly definition: { readonly id: string; readonly version: string };
+  readonly objective: Json;
+  readonly targetKind: 'agent' | 'workflow';
+  readonly mode: 'sequential' | 'concurrent';
+  readonly state: Json;
+}
+
+export interface ChildCallAuthorization {
+  readonly child: PreparedChild;
+  readonly policyRevision: string;
+  readonly allowed: boolean;
+}
+
 export interface DecisionCommit {
   readonly row: WorkRow;
   readonly definition: AnyWorkflow;
   readonly proposal: Proposal;
   readonly inputs: readonly InputRecord[];
   readonly inputBoundary: number;
-  readonly childStates?: readonly Json[];
+  readonly childCalls?: readonly PreparedChild[];
+  readonly childAuthorizations?: readonly ChildCallAuthorization[];
 }
 
 /** Semantic, fenced transactions used by the Work execution engine. */
@@ -80,24 +97,16 @@ export class ExecutionStore {
       incorporateInputs(this.store, row.id, sequence, proposal.dispositions ?? []);
       clearWakeCondition(this.store, row.id);
       if (proposal.type === 'call') this.commitCall(row, proposal, sequence, inputBoundary);
-      else if (proposal.type === 'child')
+      else if (proposal.type === 'child' || proposal.type === 'children')
         this.commitChildren(
           row,
-          [proposal.child],
+          input.childCalls!,
           proposal.state,
           sequence,
           inputBoundary,
-          input.childStates!,
+          input.childAuthorizations!,
         );
-      else if (proposal.type === 'children')
-        this.commitChildren(
-          row,
-          proposal.children,
-          proposal.state,
-          sequence,
-          inputBoundary,
-          input.childStates!,
-        );
+      else if (proposal.type === 'join') this.commitJoin(row, proposal, sequence, inputBoundary);
       else if (proposal.type === 'wait')
         this.commitWait(row, definition, proposal, sequence, inputBoundary);
       else this.commitClosure(row, proposal, sequence, inputBoundary);
@@ -106,29 +115,16 @@ export class ExecutionStore {
   }
 
   fail(row: WorkRow, problem: Reason): boolean {
+    return this.store.write(() => this.failWork(row, problem));
+  }
+
+  denyChildren(row: WorkRow, authorizations: readonly ChildCallAuthorization[]): boolean {
     return this.store.write(() => {
-      const current = this.store.work(row.id);
-      if (
-        current.status === 'closed' ||
-        current.basis !== row.basis ||
-        current.control_token !== row.control_token
-      )
-        return false;
-      const closure: Closure = { status: 'failed', reason: problem };
-      this.store.db
-        .prepare(
-          "UPDATE work SET status='closed',eligible=0,closure=?,concern=?,control_token=? WHERE id=?",
-        )
-        .run(canonical(closure), canonical(problem), entityId('control'), row.id);
-      this.options.publishClosure(row.id as WorkId, closure);
-      this.store.db
-        .prepare("UPDATE requests SET status='withdrawn' WHERE work_id=? AND status='planned'")
-        .run(row.id);
-      withdrawApprovals(this.store, row.id);
-      withdrawWaits(this.store, row.id);
-      disposeInputs(this.store, row.id, 'failed', problem);
-      this.store.event(row.id, 'work.closed', closure);
-      return true;
+      for (const authorization of authorizations) this.recordChildAuthorization(row, authorization);
+      return this.failWork(row, {
+        code: 'ACCESS_DENIED',
+        message: 'Child Call is not authorized',
+      });
     });
   }
 
@@ -255,18 +251,23 @@ export class ExecutionStore {
 
   private commitChildren(
     row: WorkRow,
-    children: readonly {
-      slot: string;
-      definition: { id: string; version: string };
-      objective: Json;
-    }[],
+    children: readonly PreparedChild[],
     state: Json,
     sequence: number,
     inputBoundary: number,
-    states: readonly Json[],
+    authorizations: readonly ChildCallAuthorization[],
   ): void {
     const parentPolicy = JSON.parse(row.policy) as Record<string, number | undefined>;
-    const started: { id: WorkId; slot: string; definition: { id: string; version: string } }[] = [];
+    const root = this.rootChildBudget(row.id);
+    let used = root.used;
+    const started: {
+      id: WorkId;
+      callId: string;
+      slot: string;
+      definition: { id: string; version: string };
+      kind: 'agent' | 'workflow';
+      mode: 'sequential' | 'concurrent';
+    }[] = [];
     for (let index = 0; index < children.length; index++) {
       const planned = children[index]!;
       const definition = this.options.registry.workflow(planned.definition)!;
@@ -278,6 +279,14 @@ export class ExecutionStore {
           parentPolicy[name] === undefined ? value : Math.min(value, parentPolicy[name]!),
         ]),
       );
+      childPolicy.maxDepth = Math.max(0, (parentPolicy.maxDepth ?? 8) - 1);
+      childPolicy.maxChildWork = Math.min(
+        definition.policy.maxChildWork ?? 100,
+        parentPolicy.maxChildWork ?? 100,
+        Math.max(0, root.limit - used - 1),
+      );
+      used++;
+      this.recordChildAuthorization(row, authorizations[index]!);
       this.store.db
         .prepare(
           "INSERT INTO work(id,principal,definition,objective,state,policy,status,eligible,control_token,context) VALUES(?,?,?,?,?,?,'active',1,?,?)",
@@ -287,7 +296,7 @@ export class ExecutionStore {
           row.principal,
           canonical(planned.definition),
           canonical(planned.objective),
-          canonical(states[index]),
+          canonical(planned.state),
           canonical(childPolicy),
           controlToken,
           row.context,
@@ -296,8 +305,21 @@ export class ExecutionStore {
         .prepare('INSERT INTO objective_revisions VALUES(?,1,?,?)')
         .run(id, canonical(planned.objective), controlToken);
       this.store.db
-        .prepare('INSERT INTO child_work VALUES(?,?,?,?,?)')
-        .run(row.id, planned.slot, id, sequence, row.control_token);
+        .prepare(
+          `INSERT INTO child_work
+           (parent_work_id,slot,child_work_id,decision_sequence,control_token,call_id,mode,target_kind,join_decision,join_slot)
+           VALUES(?,?,?,?,?,?,?,?,NULL,NULL)`,
+        )
+        .run(
+          row.id,
+          planned.slot,
+          id,
+          sequence,
+          row.control_token,
+          planned.callId,
+          planned.mode,
+          planned.targetKind,
+        );
       this.store.authorization({
         action: 'start',
         principal: row.principal,
@@ -305,20 +327,45 @@ export class ExecutionStore {
         allowed: true,
         workId: id,
         targetId: id,
-        subject: { id: planned.definition.id, version: planned.definition.version },
+        subject: {
+          kind: planned.targetKind,
+          id: planned.definition.id,
+          version: planned.definition.version,
+        },
         value: planned.objective,
       });
-      started.push({ id, slot: planned.slot, definition: planned.definition });
+      started.push({
+        id,
+        callId: planned.callId,
+        slot: planned.slot,
+        definition: planned.definition,
+        kind: planned.targetKind,
+        mode: planned.mode,
+      });
     }
+    const blocking = started.every((child) => child.mode === 'sequential');
     this.store.db
       .prepare(
-        "UPDATE work SET state=?,basis=?,state_revision=?,decisions=decisions+1,operations=operations+?,status='waiting',eligible=0 WHERE id=?",
+        `UPDATE work SET state=?,basis=?,state_revision=?,decisions=decisions+1,
+         operations=operations+?,status=?,eligible=? WHERE id=?`,
       )
-      .run(canonical(state), sequence, row.objective_revision, children.length, row.id);
+      .run(
+        canonical(state),
+        sequence,
+        row.objective_revision,
+        children.length,
+        blocking ? 'waiting' : 'active',
+        blocking ? 0 : 1,
+        row.id,
+      );
     this.store.event(
       row.id,
       'decision.committed',
-      { childWorkIds: started.map((child) => child.id), inputBoundary },
+      {
+        childWorkIds: started.map((child) => child.id),
+        callIds: started.map((child) => child.callId),
+        inputBoundary,
+      },
       sequence,
     );
     for (const child of started) {
@@ -327,8 +374,11 @@ export class ExecutionStore {
         'child.started',
         {
           childWorkId: child.id,
+          callId: child.callId,
           slot: child.slot,
           definition: child.definition,
+          kind: child.kind,
+          mode: child.mode,
         },
         sequence,
       );
@@ -337,6 +387,149 @@ export class ExecutionStore {
         slot: child.slot,
       });
     }
+  }
+
+  private recordChildAuthorization(row: WorkRow, authorization: ChildCallAuthorization): void {
+    this.store.authorization({
+      action: 'call',
+      principal: row.principal,
+      policyRevision: authorization.policyRevision,
+      allowed: authorization.allowed,
+      workId: row.id,
+      targetId: authorization.child.callId,
+      subject: {
+        kind: authorization.child.targetKind,
+        id: authorization.child.definition.id,
+        version: authorization.child.definition.version,
+      },
+      value: authorization.child.objective,
+      ...(authorization.allowed ? {} : { safeReason: 'child_call_denied' }),
+    });
+  }
+
+  private failWork(row: WorkRow, problem: Reason): boolean {
+    const current = this.store.work(row.id);
+    if (
+      current.status === 'closed' ||
+      current.basis !== row.basis ||
+      current.control_token !== row.control_token
+    )
+      return false;
+    const closure: Closure = { status: 'failed', reason: problem };
+    this.store.db
+      .prepare(
+        "UPDATE work SET status='closed',eligible=0,closure=?,concern=?,control_token=? WHERE id=?",
+      )
+      .run(canonical(closure), canonical(problem), entityId('control'), row.id);
+    this.options.publishClosure(row.id as WorkId, closure);
+    this.store.db
+      .prepare("UPDATE requests SET status='withdrawn' WHERE work_id=? AND status='planned'")
+      .run(row.id);
+    withdrawApprovals(this.store, row.id);
+    withdrawWaits(this.store, row.id);
+    disposeInputs(this.store, row.id, 'failed', problem);
+    this.store.event(row.id, 'work.closed', closure);
+    return true;
+  }
+
+  private rootChildBudget(workId: string): { id: string; limit: number; used: number } {
+    const ancestor = this.store.db
+      .prepare(
+        `WITH RECURSIVE ancestors(parent_work_id,depth) AS (
+           SELECT parent_work_id,1 FROM child_work WHERE child_work_id=?
+           UNION ALL
+           SELECT c.parent_work_id,depth+1
+           FROM child_work c JOIN ancestors a ON c.child_work_id=a.parent_work_id
+         )
+         SELECT parent_work_id AS id FROM ancestors ORDER BY depth DESC LIMIT 1`,
+      )
+      .get(workId) as { id: string } | undefined;
+    const rootId = ancestor?.id ?? workId;
+    const rootPolicy = JSON.parse(this.store.work(rootId).policy) as {
+      readonly maxChildWork?: number;
+    };
+    const used = (
+      this.store.db
+        .prepare(
+          `WITH RECURSIVE tree(id) AS (
+             SELECT ?
+             UNION ALL
+             SELECT c.child_work_id FROM child_work c JOIN tree t ON c.parent_work_id=t.id
+           )
+           SELECT COUNT(*) AS count FROM child_work c JOIN tree t ON c.parent_work_id=t.id`,
+        )
+        .get(rootId) as { count: number }
+    ).count;
+    return { id: rootId, limit: rootPolicy.maxChildWork ?? 100, used };
+  }
+
+  private commitJoin(
+    row: WorkRow,
+    proposal: Extract<Proposal, { type: 'join' }>,
+    sequence: number,
+    inputBoundary: number,
+  ): void {
+    const child = this.store.db
+      .prepare(
+        `SELECT c.call_id,c.slot,c.mode,c.child_work_id,c.control_token,w.status
+         FROM child_work c JOIN work w ON w.id=c.child_work_id
+         WHERE c.parent_work_id=? AND c.slot=?`,
+      )
+      .get(row.id, proposal.join.child) as
+      | {
+          call_id: string;
+          slot: string;
+          mode: 'sequential' | 'concurrent';
+          child_work_id: string;
+          control_token: string;
+          status: 'active' | 'waiting' | 'closed';
+        }
+      | undefined;
+    if (!child) throw new RuntimeError('INVALID_PROPOSAL', 'Join target has not started');
+    if (child.control_token !== row.control_token)
+      throw new RuntimeError('STALE_WAIT', 'Join target belongs to an older authority scope');
+    const settled = child.status === 'closed';
+    this.store.db
+      .prepare(
+        `UPDATE child_work SET join_decision=?,join_slot=? WHERE parent_work_id=? AND slot=?`,
+      )
+      .run(sequence, proposal.join.slot, row.id, child.slot);
+    this.store.db
+      .prepare(
+        `UPDATE work SET state=?,basis=?,state_revision=?,decisions=decisions+1,
+         operations=operations+1,status=?,eligible=? WHERE id=?`,
+      )
+      .run(
+        canonical(proposal.state),
+        sequence,
+        row.objective_revision,
+        settled ? 'active' : 'waiting',
+        settled ? 1 : 0,
+        row.id,
+      );
+    this.store.event(
+      row.id,
+      'decision.committed',
+      {
+        inputBoundary,
+        childWorkId: child.child_work_id,
+        callId: child.call_id,
+        joinSlot: proposal.join.slot,
+      },
+      sequence,
+    );
+    this.store.event(
+      row.id,
+      'call.joined',
+      {
+        childWorkId: child.child_work_id,
+        callId: child.call_id,
+        slot: child.slot,
+        mode: child.mode,
+        joinSlot: proposal.join.slot,
+      },
+      sequence,
+    );
   }
 
   private commitClosure(

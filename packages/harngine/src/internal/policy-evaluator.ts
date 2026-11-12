@@ -1,4 +1,4 @@
-import type { Identity, Json, WorkId } from './contracts.js';
+import type { Identity, Json, SessionId, WorkId } from './contracts.js';
 
 export interface RuntimeAccessPolicy {
   readonly revision: string;
@@ -10,6 +10,8 @@ export interface RuntimeAccessPolicy {
   canCall(input: {
     principal: string;
     workId: WorkId;
+    target: Identity & { readonly kind: 'tool' | 'agent' | 'workflow' };
+    /** Compatibility alias retained during the pre-release API transition. */
     tool: Identity;
     input: Json;
   }): boolean | Promise<boolean>;
@@ -18,6 +20,13 @@ export interface RuntimeAccessPolicy {
     workId: WorkId;
     interactionId: string;
   }): boolean | Promise<boolean>;
+  canHandoff?(input: {
+    principal: string;
+    sessionId: SessionId;
+    fromAgent: Identity;
+    toAgent: Identity;
+    reason: string | undefined;
+  }): boolean | Promise<boolean>;
 }
 
 const permissive: RuntimeAccessPolicy = Object.freeze({
@@ -25,6 +34,7 @@ const permissive: RuntimeAccessPolicy = Object.freeze({
   canStart: () => true,
   canCall: () => true,
   canRespond: () => true,
+  canHandoff: () => true,
 });
 
 /** Resolves application authorization policy independently from execution approval waits. */
@@ -49,5 +59,11 @@ export class PolicyEvaluator implements RuntimeAccessPolicy {
 
   canRespond(input: Parameters<RuntimeAccessPolicy['canRespond']>[0]): boolean | Promise<boolean> {
     return this.policy.canRespond(input);
+  }
+
+  canHandoff(
+    input: Parameters<NonNullable<RuntimeAccessPolicy['canHandoff']>>[0],
+  ): boolean | Promise<boolean> {
+    return this.policy.canHandoff?.(input) ?? false;
   }
 }

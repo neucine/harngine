@@ -11,6 +11,10 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createCodexCliAdapter, createCodexCliModel } from '../src/index.js';
 import type { Json } from 'harngine';
+import {
+  describeModelAdapterConformance,
+  type AdapterConformanceFactory,
+} from '../../harngine/test/model-adapter-conformance.js';
 
 const directories: string[] = [];
 afterEach(() => {
@@ -40,6 +44,31 @@ const responseSchema: Json = {
     },
   },
 };
+
+const conformance: AdapterConformanceFactory = (reply, options) => {
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'harngine-cli-conformance-')));
+  const command = join(directory, 'codex');
+  const replyFile = join(directory, 'reply.json');
+  writeFileSync(replyFile, JSON.stringify(reply), { mode: 0o600 });
+  writeFileSync(
+    command,
+    `#!${process.execPath}\nconst fs=require('node:fs');const args=process.argv.slice(2);if(args[0]==='--version'){console.log('codex-cli conformance');process.exit(0);}const reply=JSON.parse(fs.readFileSync(${JSON.stringify(replyFile)},'utf8'));if(reply.kind==='provider-error'){console.error('fixture provider error');process.exit(1);}if(reply.kind==='timeout'){setInterval(()=>{},1000);return;}const out=args[args.indexOf('--output-last-message')+1];fs.writeFileSync(out,reply.kind==='malformed'?'garbage':JSON.stringify(reply.value));if(reply.kind==='contract'&&reply.usage)console.log(JSON.stringify({type:'turn.completed',usage:{input_tokens:reply.usage.inputTokens,output_tokens:reply.usage.outputTokens}}));`,
+    { mode: 0o700 },
+  );
+  return {
+    adapter: createCodexCliAdapter({
+      command,
+      cliVersion: 'codex-cli conformance',
+      timeoutMs: options.timeoutMs,
+    }),
+    close() {
+      rmSync(directory, { recursive: true, force: true });
+    },
+  };
+};
+
+describeModelAdapterConformance('Codex CLI adapter', conformance);
+
 function input(signal = new AbortController().signal) {
   return { payload, responseSchema, ordinal: 1, signal };
 }
@@ -107,6 +136,7 @@ test('Codex adapter uses a provider-compatible tagged schema and normalizes its 
           object: 'model_context',
           objective: 'question',
           items: [],
+          artifacts: [],
           policy: 'test',
           budget: { inputTokens: 1000, estimatedTokens: 10 },
         },
@@ -132,12 +162,14 @@ test('Codex output contract binds each tool name to its own required input', asy
         object: 'model_context',
         objective: 'edit',
         items: [],
+        artifacts: [],
         policy: 'test',
         budget: { inputTokens: 1000, estimatedTokens: 10 },
       },
       tools: [
         {
           id: 'read',
+          kind: 'tool',
           description: 'Read',
           inputSchema: {
             type: 'object',
@@ -148,6 +180,7 @@ test('Codex output contract binds each tool name to its own required input', asy
         },
         {
           id: 'edit',
+          kind: 'tool',
           description: 'Edit',
           inputSchema: {
             type: 'object',

@@ -4,14 +4,19 @@ import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 import { createCodexCliAdapter } from '@harngine/codex-cli';
-import { createCodexApiAdapter } from '@harngine/codex-api';
-import { agent, createApp, schema, tool, type Json } from 'harngine';
+import { createOpenAIResponsesAdapter } from '@harngine/codex-api';
+import { createClaudeMessagesAdapter } from '@harngine/claude-messages';
+import { agent, createApp, schema, tool, workflow, type Json, type ModelAdapter } from 'harngine';
 
 const runFile = promisify(execFile);
 export function createCodingApp(options: {
   repo: string;
   writable: boolean;
   modelId?: string;
+  /** Override provider selection for embedding and deterministic integration tests. */
+  modelAdapter?: ModelAdapter;
+  /** Runtime principal used by the desktop or another embedding application. */
+  principal?: string;
   requireEditApproval?: boolean;
 }) {
   const root = realpathSync(resolve(options.repo));
@@ -229,24 +234,46 @@ export function createCodingApp(options: {
     },
   });
   const selectedModel = modelId || process.env.CODEX_MODEL;
-  const useApi = process.env.HARNGINE_CODING_PROVIDER === 'api';
-  const accessToken = useApi ? process.env.CODEX_ACCESS_TOKEN?.trim() : undefined;
+  const provider = process.env.HARNGINE_CODING_PROVIDER;
+  const useApi =
+    !options.modelAdapter &&
+    ['api', 'openai-responses', 'claude-messages'].includes(provider ?? '');
+  const accessToken = useApi
+    ? (process.env.HARNGINE_CODING_API_TOKEN ?? process.env.CODEX_ACCESS_TOKEN)?.trim()
+    : undefined;
   if (useApi && !accessToken)
-    throw new Error('HARNGINE_CODING_PROVIDER=api requires CODEX_ACCESS_TOKEN');
-  const model = useApi
-    ? createCodexApiAdapter({
-        accessToken: accessToken!,
-        ...(selectedModel ? { model: selectedModel } : {}),
-      })
-    : createCodexCliAdapter({
-        cliVersion: execFileSync('codex', ['--version'], { encoding: 'utf8' }).trim(),
-        ...(modelId ? { model: modelId } : {}),
-        timeoutMs: 180000,
-      });
+    throw new Error(
+      'HARNGINE_CODING_PROVIDER requires HARNGINE_CODING_API_TOKEN or CODEX_ACCESS_TOKEN',
+    );
+  if (provider === 'claude-messages' && !selectedModel)
+    throw new Error('Claude Messages provider requires CODEX_MODEL');
+  const model =
+    options.modelAdapter ??
+    (provider === 'claude-messages'
+      ? createClaudeMessagesAdapter({
+          accessToken: accessToken!,
+          model: selectedModel!,
+          ...(process.env.HARNGINE_CODING_API_BASE_URL
+            ? { baseUrl: process.env.HARNGINE_CODING_API_BASE_URL }
+            : {}),
+        })
+      : useApi
+        ? createOpenAIResponsesAdapter({
+            accessToken: accessToken!,
+            ...(process.env.HARNGINE_CODING_API_BASE_URL
+              ? { baseUrl: process.env.HARNGINE_CODING_API_BASE_URL }
+              : {}),
+            ...(selectedModel ? { model: selectedModel } : {}),
+          })
+        : createCodexCliAdapter({
+            cliVersion: execFileSync('codex', ['--version'], { encoding: 'utf8' }).trim(),
+            ...(modelId ? { model: modelId } : {}),
+            timeoutMs: 180000,
+          }));
   const task = schema<string>({ id: 'coding.task', version: '1', jsonSchema: string });
   const readAssistant = agent({
     id: 'coding.workspace-read',
-    instructions: `You are a coding agent working in ${root}. Inspect files before answering. Use relative paths. Report findings accurately. This session is read only; do not claim to edit.`,
+    instructions: `You are the researcher specialist for a coding task in ${root}. Inspect files before answering. Use relative paths. Return concrete evidence, relevant file and line references, and risks. This role is read only; do not claim to edit.`,
     objective: task,
     model,
     tools: [read, search],
@@ -254,17 +281,84 @@ export function createCodingApp(options: {
   });
   const writeAssistant = agent({
     id: 'coding.workspace-write',
-    instructions: `You are a coding agent working in ${root}. Inspect files before proposing changes. Use relative paths. The coding.edit Tool requires exactly three string fields: path, oldText, and newText. Set oldText to one exact, unique fragment copied from the file and newText to its replacement; never omit either field. A desktop reviewer must approve the exact edit before execution. After an approved edit, run a focused coding.check command. Report actual changes and check results accurately.`,
+    instructions: `You are the implementer specialist for a coding task in ${root}. Inspect files before proposing changes. Use relative paths. The coding.edit Tool requires exactly three string fields: path, oldText, and newText. Set oldText to one exact, unique fragment copied from the file and newText to its replacement; never omit either field. A desktop reviewer must approve the exact edit before execution. After an approved edit, run a focused coding.check command. Report actual changes and check results accurately.`,
     objective: task,
     model,
     tools: [read, search, edit, check],
     limits: { modelTurns: 20, toolExecutions: 40 },
   });
-  const assistant = writable ? writeAssistant : readAssistant;
+  const reviewer = agent({
+    id: 'coding.reviewer',
+    instructions: `You are the reviewer specialist for a coding task in ${root}. Inspect the supplied evidence and relevant repository files. Focus on correctness, security, compatibility, missing tests, and actionable risks. Use relative paths. This role is read only and must not claim to edit.`,
+    objective: task,
+    model,
+    tools: [read, search],
+    limits: { modelTurns: 16, toolExecutions: 32 },
+  });
+  const orchestrator = agent({
+    id: 'coding.orchestrator',
+    instructions: `You are the coding orchestrator for ${root}. Solve the task using recorded repository evidence. You may delegate focused research, implementation, or review to the explicitly exposed specialists, then synthesize their results. Use relative paths and report actual changes and checks accurately. Never claim work the recorded outcomes do not support.`,
+    objective: task,
+    model,
+    tools: writable ? [read, search, edit, check] : [read, search],
+    delegates: [
+      {
+        target: readAssistant,
+        description: 'Research repository evidence and constraints for a bounded subtask.',
+      },
+      ...(writable
+        ? [
+            {
+              target: writeAssistant,
+              description:
+                'Implement a bounded repository change through approved, recoverable Tools.',
+            },
+          ]
+        : []),
+      {
+        target: reviewer,
+        description: 'Review evidence or a proposed change for correctness and concrete risks.',
+        mode: 'concurrent' as const,
+      },
+    ],
+    limits: { modelTurns: 24, toolExecutions: 48, childWork: 8 },
+  });
+  const collaborativeReview = workflow({
+    id: 'coding.collaborative-review',
+    objective: task,
+    result: task,
+    children: [readAssistant, reviewer],
+    async run(objective, flow) {
+      const research = await flow.start(
+        'research',
+        readAssistant,
+        `Collect repository evidence for: ${objective}`,
+      );
+      const review = await flow.call(
+        'review',
+        reviewer,
+        `Review the likely implementation and risks for: ${objective}`,
+      );
+      const evidence = await flow.join('research-complete', research);
+      return `Research:\n${evidence}\n\nReview:\n${review}`;
+    },
+  });
+  const assistant = orchestrator;
   const app = createApp({
     directory: data,
-    agents: [readAssistant, writeAssistant],
+    agents: [orchestrator, readAssistant, writeAssistant, reviewer],
+    workflows: [collaborativeReview],
     access: { allowAuthenticated: true },
+    ...(options.principal ? { principal: options.principal } : {}),
   });
-  return { app, assistant, readAssistant, writeAssistant, root };
+  return {
+    app,
+    assistant,
+    orchestrator,
+    readAssistant,
+    writeAssistant,
+    reviewer,
+    collaborativeReview,
+    root,
+  };
 }

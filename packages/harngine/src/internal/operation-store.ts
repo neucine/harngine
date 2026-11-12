@@ -541,7 +541,7 @@ export class OperationStore {
     });
   }
 
-  recoverAdmittedAttempts(): void {
+  recoverAdmittedAttempts(repeatable?: (request: RequestRow) => boolean): void {
     this.store.write(() => {
       const pending = this.store.db
         .prepare(
@@ -549,22 +549,50 @@ export class OperationStore {
         )
         .all() as RequestRow[];
       for (const request of pending) {
-        const outcome: Outcome = {
-          status: 'unknown',
-          reason: { code: 'INTERRUPTED', message: 'Admission has no conclusive durable outcome' },
-        };
+        const interrupted = repeatable?.(request) === true;
+        const outcome: Outcome = interrupted
+          ? {
+              status: 'failure',
+              effect: 'none',
+              reason: {
+                code: 'MODEL_INTERRUPTED',
+                message: 'Model request was interrupted',
+              },
+            }
+          : {
+              status: 'unknown',
+              reason: {
+                code: 'INTERRUPTED',
+                message: 'Admission has no conclusive durable outcome',
+              },
+            };
+        const attempt = this.store.db
+          .prepare("SELECT id FROM attempts WHERE operation_id=? AND status='admitted'")
+          .get(request.id) as { id: string };
+        if (interrupted)
+          this.store.db
+            .prepare('INSERT INTO attempt_outcomes VALUES(?,?)')
+            .run(attempt.id, canonical(outcome));
         this.store.db
-          .prepare("UPDATE attempts SET status='unknown' WHERE operation_id=?")
-          .run(request.id);
+          .prepare("UPDATE attempts SET status=? WHERE operation_id=? AND status='admitted'")
+          .run(interrupted ? 'settled' : 'unknown', request.id);
         this.store.db
-          .prepare("UPDATE requests SET status='unknown',outcome=? WHERE id=?")
-          .run(canonical(outcome), request.id);
+          .prepare('UPDATE requests SET status=?,outcome=? WHERE id=?')
+          .run(interrupted ? 'settled' : 'unknown', canonical(outcome), request.id);
         this.store.db
           .prepare(
-            "UPDATE work SET status=CASE WHEN status='closed' THEN status ELSE 'waiting' END,eligible=0,concern=? WHERE id=?",
+            interrupted
+              ? "UPDATE work SET status=CASE WHEN status='closed' THEN status ELSE 'active' END,eligible=CASE WHEN status='closed' THEN 0 ELSE 1 END,concern=NULL WHERE id=?"
+              : "UPDATE work SET status=CASE WHEN status='closed' THEN status ELSE 'waiting' END,eligible=0,concern=? WHERE id=?",
           )
-          .run(canonical(outcome.reason), request.work_id);
-        this.store.event(request.work_id, 'attempt.uncertain', { operationId: request.id });
+          .run(...(interrupted ? [request.work_id] : [canonical(outcome.reason), request.work_id]));
+        this.store.event(
+          request.work_id,
+          interrupted ? 'attempt.interrupted' : 'attempt.uncertain',
+          {
+            operationId: request.id,
+          },
+        );
       }
     });
   }

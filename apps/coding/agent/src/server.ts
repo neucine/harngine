@@ -7,6 +7,7 @@ export async function startCodingServer(options: { repo: string; debugHttp?: boo
   const { app, root } = createCodingApp({
     repo: options.repo,
     writable: false,
+    principal: 'desktop',
     requireEditApproval: true,
   });
   const token = randomBytes(32).toString('hex');

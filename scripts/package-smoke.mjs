@@ -4,7 +4,7 @@ import { mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'n
 import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
-const nodeRuntime = join(root, 'node_modules/node/bin/node');
+const nodeRuntime = process.env.HARNGINE_NODE_BINARY ?? join(root, 'node_modules/node/bin/node');
 const temp = realpathSync(mkdtempSync(join(root, '.tmp-package-')));
 const environment = { ...process.env, TMPDIR: temp };
 try {
@@ -30,13 +30,28 @@ try {
   assert(workbenchFiles.includes('package/dist/index.js'));
   assert(workbenchFiles.includes('package/dist/cli.js'));
   assert(workbenchFiles.includes('package/LICENSE'));
+  execFileSync('bun', ['pm', 'pack', '--destination', temp], {
+    cwd: join(root, 'packages/mcp'),
+    stdio: 'pipe',
+  });
+  const mcpTarball = join(
+    temp,
+    readdirSync(temp).find((name) => name.includes('mcp') && name.endsWith('.tgz')),
+  );
+  const mcpFiles = execFileSync('tar', ['-tzf', mcpTarball], { encoding: 'utf8' });
+  assert(mcpFiles.includes('package/dist/index.js'));
+  assert(mcpFiles.includes('package/dist/catalog.js'));
   writeFileSync(
     join(temp, 'package.json'),
     JSON.stringify({
       private: true,
       type: 'module',
       trustedDependencies: [],
-      dependencies: { harngine: tarball, '@harngine/workbench': workbenchTarball },
+      dependencies: {
+        harngine: tarball,
+        '@harngine/mcp': mcpTarball,
+        '@harngine/workbench': workbenchTarball,
+      },
       overrides: { harngine: tarball },
     }),
   );
@@ -45,6 +60,7 @@ try {
     import assert from 'node:assert/strict';
     import { join } from 'node:path';
     import { createApp, schema, tool, workflow } from 'harngine';
+    import { mcpToolCatalog, mcpToolFromCatalog } from '@harngine/mcp';
     import { serveWorkbench } from '@harngine/workbench';
 
     const number = schema({ id: 'smoke.number', version: '1', jsonSchema: { type: 'integer' } });
@@ -59,6 +75,26 @@ try {
     const page = await work.inspect({ detail: 'diagnostic' });
     assert.equal(page.work.status, 'completed');
     assert(page.entries.some(entry => entry.type === 'work.closed'));
+    const remote = mcpToolFromCatalog(mcpToolCatalog({
+      object: 'mcp_tool_catalog',
+      tools: [{ name: 'lookup', inputSchema: {
+        type: 'object', required: ['id'], properties: { id: { type: 'string' } },
+      } }],
+    }), {
+      id: 'smoke.remote',
+      name: 'lookup',
+      effect: 'read',
+      client: { async callTool(input) {
+        return { content: [{ type: 'text', text: 'Found ' + input.arguments.id }] };
+      } },
+    });
+    assert.equal(remote.id, 'smoke.remote');
+    assert.deepEqual(await remote.execute({ id: 'record' }, {
+      signal: new AbortController().signal,
+      idempotencyKey: 'smoke-mcp',
+      fail(error) { throw new Error(error.code); },
+      effectUnknown(error) { throw new Error(error.code); },
+    }), { content: [{ type: 'text', text: 'Found record' }] });
     const raw = await app.diagnostics.records(work.id, { limit: 2 });
     assert.equal(raw.records[0].table, 'work');
     const server = await serveWorkbench({ app });

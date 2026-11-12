@@ -5,6 +5,7 @@
     { "path": "../../../packages/harngine" },
     { "path": "../../../packages/codex-cli" },
     { "path": "../../../packages/codex-api" },
+    { "path": "../../../packages/claude-messages" },
     { "path": "../../../packages/http" }
   ],
   "include": ["src/**/*.ts"]

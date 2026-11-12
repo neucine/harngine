@@ -37,6 +37,8 @@ Open `apps/coding/desktop/build/NeivApp.app` in Finder after the build. A local 
 - **Inspection** showing context, model responses, decisions, Tool activity, interactions, and
   terminal results.
 - **Post-commit telemetry** through an optional payload-free sink that cannot alter execution.
+- **Inspection-based benchmarks** through the optional evaluation companion, with Work-tree usage,
+  outcomes, child Calls and application-defined scorers.
 - **Workbench**, a browser application for running and inspecting Agents and Workflows during
   development.
 
@@ -183,6 +185,57 @@ await app.close();
 `app.run()` starts Work and waits for its result. Use `app.start()` when the application needs to
 observe or control execution.
 
+`app.close()` stops background execution and aborts an active model or Tool invocation by default.
+An interrupted model turn remains in Work inspection, and reopening the App retries that Agent turn
+from its durable state. Pass `{ abortInFlight: false }` when shutdown should wait for the current
+invocation to settle. Adapters and Tools should honor their `AbortSignal` promptly; durable effect
+reconciliation still handles a write whose remote outcome remains uncertain.
+
+`ModelAdapter` is the provider boundary. Core Harngine owns durable turns, Tool authorization,
+approvals, effects, recovery, and provenance; an adapter translates one provider protocol into
+Harngine's structured model request and response. Optional adapters can therefore target the
+OpenAI Responses or Claude Messages compatibility APIs without coupling the core runtime or
+application Agent to one vendor SDK.
+
+Adapter packages share a conformance suite in
+[`model-adapter-conformance.ts`](../packages/harngine/test/model-adapter-conformance.ts). It covers
+structured text, finish reasons, usage, Tool proposals, optional fields, malformed output, provider
+failures, timeouts, and advertised capabilities. A new adapter should use the same suite before
+adding live provider smoke tests.
+
+## Discover MCP Tool contracts
+
+`discoverMcpTools()` captures selected MCP server contracts into a bounded, immutable catalog
+snapshot. Review and persist that snapshot in application source rather than registering a remote
+server's changing Tool list at runtime:
+
+```ts
+import {
+  discoverMcpTools,
+  mcpToolCatalog,
+  mcpToolFromCatalog,
+} from "@harngine/mcp";
+
+// Run during authoring, review the result, and persist it in source.
+const discovered = await discoverMcpTools(client, { maxTools: 128 });
+
+const catalog = mcpToolCatalog(discovered);
+const lookup = mcpToolFromCatalog(catalog, {
+  id: "my-app.lookup",
+  name: "lookup",
+  effect: "read",
+  client,
+});
+```
+
+Discovery supplies the remote description and input schema. Application source still chooses the
+stable Harngine ID, effect and write capabilities. The selected snapshot fields participate in the
+definition configuration, so a contract change produces a new exact definition revision while
+existing Work keeps its original revision. MCP annotations do not grant authority, and runtime
+discovery cannot let a model expose a new Tool to itself. MCP prompts and resources remain
+application context unless a selected input explicitly enters a model turn. The pinned contract
+cannot detect a remote server that changes behavior without changing its advertised schema.
+
 ## Observe long-running Work
 
 ```ts
@@ -236,6 +289,27 @@ A Session has at most one foreground Work. `session.send()` atomically records t
 and creates new Work. When Work is already active, the new Work waits in the Session's durable FIFO
 queue. Use `first.work.steer()` to influence that exact Work while it is active.
 
+An application can transfer future conversation ownership to another exact Agent revision after
+the Session becomes idle:
+
+```ts
+const billingSession = await session.handoff(billingSpecialist, {
+  reason: "Duplicate charge requires billing review",
+  idempotencyKey: "transfer-order-842-billing",
+});
+
+const specialist = await billingSession.send({
+  request: "Review the duplicate charge",
+});
+```
+
+`session.handoff()` requires the caller to pass the Session's handoff access policy and rejects an
+active or queued Session with `SESSION_BUSY`. It preserves the existing messages, appends durable
+from/to Agent lineage available through `session.handoffs()`, and returns a typed handle for the new
+Agent. The old handle rejects `send()` with `SESSION_HANDED_OFF`. Handoff transfers the
+user-facing voice; child Work remains a separate delegation mechanism beneath whichever Agent owns
+the current conversation.
+
 ## Control model context
 
 Agent context is resolved into a provider-neutral, inspectable snapshot for each model turn. An
@@ -246,6 +320,32 @@ history and prior model/Tool outcomes retain provenance so inspection can explai
 A Model adapter may expose a named tokenizer for provider/model-aware accounting. Without one,
 Harngine uses its documented UTF-8 estimate. Selection and accounting happen before the model call;
 the execution kernel consumes the resulting `ModelContext` and does not act as implicit memory.
+
+Large documents, code files and generated outputs can cross execution as content-addressed
+references instead of payloads:
+
+```ts
+import { artifactReference } from "harngine";
+
+const agreement = artifactReference({
+  id: "attachment:master-services-agreement",
+  name: "master-services-agreement.pdf",
+  mediaType: "application/pdf",
+  byteLength: 184_320,
+  digest: "sha256:...",
+});
+
+const review = await app.run(reviewer, {
+  question: "Summarize the renewal terms",
+  attachments: [agreement],
+});
+```
+
+`ArtifactReference` carries identity, media type, size and digest but no bytes. Harngine validates
+and deduplicates references found in the objective and selected Context Items, then exposes them
+through `ModelContext.artifacts`. The application owns storage, authorization, retention and
+resolution; a Tool that reads content verifies the digest and byte length before use. This supports
+document and code workflows without implying provider-native image, audio or voice transport.
 
 ## Write a Workflow
 
@@ -285,11 +385,27 @@ const parent = workflow({
 });
 ```
 
+Use `flow.call(name, target, objective)` to wait for one child Closure. Use a named
+`flow.start(name, target, objective)` handle when the parent has useful work to do first, then pass
+that handle to `flow.join(joinName, handle)`. Both operations replay by name and keep one durable
+Call identity and one child Work ID. A failed or canceled child Call throws `WorkFailedError` or
+`WorkCanceledError` with the child `work_...` identity so Workflow code can catch it and choose a
+recorded recovery path.
+
+An Agent can expose the same kind of composition through `delegates`. Each delegate declares one
+exact Agent or Workflow revision, a semantic description, and an optional
+`sequential | concurrent` mode. The model sees the delegates in its Tool-call catalog, but
+selecting one starts child Work; it is not a Tool Attempt. Registration alone never exposes a
+delegate. The parent receives the child Closure as required model context on its next turn.
+
 Use `flow.all(name, tasks)` for an explicit bounded fan-out/fan-in of child Work. The entire batch
 is admitted atomically with durable indexed slots; results retain task order, each child recovers
 independently, and canceling the parent cancels open descendants. Ordinary concurrent or unawaited
 Workflow promises remain unsupported because they have no durable identity or replay ordering.
-Parent snapshots expose child Work IDs, and story inspection records every child start and closure.
+Parent snapshots expose child Work IDs, and story inspection records child Call start, join, and
+closure with their Call IDs and modes. Child Work does not publish a separate Session message.
+Attached children cannot outlive successful parent completion; detached child execution remains
+deferred.
 
 Questions and approvals appear in `work.snapshot().interactions` and in Work and Session watchers.
 Resolve them with `work.respond(interaction.id, response)`.
@@ -371,8 +487,9 @@ Diagnostic inspection adds normalized model requests and responses plus validate
 Model responses may include normalized input, output, and total token usage plus cost in
 currency-denominated micros. Inspection does not expose hidden model reasoning.
 
-Hosts may provide access policy for three decisions: who may start a definition, call a Tool, and
-respond to an Interaction. Authorization and human approval are separate gates.
+Hosts may provide access policy for four decisions: who may start a definition, call a Tool, respond
+to an Interaction, and hand off Session ownership. Authorization and human approval are separate
+gates.
 
 ## Use Workbench
 
@@ -396,6 +513,11 @@ This is a Bun workspace:
 packages/harngine   public framework and embedded SQLite runtime
 packages/workbench  browser development and inspection application
 packages/codex-cli  development adapter using local Codex CLI authentication
+packages/codex-api  OpenAI Responses compatible model adapter
+packages/claude-messages  Claude Messages compatible model adapter
+packages/mcp        MCP catalog discovery and selected Tool bridge
+packages/retrieval  versioned retrieval Tools and citation checks
+packages/evaluation inspection-based Work-tree metrics, scorers and benchmark reports
 apps/coding/agent   repository coding agent and local HTTP server
 apps/coding/cli     command line interface for the coding agent
 apps/coding/demo fictional workspace coding showcase
@@ -403,6 +525,8 @@ apps/coding/desktop Neiv and Weiv coding desktop UI
 apps/quest          persistent social cultural-world reference application
 apps/roam           collaborative travel reference application
 apps/muse           evidence-backed creator-studio reference application
+apps/support        support triage, ownership handoff and approval-gated refund demo
+apps/due-diligence  attachment review, cited retrieval and approved report publication
 ```
 
 Run the project checks:
@@ -414,14 +538,30 @@ bun run check
 bun run test:package
 ```
 
+The coding Agent has an optional live Magpie smoke over both compatibility protocols:
+
+```bash
+bun run smoke:coding:magpie
+
+HARNGINE_CODING_PROVIDER=claude-messages \
+CODEX_MODEL=opencode-go/deepseek-v4.1-flash \
+bun run smoke:coding:magpie
+```
+
+Set `HARNGINE_NODE_BINARY` to choose the Node.js executable used by the smoke. These live checks
+are separate from normal tests, so CI does not depend on a running local router.
+
 Run the local showcases:
 
 ```bash
+bun run build
 bun run demo:coding
 bun run agent:coding --repo . --task "Explain this repository"
 bun run agent:desktop --repo . # build the app, then open it in Finder
 bun run demo:quest
 bun run demo:roam
+node apps/support/dist/main.js
+node apps/due-diligence/dist/main.js
 ```
 
 Package documentation:
@@ -429,6 +569,11 @@ Package documentation:
 - [`harngine`](../packages/harngine/README.md)
 - [`@harngine/workbench`](../packages/workbench/README.md)
 - [Codex CLI development adapter](../packages/codex-cli/README.md)
+- [OpenAI Responses adapter](../packages/codex-api/README.md)
+- [Claude Messages adapter](../packages/claude-messages/README.md)
+- [MCP Tool bridge](../packages/mcp/README.md)
+- [Retrieval Tool bridge](../packages/retrieval/README.md)
+- [Evaluation companion](../packages/evaluation/README.md)
 - [Coding agent](../apps/coding/agent/README.md)
 - [Coding application layout](../apps/coding/README.md)
 - [Coding CLI](../apps/coding/cli/README.md)

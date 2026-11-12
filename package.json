@@ -20,6 +20,7 @@
     "check": "bun run format:check && bun run typecheck && bun run test",
     "test:package": "bun run build && bun scripts/package-smoke.mjs",
     "test:linux": "bash scripts/test-linux.sh",
+    "smoke:coding:magpie": "bun run build && bun scripts/run-coding-magpie-smoke.mjs",
     "agent:desktop": "bun scripts/build-coding-desktop.mjs",
     "agent:coding": "bun scripts/run-coding-cli.mjs cli",
     "demo:coding": "bun run build && node_modules/node/bin/node apps/coding/demo/dist/coding-session.js",
@@ -27,7 +28,9 @@
     "demo:quest": "bun run manifest && sh apps/quest/scripts/build-ui.sh && bun node_modules/typescript/bin/tsc -b apps/quest --force && node_modules/node/bin/node apps/quest/dist/main.js",
     "demo:roam": "bun node_modules/typescript/bin/tsc -b packages/harngine apps/roam --force && node_modules/node/bin/node apps/roam/dist/main.js",
     "demo:muse": "bun run manifest && sh apps/muse/scripts/build-ui.sh && bun node_modules/typescript/bin/tsc -b packages/harngine apps/muse --force && node_modules/node/bin/node apps/muse/dist/cli.js",
-    "demo:muse:live": "bun run manifest && sh apps/muse/scripts/build-ui.sh && bun node_modules/typescript/bin/tsc -b packages/harngine apps/muse --force && node_modules/node/bin/node apps/muse/dist/cli.js --live"
+    "demo:muse:live": "bun run manifest && sh apps/muse/scripts/build-ui.sh && bun node_modules/typescript/bin/tsc -b packages/harngine apps/muse --force && node_modules/node/bin/node apps/muse/dist/cli.js --live",
+    "demo:support": "exec node apps/support/dist/main.js",
+    "demo:diligence": "exec node apps/due-diligence/dist/main.js"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

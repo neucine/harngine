@@ -23,6 +23,7 @@ export interface CallAccessPolicy {
   canCall(input: {
     principal: string;
     workId: WorkId;
+    target: Identity & { readonly kind: 'tool' | 'agent' | 'workflow' };
     tool: Identity;
     input: Json;
   }): boolean | Promise<boolean>;
@@ -32,6 +33,7 @@ export interface OperationExecutorOptions {
   readonly store: SqliteStore;
   readonly tools: ReadonlyMap<string, AnyTool>;
   readonly access: CallAccessPolicy;
+  readonly shouldContinue: () => boolean;
   readonly checkpoint: (
     boundary:
       | 'beforeAdmission'
@@ -54,12 +56,19 @@ export class OperationExecutor {
   }
 
   recover(): void {
-    this.transactions.recoverAdmittedAttempts();
+    this.transactions.recoverAdmittedAttempts((request) => {
+      const selected = this.options.tools.get(key(JSON.parse(request.tool)));
+      return selected?.effect === 'read' && selected.category === 'model';
+    });
     this.transactions.recoverAdmittedReconciliations();
   }
 
   abort(workId: string): void {
     this.invocations.get(workId)?.abort();
+  }
+
+  abortAll(): void {
+    for (const invocation of new Set(this.invocations.values())) invocation.abort();
   }
 
   resolveUnknown(
@@ -199,10 +208,16 @@ export class OperationExecutor {
     const access = this.options.access.canCall({
       principal: row.principal,
       workId: row.id as WorkId,
+      target: {
+        kind: 'tool',
+        id: authorization.tool.id,
+        version: authorization.tool.version,
+      },
       tool: authorization.tool,
       input,
     });
     const authorized = typeof access === 'boolean' ? access : await access;
+    if (!this.options.shouldContinue()) return true;
     if (!authorized) {
       this.transactions.denyCall(row.id, request.id, authorization);
       return true;
@@ -239,7 +254,12 @@ export class OperationExecutor {
                   progress: (event: {
                     type: string;
                     text?: string;
-                    usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number };
+                    usage?: {
+                      inputTokens?: number;
+                      outputTokens?: number;
+                      totalTokens?: number;
+                      cost?: { amountMicros: number; currency: string };
+                    };
                   }) => {
                     if (
                       controller.signal.aborted ||
@@ -257,16 +277,43 @@ export class OperationExecutor {
                       ].every(
                         (value) =>
                           value === undefined || (Number.isSafeInteger(value) && value >= 0),
-                      )
+                      ) &&
+                      (event.usage.cost === undefined ||
+                        (Number.isSafeInteger(event.usage.cost.amountMicros) &&
+                          event.usage.cost.amountMicros >= 0 &&
+                          typeof event.usage.cost.currency === 'string' &&
+                          event.usage.cost.currency.length > 0 &&
+                          event.usage.cost.currency.length <= 16))
                         ? event.usage
                         : undefined;
+                    const recordedUsage: Json | undefined = usage
+                      ? {
+                          ...(usage.inputTokens === undefined
+                            ? {}
+                            : { inputTokens: usage.inputTokens }),
+                          ...(usage.outputTokens === undefined
+                            ? {}
+                            : { outputTokens: usage.outputTokens }),
+                          ...(usage.totalTokens === undefined
+                            ? {}
+                            : { totalTokens: usage.totalTokens }),
+                          ...(usage.cost
+                            ? {
+                                cost: {
+                                  amountMicros: usage.cost.amountMicros,
+                                  currency: usage.cost.currency,
+                                },
+                              }
+                            : {}),
+                        }
+                      : undefined;
                     this.options.store.write(() =>
                       this.options.store.event(row.id, 'model.progress', {
                         operationId: request.id,
                         attemptId,
                         type: event.type,
                         ...(text ? { text } : {}),
-                        ...(usage ? { usage } : {}),
+                        ...(recordedUsage ? { usage: recordedUsage } : {}),
                       }),
                     );
                   },

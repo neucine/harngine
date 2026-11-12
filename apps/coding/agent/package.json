@@ -17,6 +17,10 @@
     "harngine": "workspace:*",
     "@harngine/codex-cli": "workspace:*",
     "@harngine/codex-api": "workspace:*",
+    "@harngine/claude-messages": "workspace:*",
     "@harngine/http": "workspace:*"
+  },
+  "devDependencies": {
+    "@harngine/evaluation": "workspace:*"
   }
 }

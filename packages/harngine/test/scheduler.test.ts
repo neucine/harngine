@@ -25,6 +25,7 @@ test('Scheduler coalesces wakeups during a drain and finalizes shutdown once', a
     },
     expireDeadlines: () => {},
     nextDeadline: () => null,
+    abortInFlight: () => {},
     clock: () => 0,
   });
 
@@ -59,6 +60,7 @@ test('Scheduler preserves the first background failure across supervision, drain
     },
     expireDeadlines: () => {},
     nextDeadline: () => null,
+    abortInFlight: () => {},
     clock: () => 0,
   });
 

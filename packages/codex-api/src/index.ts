@@ -1,11 +1,12 @@
-import type { ModelAdapter, ModelRequest, ModelResponse } from 'harngine';
 import {
-  codexCliSystemInstructions,
-  normalizeResponse,
-  responseContract,
-} from '@harngine/codex-cli';
+  modelEnvelopeInstructions,
+  modelOutputSchema,
+  modelResponseContract,
+  normalizeModelEnvelope,
+} from 'harngine';
+import type { ModelAdapter, ModelRequest, ModelResponse } from 'harngine';
 
-export interface CodexApiOptions {
+export interface OpenAIResponsesOptions {
   accessToken: string;
   model?: string;
   baseUrl?: string;
@@ -16,14 +17,14 @@ export interface CodexApiOptions {
 function message(value: unknown): string {
   if (value && typeof value === 'object') {
     const error = (value as { error?: { code?: string } }).error;
-    if (error?.code) return `Codex API error: ${error.code}`;
+    if (error?.code) return `OpenAI Responses API error: ${error.code}`;
   }
-  return 'Codex API request failed';
+  return 'OpenAI Responses API request failed';
 }
 
-export function createCodexApiAdapter(options: CodexApiOptions): ModelAdapter {
-  if (!options.accessToken.trim()) throw new Error('CODEX_ACCESS_TOKEN is empty');
-  const baseUrl = options.baseUrl ?? 'https://api.openai.com/v1';
+export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): ModelAdapter {
+  if (!options.accessToken.trim()) throw new Error('API access token is empty');
+  const baseUrl = (options.baseUrl ?? 'https://api.openai.com/v1').replace(/\/+$/, '');
   const request = options.fetch ?? globalThis.fetch;
   const timeoutMs = options.timeoutMs ?? 180000;
   let selectedModel = options.model;
@@ -35,17 +36,21 @@ export function createCodexApiAdapter(options: CodexApiOptions): ModelAdapter {
     });
     if (response.status === 401)
       throw new Error(
-        'CODEX_ACCESS_TOKEN was rejected by the OpenAI model catalog (HTTP 401). Use an authorized ChatGPT plan OAuth access token or unset the variable to use Codex CLI.',
+        'API token was rejected by the model catalog (HTTP 401). Check the token and API base URL.',
       );
-    if (!response.ok) throw new Error(`Codex model catalog HTTP ${response.status}`);
-    const catalog = (await response.json()) as { models?: { slug: string; visibility?: string }[] };
-    const choice = catalog.models?.find((item) => item.visibility === 'list')?.slug;
-    if (!choice) throw new Error('Codex model catalog has no listed model; set CODEX_MODEL');
+    if (!response.ok) throw new Error(`OpenAI compatible model catalog HTTP ${response.status}`);
+    const catalog = (await response.json()) as {
+      data?: { id: string }[];
+      models?: { slug: string; visibility?: string }[];
+    };
+    const choice =
+      catalog.data?.[0]?.id ?? catalog.models?.find((item) => item.visibility === 'list')?.slug;
+    if (!choice) throw new Error('Model catalog has no listed model; specify the model option');
     selectedModel = choice;
     return choice;
   }
   return {
-    id: 'codex-api',
+    id: 'openai-responses',
     capabilities: {
       tools: true,
       structuredOutput: true,
@@ -58,7 +63,10 @@ export function createCodexApiAdapter(options: CodexApiOptions): ModelAdapter {
       const abort = () => controller.abort(signal.reason);
       signal.addEventListener('abort', abort, { once: true });
       if (signal.aborted) controller.abort(signal.reason);
-      const timer = setTimeout(() => controller.abort(new Error('Codex API timeout')), timeoutMs);
+      const timer = setTimeout(
+        () => controller.abort(new Error('OpenAI Responses API timeout')),
+        timeoutMs,
+      );
       try {
         const name = await model(controller.signal);
         const response = await request(`${baseUrl}/responses`, {
@@ -69,14 +77,14 @@ export function createCodexApiAdapter(options: CodexApiOptions): ModelAdapter {
           },
           body: JSON.stringify({
             model: name,
-            instructions: codexCliSystemInstructions,
+            instructions: modelEnvelopeInstructions,
             input: [{ role: 'user', content: JSON.stringify(input) }],
             text: {
               format: {
                 type: 'json_schema',
                 name: 'harngine_response',
                 strict: true,
-                schema: responseContract(input),
+                schema: modelOutputSchema(modelResponseContract(input)),
               },
             },
             store: false,
@@ -88,13 +96,14 @@ export function createCodexApiAdapter(options: CodexApiOptions): ModelAdapter {
           const body = await response.json().catch(() => null);
           throw new Error(`${message(body)} (HTTP ${response.status})`);
         }
-        if (!response.body) throw new Error('Codex API response has no stream');
+        if (!response.body) throw new Error('OpenAI Responses API response has no stream');
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let pending = '',
           output = '',
           complete: any = null;
         let bytes = 0;
+        const commentary = new Set<string>();
         const frame = (text: string) => {
           const data = text
             .split(/\r?\n/)
@@ -103,7 +112,21 @@ export function createCodexApiAdapter(options: CodexApiOptions): ModelAdapter {
             .join('\n');
           if (!data || data === '[DONE]') return;
           const event = JSON.parse(data) as { type: string; delta?: string; response?: any };
-          if (event.type === 'response.output_text.delta') output += event.delta ?? '';
+          const eventWithItem = event as {
+            item_id?: string;
+            item?: { id?: string; phase?: string };
+          };
+          if (
+            event.type === 'response.output_item.added' &&
+            eventWithItem.item?.id &&
+            eventWithItem.item.phase === 'commentary'
+          )
+            commentary.add(eventWithItem.item.id);
+          if (
+            event.type === 'response.output_text.delta' &&
+            (!eventWithItem.item_id || !commentary.has(eventWithItem.item_id))
+          )
+            output += event.delta ?? '';
           if (event.type === 'response.completed') complete = event.response;
           if (
             event.type === 'response.failed' ||
@@ -116,7 +139,8 @@ export function createCodexApiAdapter(options: CodexApiOptions): ModelAdapter {
           const { done, value } = await reader.read();
           if (done) break;
           bytes += value.byteLength;
-          if (bytes > 2 * 1024 * 1024) throw new Error('Codex API response exceeded 2 MB');
+          if (bytes > 2 * 1024 * 1024)
+            throw new Error('OpenAI Responses API response exceeded 2 MB');
           pending += decoder.decode(value, { stream: true });
           let end: number;
           while ((end = pending.search(/\r?\n\r?\n/)) >= 0) {
@@ -125,17 +149,26 @@ export function createCodexApiAdapter(options: CodexApiOptions): ModelAdapter {
             pending = pending.slice(end + separator.length);
           }
         }
-        if (!complete) throw new Error('Codex API stream ended without response.completed');
-        if (!output)
-          output = (complete.output ?? [])
+        if (!complete)
+          throw new Error('OpenAI Responses API stream ended without response.completed');
+        if (!output) {
+          const items = (complete.output ?? []) as {
+            phase?: string;
+            content?: { type: string; text?: string }[];
+          }[];
+          const final = items.some((item) => item.phase === 'final_answer')
+            ? items.filter((item) => item.phase === 'final_answer')
+            : items.filter((item) => item.phase !== 'commentary');
+          output = final
             .flatMap((item: any) => item.content ?? [])
             .filter((part: any) => part.type === 'output_text')
             .map((part: any) => part.text)
             .join('');
-        const result = normalizeResponse(JSON.parse(output));
+        }
+        const result = normalizeModelEnvelope(JSON.parse(output), input);
         return {
           ...result,
-          provider: { name: 'openai', model: name },
+          provider: { name: 'openai-responses', model: name },
           ...(complete.usage
             ? {
                 usage: {
@@ -153,3 +186,8 @@ export function createCodexApiAdapter(options: CodexApiOptions): ModelAdapter {
     },
   };
 }
+
+/** @deprecated Use createOpenAIResponsesAdapter. */
+export const createCodexApiAdapter = createOpenAIResponsesAdapter;
+/** @deprecated Use OpenAIResponsesOptions. */
+export type CodexApiOptions = OpenAIResponsesOptions;

@@ -10,7 +10,6 @@
     }
   },
   "dependencies": {
-    "harngine": "workspace:*",
-    "@harngine/codex-cli": "workspace:*"
+    "harngine": "workspace:*"
   }
 }

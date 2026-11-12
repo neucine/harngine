@@ -88,10 +88,17 @@ export class WorkService {
           'maxOperations',
           'maxModelTurns',
           'maxToolExecutions',
+          'maxChildWork',
+          'maxDepth',
         ]);
         for (const [name, limit] of Object.entries(request.limits)) {
-          if (!Number.isSafeInteger(limit) || (limit as number) < 1)
+          if (!Number.isSafeInteger(limit) || (limit as number) <= 0)
             throw new RuntimeError('INVALID_POLICY', 'Work limits must be positive integers');
+          if (name === 'maxDepth') {
+            if ((limit as number) > 8)
+              throw new RuntimeError('INVALID_POLICY', 'Work depth may not exceed the default');
+            continue;
+          }
           const configured = definition.policy[name as keyof Policy];
           if (configured === undefined || (limit as number) > configured)
             throw new RuntimeError('INVALID_POLICY', 'Work limits may only narrow the definition');

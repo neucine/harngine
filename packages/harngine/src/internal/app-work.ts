@@ -21,7 +21,7 @@ import {
 } from '../errors.js';
 import type { Agent as PublicAgent } from '../agent.js';
 import type { Workflow as PublicWorkflow } from '../workflow.js';
-import type { ModelRequest, ModelResponse } from '../model.js';
+import type { ModelRequest, ModelResponse, ModelUsage } from '../model.js';
 import type {
   CallInspectionEntry,
   CancelOptions,
@@ -118,6 +118,7 @@ export function definitionDescription(record: RuntimeDefinitionRecord): Definiti
       limits: {
         operations: policy.maxOperations ?? policy.maxDecisions ?? null,
         toolExecutions: policy.maxToolExecutions ?? policy.maxAttempts ?? null,
+        childWork: policy.maxChildWork ?? null,
       },
     });
   const instructions = Array.isArray(manifest.instructions)
@@ -138,10 +139,23 @@ export function definitionDescription(record: RuntimeDefinitionRecord): Definiti
       capabilities: model.capabilities ?? {},
     },
     tools: toolReferences(manifest.tools),
+    delegates: Object.freeze(
+      Array.isArray(manifest.delegates)
+        ? manifest.delegates.map((value) => {
+            const delegate = value as { id: string; version: string; kind: 'agent' | 'workflow' };
+            return reference(
+              delegate.kind,
+              delegate.id,
+              delegate.version,
+            ) as ExecutableDefinitionReference;
+          })
+        : [],
+    ),
     context: manifest.context ?? {},
     limits: {
       modelTurns: policy.maxModelTurns ?? policy.maxDecisions ?? null,
       toolExecutions: policy.maxToolExecutions ?? policy.maxAttempts ?? null,
+      childWork: policy.maxChildWork ?? null,
     },
   });
 }
@@ -200,8 +214,8 @@ export function workLimits(
   const publicDefinition = definition as PublicAgent<any, any> | PublicWorkflow<any, any>;
   const agentDefinition = 'instructions' in publicDefinition;
   const supported = agentDefinition
-    ? new Set(['modelTurns', 'toolExecutions'])
-    : new Set(['operations', 'toolExecutions']);
+    ? new Set(['modelTurns', 'toolExecutions', 'childWork', 'depth'])
+    : new Set(['operations', 'toolExecutions', 'childWork', 'depth']);
   for (const [name, value] of Object.entries(requested ?? {})) {
     if (!supported.has(name) || !Number.isSafeInteger(value) || value < 1)
       throw new ValidationError({
@@ -216,6 +230,7 @@ export function workLimits(
       });
   }
   const configured = publicDefinition.limits;
+  const depth = requested?.depth ?? ceiling?.depth ?? 8;
   if (agentDefinition) {
     const definitionLimits = configured as PublicAgent['limits'];
     const modelTurns = Math.min(
@@ -226,9 +241,14 @@ export function workLimits(
       requested?.toolExecutions ?? definitionLimits.toolExecutions,
       ceiling?.toolExecutions ?? definitionLimits.toolExecutions,
     );
+    const childWork = Math.min(
+      requested?.childWork ?? definitionLimits.childWork,
+      ceiling?.childWork ?? definitionLimits.childWork,
+    );
     if (
       modelTurns > definitionLimits.modelTurns ||
-      toolExecutions > definitionLimits.toolExecutions
+      toolExecutions > definitionLimits.toolExecutions ||
+      childWork > definitionLimits.childWork
     )
       throw new ValidationError({
         code: 'INVALID_POLICY',
@@ -237,6 +257,8 @@ export function workLimits(
     return {
       maxModelTurns: modelTurns,
       maxToolExecutions: toolExecutions,
+      maxChildWork: childWork,
+      maxDepth: depth,
       maxAttempts: modelTurns + toolExecutions,
       maxDecisions: modelTurns + toolExecutions + 1,
     };
@@ -250,7 +272,15 @@ export function workLimits(
     requested?.toolExecutions ?? definitionLimits.toolExecutions,
     ceiling?.toolExecutions ?? definitionLimits.toolExecutions,
   );
-  if (operations > definitionLimits.operations || toolExecutions > definitionLimits.toolExecutions)
+  const childWork = Math.min(
+    requested?.childWork ?? definitionLimits.childWork,
+    ceiling?.childWork ?? definitionLimits.childWork,
+  );
+  if (
+    operations > definitionLimits.operations ||
+    toolExecutions > definitionLimits.toolExecutions ||
+    childWork > definitionLimits.childWork
+  )
     throw new ValidationError({
       code: 'INVALID_POLICY',
       message: 'Work limits may only narrow the Workflow definition',
@@ -258,6 +288,8 @@ export function workLimits(
   return {
     maxOperations: operations,
     maxToolExecutions: toolExecutions,
+    maxChildWork: childWork,
+    maxDepth: depth,
     maxDecisions: operations,
     maxAttempts: toolExecutions,
   };
@@ -757,9 +789,11 @@ export class WorkHandle<O extends Json, R extends Json> implements Work<O, R> {
             ? 'Delegated one child Work'
             : proposal === 'children'
               ? 'Started parallel child Work'
-              : proposal === 'complete'
-                ? 'Completed the objective'
-                : 'Failed the objective';
+              : proposal === 'join'
+                ? 'Joined concurrent child Work'
+                : proposal === 'complete'
+                  ? 'Completed the objective'
+                  : 'Failed the objective';
     let details: DecisionInspectionEntry['diagnostic'];
     if (diagnostic) {
       const modelCalls = (
@@ -958,7 +992,7 @@ export class WorkHandle<O extends Json, R extends Json> implements Work<O, R> {
       const text = typeof body.text === 'string' ? body.text : undefined;
       const usage =
         body.usage && typeof body.usage === 'object' && !Array.isArray(body.usage)
-          ? (body.usage as { inputTokens?: number; outputTokens?: number; totalTokens?: number })
+          ? (body.usage as ModelUsage)
           : undefined;
       return Object.freeze({
         ...base,
@@ -1016,12 +1050,29 @@ export class WorkHandle<O extends Json, R extends Json> implements Work<O, R> {
     }
     if (event.kind === 'decision.committed')
       return this.decisionEntry(event, record, snapshot, diagnostic);
-    if (event.kind === 'child.started' || event.kind === 'child.closed') {
+    if (
+      event.kind === 'child.started' ||
+      event.kind === 'call.joined' ||
+      event.kind === 'child.closed'
+    ) {
       const childWorkId = body.childWorkId;
       const slot = body.slot;
-      if (typeof childWorkId !== 'string' || typeof slot !== 'string') return null;
+      const callId = body.callId;
+      const mode = body.mode;
+      if (
+        typeof childWorkId !== 'string' ||
+        typeof slot !== 'string' ||
+        typeof callId !== 'string' ||
+        (mode !== 'sequential' && mode !== 'concurrent')
+      )
+        return null;
       const childRecord = this.runtime.workRecord(this.caller, childWorkId as WorkId);
-      const phase = event.kind === 'child.started' ? 'started' : 'closed';
+      const phase =
+        event.kind === 'child.started'
+          ? ('started' as const)
+          : event.kind === 'call.joined'
+            ? ('joined' as const)
+            : ('closed' as const);
       const status =
         phase === 'closed' &&
         (body.closure === 'completed' || body.closure === 'failed' || body.closure === 'canceled')
@@ -1031,15 +1082,25 @@ export class WorkHandle<O extends Json, R extends Json> implements Work<O, R> {
         ...base,
         type: 'child',
         presentation: {
-          title: phase === 'started' ? 'Child Work started' : 'Child Work closed',
+          title:
+            phase === 'started'
+              ? 'Child Call started'
+              : phase === 'joined'
+                ? 'Child Call joined'
+                : 'Child Call closed',
           summary:
             phase === 'started'
               ? `Started ${childRecord.ref.definition.id}`
-              : `Child Work ${status ?? 'closed'}`,
+              : phase === 'joined'
+                ? `Joined ${String(body.joinSlot)}`
+                : `Child Work ${status ?? 'closed'}`,
         },
+        callId,
         childWorkId: childWorkId as WorkId,
         slot,
         phase,
+        mode,
+        ...(typeof body.joinSlot === 'string' ? { joinSlot: body.joinSlot } : {}),
         definition: workReference(childRecord),
         ...(status ? { status } : {}),
       });

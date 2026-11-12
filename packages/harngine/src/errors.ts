@@ -1,5 +1,6 @@
 import type { Reason } from './internal/contracts.js';
 import type { Json } from './types.js';
+import type { WorkId } from './types.js';
 
 export type PublicError = {
   object: 'error';
@@ -47,20 +48,30 @@ export class UnavailableError extends HarngineError {
 
 export class WorkFailedError extends HarngineError {
   readonly reason: Reason;
+  readonly workId?: WorkId;
 
-  constructor(reason: Reason) {
+  constructor(reason: Reason, options: { readonly workId?: WorkId } = {}) {
     const normalized = publicWorkReason(reason);
-    super(normalized);
+    super({
+      ...normalized,
+      ...(options.workId ? { details: { workId: options.workId } } : {}),
+    });
     this.reason = normalized;
+    if (options.workId) this.workId = options.workId;
   }
 }
 
 export class WorkCanceledError extends HarngineError {
   readonly reason: Reason;
+  readonly workId?: WorkId;
 
-  constructor(reason: Reason) {
-    super(reason);
+  constructor(reason: Reason, options: { readonly workId?: WorkId } = {}) {
+    super({
+      ...reason,
+      ...(options.workId ? { details: { workId: options.workId } } : {}),
+    });
     this.reason = reason;
+    if (options.workId) this.workId = options.workId;
   }
 }
 

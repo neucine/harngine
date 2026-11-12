@@ -15,6 +15,7 @@ test('PolicyEvaluator provides the explicit legacy-permissive embedded policy', 
     policy.canCall({
       principal: 'owner',
       workId: 'work_test' as never,
+      target: { kind: 'tool', id: 'tool', version: '1' },
       tool: { id: 'tool', version: '1' },
       input: null,
     }),
@@ -51,6 +52,7 @@ test('PolicyEvaluator delegates async application policy with its immutable revi
     policy.canCall({
       principal: 'owner',
       workId: 'work_test' as never,
+      target: { kind: 'tool', id: 'tool', version: '1' },
       tool: { id: 'tool', version: '1' },
       input: null,
     }),

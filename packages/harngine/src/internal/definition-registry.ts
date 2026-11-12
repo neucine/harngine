@@ -179,6 +179,9 @@ export class DefinitionRegistry {
       for (const reference of definition.tools)
         if (!this.toolRevisions.has(key(reference)))
           throw new RuntimeError('UNAVAILABLE', 'Agent tool is missing');
+      for (const reference of definition.children ?? [])
+        if (!this.workflows.has(key(reference)))
+          throw new RuntimeError('UNAVAILABLE', 'Agent delegate is missing');
       this.addWorkflowSchemas(definition, addSchema);
       records.push({
         kind: 'agent',
@@ -210,6 +213,15 @@ export class DefinitionRegistry {
             : identity(value.model as Agent['model']),
           ...('modelResponse' in value ? { modelResponse: value.modelResponse } : {}),
           tools: value.tools.map(toolIdentity),
+          ...(definition.children
+            ? {
+                delegates: definition.children.map((child) => ({
+                  id: child.id,
+                  version: child.version,
+                  kind: this.agents.has(key(child)) ? 'agent' : 'workflow',
+                })),
+              }
+            : {}),
           ...('input' in value && value.input ? { input: value.input } : {}),
           ...('reply' in value && value.reply ? { reply: value.reply } : {}),
         },

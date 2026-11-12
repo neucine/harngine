@@ -135,6 +135,8 @@ export function workflow<O extends Json, S extends Json, R extends Json, I exten
           'maxOperations',
           'maxModelTurns',
           'maxToolExecutions',
+          'maxChildWork',
+          'maxDepth',
         ].includes(k),
     )
   )
@@ -148,6 +150,8 @@ export function workflow<O extends Json, S extends Json, R extends Json, I exten
     definition.policy.maxOperations,
     definition.policy.maxModelTurns,
     definition.policy.maxToolExecutions,
+    definition.policy.maxChildWork,
+    definition.policy.maxDepth,
   ]) {
     if (limit === undefined) continue;
     if (!Number.isSafeInteger(limit) || limit < 1)

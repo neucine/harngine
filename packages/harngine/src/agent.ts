@@ -18,10 +18,20 @@ import type {
 import { digest, identity, key, schema, tool as coreTool, validate, workflow } from './schema.js';
 import type { Tool as PublicTool } from './tool.js';
 import { toolIdentity } from './tool.js';
+import type { Workflow as PublicWorkflow } from './workflow.js';
 import { definitionRevision } from './build/manifest.js';
 import { ContextEngine } from './internal/context-engine.js';
 
 type AgentTool<I extends Json = Json, O extends Json = Json> = CoreTool<I, O> | PublicTool<I, O>;
+export type AgentTarget<O extends Json = Json, R extends Json = Json> =
+  | Agent<O, R>
+  | PublicWorkflow<O, R>;
+
+export interface AgentDelegate<O extends Json = Json, R extends Json = Json> {
+  readonly target: AgentTarget<O, R>;
+  readonly description: string;
+  readonly mode?: 'sequential' | 'concurrent';
+}
 
 export interface AgentDefinition<O extends Json, R extends Json = string> {
   readonly id: string;
@@ -30,7 +40,12 @@ export interface AgentDefinition<O extends Json, R extends Json = string> {
   readonly result?: Schema<R>;
   readonly model: ModelAdapter;
   readonly tools?: readonly AgentTool<any, any>[];
-  readonly limits?: { readonly modelTurns?: number; readonly toolExecutions?: number };
+  readonly delegates?: readonly AgentDelegate<any, any>[];
+  readonly limits?: {
+    readonly modelTurns?: number;
+    readonly toolExecutions?: number;
+    readonly childWork?: number;
+  };
   readonly context?: ContextConfiguration;
   readonly publish?: false | ((result: R) => Json);
 }
@@ -43,7 +58,12 @@ export interface Agent<O extends Json = Json, R extends Json = Json> {
   readonly result: Schema<R>;
   readonly model: ModelAdapter;
   readonly tools: readonly AgentTool<any, any>[];
-  readonly limits: { readonly modelTurns: number; readonly toolExecutions: number };
+  readonly delegates: readonly AgentDelegate<any, any>[];
+  readonly limits: {
+    readonly modelTurns: number;
+    readonly toolExecutions: number;
+    readonly childWork: number;
+  };
   readonly context: Required<Pick<ContextConfiguration, 'reserveForOutput' | 'maxInputTokens'>> &
     Pick<ContextConfiguration, 'session' | 'policy'>;
   readonly publish: false | ((result: R) => Json);
@@ -65,9 +85,9 @@ const objectSchema = (properties: Record<string, Json>, required: string[]): Jso
 function responseSchema(
   id: string,
   version: string,
-  tools: readonly AgentTool<any, any>[],
+  callables: readonly { readonly id: string; readonly input: Schema }[],
 ): Schema<Json> {
-  const toolCalls = tools.map((selected) =>
+  const toolCalls = callables.map((selected) =>
     objectSchema(
       {
         type: { const: 'tool-call' },
@@ -155,7 +175,27 @@ export function agent<O extends Json, R extends Json>(
     throw new RuntimeError('INVALID_DEFINITION', 'Every model-facing Tool needs a description');
   if (new Set(tools.map((selected) => key(toolIdentity(selected)))).size !== tools.length)
     throw new RuntimeError('REGISTRATION_CONFLICT', 'Agent Tools must be unique');
-  if (tools.length && !definition.model.capabilities.tools)
+  const delegates = definition.delegates ?? [];
+  if (
+    delegates.some(
+      (delegate) =>
+        !delegate.description?.trim() ||
+        !['sequential', 'concurrent'].includes(delegate.mode ?? 'sequential'),
+    )
+  )
+    throw new RuntimeError(
+      'INVALID_DEFINITION',
+      'Every Agent delegate needs a description and supported mode',
+    );
+  if (new Set(delegates.map((delegate) => delegate.target.id)).size !== delegates.length)
+    throw new RuntimeError('REGISTRATION_CONFLICT', 'Agent delegates must be unique');
+  const callableIds = [
+    ...tools.map((selected) => selected.id),
+    ...delegates.map((selected) => selected.target.id),
+  ];
+  if (new Set(callableIds).size !== callableIds.length)
+    throw new RuntimeError('REGISTRATION_CONFLICT', 'Agent Tool and delegate ids must be unique');
+  if (callableIds.length && !definition.model.capabilities.tools)
     throw new RuntimeError('UNSUPPORTED_MODEL', 'Model adapter does not support native Tool calls');
   if (definition.result && !definition.model.capabilities.structuredOutput)
     throw new RuntimeError('UNSUPPORTED_MODEL', 'Model adapter does not support structured output');
@@ -167,12 +207,15 @@ export function agent<O extends Json, R extends Json>(
   const limits = {
     modelTurns: configured.limits?.modelTurns ?? 50,
     toolExecutions: configured.limits?.toolExecutions ?? 100,
+    childWork: configured.limits?.childWork ?? 100,
   };
   if (
     !Number.isSafeInteger(limits.modelTurns) ||
     limits.modelTurns < 1 ||
     !Number.isSafeInteger(limits.toolExecutions) ||
-    limits.toolExecutions < 1
+    limits.toolExecutions < 1 ||
+    !Number.isSafeInteger(limits.childWork) ||
+    limits.childWork < 1
   )
     throw new RuntimeError('INVALID_POLICY', 'Agent limits must be positive finite integers');
   const context = {
@@ -228,6 +271,11 @@ export function agent<O extends Json, R extends Json>(
     result: definition.result?.jsonSchema ?? { type: 'string' },
     model: { id: definition.model.id, artifactDigest: modelArtifact },
     tools: tools.map(toolIdentity),
+    delegates: delegates.map((delegate) => ({
+      target: { id: delegate.target.id, version: delegate.target.revision },
+      description: delegate.description,
+      mode: delegate.mode ?? 'sequential',
+    })),
     limits,
     context: {
       session: context.session,
@@ -246,7 +294,10 @@ export function agent<O extends Json, R extends Json>(
       version: revision,
       jsonSchema: { type: 'string' },
     })) as Schema<R>;
-  const modelOutput = responseSchema(definition.id, revision, tools);
+  const modelOutput = responseSchema(definition.id, revision, [
+    ...tools.map((selected) => ({ id: selected.id, input: selected.input })),
+    ...delegates.map((delegate) => ({ id: delegate.target.id, input: delegate.target.objective })),
+  ]);
   const modelInput = schema<Json>({
     id: `${definition.id}.model-request`,
     version: revision,
@@ -270,12 +321,17 @@ export function agent<O extends Json, R extends Json>(
         const response = normalizedModelResponse(generated);
         return { status: 'success', value: validate(modelOutput, response as unknown as Json) };
       } catch (error) {
+        const interrupted = signal.aborted;
         return {
           status: 'failure',
           effect: 'none',
           reason: {
-            code: 'MODEL_FAILED',
-            message: error instanceof Error ? error.message : 'Model generation failed',
+            code: interrupted ? 'MODEL_INTERRUPTED' : 'MODEL_FAILED',
+            message: interrupted
+              ? 'Model request was interrupted'
+              : error instanceof Error
+                ? error.message
+                : 'Model generation failed',
           },
         };
       }
@@ -289,6 +345,7 @@ export function agent<O extends Json, R extends Json>(
     result: resultContract,
     model: definition.model,
     tools: Object.freeze([...tools]),
+    delegates: Object.freeze([...delegates]),
     limits: Object.freeze(limits),
     context: Object.freeze(context),
     publish:
@@ -307,13 +364,24 @@ export function agent<O extends Json, R extends Json>(
     ),
   });
   const toolById = new Map(tools.map((selected) => [selected.id, selected]));
+  const delegateById = new Map(delegates.map((selected) => [selected.target.id, selected]));
   const request = (view: View): Json => {
-    const catalog = tools.map((selected) => ({
-      id: selected.id,
-      description: selected.description!,
-      inputSchema: selected.input.jsonSchema,
-      outputSchema: selected.output.jsonSchema,
-    }));
+    const catalog: ModelRequest['tools'] = [
+      ...tools.map((selected) => ({
+        id: selected.id,
+        kind: 'tool' as const,
+        description: selected.description!,
+        inputSchema: selected.input.jsonSchema,
+        outputSchema: selected.output.jsonSchema,
+      })),
+      ...delegates.map((delegate) => ({
+        id: delegate.target.id,
+        kind: 'instructions' in delegate.target ? ('agent' as const) : ('workflow' as const),
+        description: delegate.description,
+        inputSchema: delegate.target.objective.jsonSchema,
+        outputSchema: delegate.target.result.jsonSchema,
+      })),
+    ];
     const base = {
       instructions,
       objective: view.objective,
@@ -345,8 +413,13 @@ export function agent<O extends Json, R extends Json>(
       maxAttempts: limits.modelTurns + limits.toolExecutions,
       maxModelTurns: limits.modelTurns,
       maxToolExecutions: limits.toolExecutions,
+      maxChildWork: limits.childWork,
     },
     tools: [identity(modelTool), ...tools.map(toolIdentity)],
+    children: delegates.map((delegate) => ({
+      id: delegate.target.id,
+      version: delegate.target.revision,
+    })),
     initial: () => ({ phase: 'model', turn: 0, toolIndex: 0 }),
     decide(view): Proposal<State, R> {
       const finish = (proposal: Proposal<State, R>): Proposal<State, R> => ({
@@ -381,21 +454,75 @@ export function agent<O extends Json, R extends Json>(
           },
         });
       if (!modelCall.outcome) return finish({ type: 'wait', state: view.state });
-      if (modelCall.outcome.status !== 'success')
+      if (modelCall.outcome.status !== 'success') {
+        if (modelCall.outcome.reason.code === 'MODEL_INTERRUPTED') {
+          const nextTurn = view.state.turn + 1;
+          return finish({
+            type: 'call',
+            state: { phase: 'model', turn: nextTurn, toolIndex: 0 },
+            call: {
+              slot: `model:${nextTurn}`,
+              tool: identity(modelTool),
+              input: request({
+                ...view,
+                state: { phase: 'model', turn: nextTurn, toolIndex: 0 },
+              }),
+            },
+          });
+        }
         return finish({ type: 'fail', reason: modelCall.outcome.reason });
+      }
       const saved = modelCall.outcome.value as unknown as ModelResponse;
       const calls = saved.items.filter(
         (item): item is Extract<ModelItem, { type: 'tool-call' }> => item.type === 'tool-call',
       );
+      if (new Set(calls.map((call) => call.providerCallId)).size !== calls.length)
+        return finish({
+          type: 'fail',
+          reason: {
+            code: 'MODEL_FAILED',
+            message: 'Model response contains duplicate provider call ids',
+          },
+        });
       if (view.state.toolIndex < calls.length) {
         const call = calls[view.state.toolIndex]!;
         const selected = toolById.get(call.tool);
+        const delegate = delegateById.get(call.tool);
+        if (!selected && !delegate)
+          return finish({
+            type: 'fail',
+            reason: {
+              code: 'MODEL_FAILED',
+              message: `Model selected unexposed target ${call.tool}`,
+            },
+          });
+        if (delegate) {
+          const slot = `delegate:${view.state.turn}:${call.providerCallId}`;
+          if (!view.children[slot])
+            return finish({
+              type: 'child',
+              state: {
+                phase: 'tools',
+                turn: view.state.turn,
+                toolIndex: view.state.toolIndex + 1,
+              },
+              child: {
+                slot,
+                definition: {
+                  id: delegate.target.id,
+                  version: delegate.target.revision,
+                },
+                objective: call.input,
+                mode: delegate.mode ?? 'sequential',
+              },
+            });
+        }
+        const slot = `tool:${view.state.turn}:${call.providerCallId}`;
         if (!selected)
           return finish({
             type: 'fail',
             reason: { code: 'MODEL_FAILED', message: `Model selected unknown Tool ${call.tool}` },
           });
-        const slot = `tool:${view.state.turn}:${call.providerCallId}`;
         if (!view.calls[slot])
           return finish({
             type: 'call',
@@ -403,6 +530,8 @@ export function agent<O extends Json, R extends Json>(
             call: { slot, tool: toolIdentity(selected), input: call.input },
           });
       }
+      if (Object.values(view.children).some((child) => child.closure === null))
+        return finish({ type: 'wait', state: view.state });
       if (calls.length)
         return finish({
           type: 'call',

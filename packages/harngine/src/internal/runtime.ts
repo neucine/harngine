@@ -19,6 +19,7 @@ import {
   type InputRequest,
   type ReplyRequest,
   type SessionCreate,
+  type SessionHandoffRequest,
   type SessionRef,
   type SessionSend,
   type ResolveEffectRequest,
@@ -154,6 +155,7 @@ export class Runtime {
         store: this.store,
         tools: this.registry.tools,
         access: this.policy,
+        shouldContinue: () => this.scheduler.shouldContinue,
         checkpoint: this.checkpoint,
         clock: this.clock,
         fail: (row, problem) => this.executionEngine.fail(row, problem),
@@ -162,6 +164,7 @@ export class Runtime {
         store: this.store,
         registry: this.registry,
         operations: this.operationExecutor,
+        access: this.policy,
         shouldContinue: () => this.scheduler.shouldContinue,
         beforeCycle: () => {
           this.scheduler.expireNow();
@@ -178,6 +181,7 @@ export class Runtime {
         drive: () => this.executionEngine.drive(),
         expireDeadlines: () => this.waitManager.expire(),
         nextDeadline: () => this.waitManager.nextDeadline(),
+        abortInFlight: () => this.operationExecutor.abortAll(),
         clock: this.clock,
       });
       this.inspection = new InspectionService(
@@ -239,6 +243,11 @@ export class Runtime {
         },
         send: (session: SessionRef, request: SessionSend) =>
           this.sessionCoordinator.send(caller, session, request),
+        handoff: (session: SessionRef, request: SessionHandoffRequest) => {
+          if (!this.registry.agent(request.agent))
+            throw new RuntimeError('UNAVAILABLE', 'Use a registered Agent');
+          return this.sessionCoordinator.handoff(caller, session, request);
+        },
         work: async (session: SessionRef, workId: WorkId): Promise<WorkRef> => {
           return this.sessionCoordinator.work(caller, session, workId);
         },
@@ -386,8 +395,8 @@ export class Runtime {
   drain(): Promise<void> {
     return this.scheduler.drain();
   }
-  async close(): Promise<void> {
-    await this.scheduler.close(() => this.store.close());
+  async close(options: { readonly abortInFlight?: boolean } = {}): Promise<void> {
+    await this.scheduler.close(() => this.store.close(), options);
   }
 }
 export function createRuntime(options: RuntimeOptions): Runtime {

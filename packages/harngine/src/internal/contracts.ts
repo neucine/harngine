@@ -31,6 +31,8 @@ export interface Policy {
   readonly maxOperations?: number;
   readonly maxModelTurns?: number;
   readonly maxToolExecutions?: number;
+  readonly maxChildWork?: number;
+  readonly maxDepth?: number;
 }
 export type Outcome<O extends Json = Json> =
   | { status: 'success'; value: O }
@@ -89,9 +91,13 @@ export interface CallRecord {
   readonly outcome: Outcome | null;
 }
 export interface ChildWorkRecord {
+  readonly callId: string;
   readonly slot: string;
   readonly work: WorkRef;
   readonly objective: Json;
+  readonly definitionKind: 'agent' | 'workflow';
+  readonly mode: 'sequential' | 'concurrent';
+  readonly joinSlot: string | null;
   readonly status: 'active' | 'waiting' | 'closed';
   readonly closure: Closure | null;
 }
@@ -119,13 +125,24 @@ export type Proposal<S extends Json = Json, R extends Json = Json> = {
   | {
       type: 'child';
       state: S;
-      child: { slot: string; definition: Identity; objective: Json };
+      child: {
+        slot: string;
+        definition: Identity;
+        objective: Json;
+        mode?: 'sequential' | 'concurrent';
+      };
     }
   | {
       type: 'children';
       state: S;
-      children: readonly { slot: string; definition: Identity; objective: Json }[];
+      children: readonly {
+        slot: string;
+        definition: Identity;
+        objective: Json;
+        mode?: 'sequential' | 'concurrent';
+      }[];
     }
+  | { type: 'join'; state: S; join: { slot: string; child: string } }
   | { type: 'complete'; result: R }
   | { type: 'fail'; reason: Reason }
   | { type: 'wait'; state: S; until?: WaitPlan }
@@ -196,6 +213,7 @@ export type ContextSource =
   | ({ readonly type: 'work_context'; readonly index: number } & Json)
   | ({ readonly type: 'work_input'; readonly id: string } & Json)
   | ({ readonly type: 'work_call'; readonly id: string } & Json)
+  | ({ readonly type: 'work_child'; readonly id: string } & Json)
   | ({ readonly type: 'reply'; readonly waitId: string } & Json);
 export type ContextItem =
   | ({
@@ -212,6 +230,22 @@ export type ContextItem =
         readonly input: Json;
       } & Json;
       readonly outcome: Outcome & Json;
+      readonly source: ContextSource;
+    } & Json)
+  | ({
+      readonly type: 'child_outcome';
+      readonly call: {
+        readonly id: string;
+        readonly slot: string;
+        readonly target: {
+          readonly kind: 'agent' | 'workflow';
+          readonly id: string;
+          readonly version: string;
+        };
+        readonly objective: Json;
+        readonly mode: 'sequential' | 'concurrent';
+      } & Json;
+      readonly closure: Closure & Json;
       readonly source: ContextSource;
     } & Json)
   | ({
@@ -451,6 +485,18 @@ export interface SessionClose {
   readonly requestId: RequestId;
   readonly expectedVersion: SessionVersion;
 }
+export interface SessionHandoffRequest {
+  readonly requestId: RequestId;
+  readonly expectedVersion: SessionVersion;
+  readonly agent: Identity;
+  readonly reason?: string;
+}
+export interface SessionHandoffAcceptance extends SessionChange {
+  readonly sequence: SessionCursor;
+  readonly fromAgent: Identity;
+  readonly toAgent: Identity;
+  readonly reason?: string;
+}
 export interface SessionChange {
   readonly version: SessionVersion;
 }
@@ -478,7 +524,13 @@ export interface SessionEntry {
   readonly recordedAt: number;
   readonly entry:
     | Exclude<SessionContent, { type: 'result' }>
-    | { readonly type: 'result'; readonly work: WorkRef; readonly closure: Closure };
+    | { readonly type: 'result'; readonly work: WorkRef; readonly closure: Closure }
+    | {
+        readonly type: 'handoff';
+        readonly fromAgent: Identity;
+        readonly toAgent: Identity;
+        readonly reason?: string;
+      };
 }
 export interface SessionHistoryOptions {
   readonly after?: SessionCursor;

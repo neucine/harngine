@@ -1,14 +1,16 @@
 import type {
   AnyWorkflow,
+  Closure,
   Outcome,
   Proposal,
   Tool as CoreTool,
   View,
+  WorkId,
   Workflow as CoreWorkflow,
 } from './internal/contracts.js';
 import { RuntimeError } from './internal/contracts.js';
 import type { Json, Schema } from './types.js';
-import { ToolCallError } from './errors.js';
+import { ToolCallError, WorkCanceledError, WorkFailedError } from './errors.js';
 import { definitionRevision } from './build/manifest.js';
 import { toolIdentity, type Tool as PublicTool } from './tool.js';
 import {
@@ -35,6 +37,13 @@ export interface ChildTask<O extends Json = Json, R extends Json = Json> {
   readonly objective: O;
 }
 
+export interface CallHandle<O extends Json = Json, R extends Json = Json> {
+  readonly slot: string;
+  readonly definition: ChildDefinition<O, R>;
+  readonly __objective?: O;
+  readonly __result?: R;
+}
+
 export interface Question<R extends Json> {
   response(): Promise<R>;
 }
@@ -45,11 +54,22 @@ export interface Flow {
     tool: WorkflowTool<I, O>,
     input: I,
   ): Promise<O>;
+  call<O extends Json, R extends Json>(
+    name: string,
+    target: ChildDefinition<O, R>,
+    objective: O,
+  ): Promise<R>;
   child<O extends Json, R extends Json>(
     name: string,
     definition: ChildDefinition<O, R>,
     objective: O,
   ): Promise<R>;
+  start<O extends Json, R extends Json>(
+    name: string,
+    target: ChildDefinition<O, R>,
+    objective: O,
+  ): Promise<CallHandle<O, R>>;
+  join<R extends Json>(name: string, call: CallHandle<any, R>): Promise<R>;
   all<T extends readonly ChildTask<any, any>[]>(
     name: string,
     tasks: T,
@@ -90,7 +110,11 @@ export interface WorkflowDefinition<O extends Json, R extends Json> {
   readonly result: Schema<R>;
   readonly tools?: readonly WorkflowTool<any, any>[];
   readonly children?: readonly ChildDefinition<any, any>[];
-  readonly limits?: { readonly operations?: number; readonly toolExecutions?: number };
+  readonly limits?: {
+    readonly operations?: number;
+    readonly toolExecutions?: number;
+    readonly childWork?: number;
+  };
   readonly run: (objective: O, flow: Flow) => R | Promise<R>;
 }
 
@@ -101,7 +125,11 @@ export interface Workflow<O extends Json = Json, R extends Json = Json> {
   readonly result: Schema<R>;
   readonly tools: readonly WorkflowTool<any, any>[];
   readonly children: readonly ChildDefinition<any, any>[];
-  readonly limits: { readonly operations: number; readonly toolExecutions: number };
+  readonly limits: {
+    readonly operations: number;
+    readonly toolExecutions: number;
+    readonly childWork: number;
+  };
   readonly run: (objective: O, flow: Flow) => R | Promise<R>;
   readonly __objective?: O;
   readonly __result?: R;
@@ -238,13 +266,26 @@ async function replay<O extends Json, R extends Json>(
   const flow: Flow = Object.freeze({
     call<I extends Json, V extends Json>(
       name: string,
-      selected: WorkflowTool<I, V>,
+      selected: WorkflowTool<I, V> | ChildDefinition<I, V>,
       input: I,
     ): Promise<V> {
       validateOperationName(name);
+      if (!isWorkflowTool(selected)) {
+        const target = selected as ChildDefinition<I, V>;
+        if (children.get(key(executableIdentity(target))) !== target)
+          throw new RuntimeError(
+            'INVALID_DEFINITION',
+            'flow.call must use a declared Tool or executable target',
+          );
+        return replayChild(name, target, input, 'sequential');
+      }
       if (tools.get(key(toolIdentity(selected))) !== selected)
         throw new RuntimeError('INVALID_DEFINITION', 'flow.call must use a declared Tool');
       if (pending) return blockedByPending<V>();
+      if (view.children[name])
+        return Promise.reject(
+          new RuntimeError('INVALID_DEFINITION', 'Workflow operation kind changed during replay'),
+        );
       const outcome = recordedOutcome(name, selected as WorkflowTool<I, Json>, input, view);
       if (!outcome) {
         pending = {
@@ -266,23 +307,45 @@ async function replay<O extends Json, R extends Json>(
       objective: CO,
     ): Promise<CR> {
       validateOperationName(name);
-      const selectedIdentity = childIdentity(selected);
+      const selectedIdentity = executableIdentity(selected);
       if (children.get(key(selectedIdentity)) !== selected)
-        throw new RuntimeError('INVALID_DEFINITION', 'flow.child must use a declared Workflow');
-      if (pending) return blockedByPending<CR>();
+        throw new RuntimeError(
+          'INVALID_DEFINITION',
+          'flow.child must use a declared Agent or Workflow',
+        );
+      return replayChild(name, selected, objective, 'sequential');
+    },
+    start<CO extends Json, CR extends Json>(
+      name: string,
+      selected: ChildDefinition<CO, CR>,
+      objective: CO,
+    ): Promise<CallHandle<CO, CR>> {
+      validateOperationName(name);
+      const selectedIdentity = executableIdentity(selected);
+      if (children.get(key(selectedIdentity)) !== selected)
+        throw new RuntimeError(
+          'INVALID_DEFINITION',
+          'flow.start must use a declared Agent or Workflow',
+        );
+      if (pending) return blockedByPending<CallHandle<CO, CR>>();
       const saved = view.children[name];
       if (!saved) {
+        if (view.calls[name])
+          return Promise.reject(
+            new RuntimeError('INVALID_DEFINITION', 'Workflow operation kind changed during replay'),
+          );
         pending = {
           type: 'child',
           state: null,
-          child: { slot: name, definition: selectedIdentity, objective },
+          child: { slot: name, definition: selectedIdentity, objective, mode: 'concurrent' },
         };
         queueMicrotask(wakePending);
-        return new Promise<CR>(() => {});
+        return new Promise<CallHandle<CO, CR>>(() => {});
       }
       if (
         key(saved.work.definition) !== key(selectedIdentity) ||
-        canonical(saved.objective) !== canonical(objective)
+        canonical(saved.objective) !== canonical(objective) ||
+        saved.mode !== 'concurrent'
       )
         return Promise.reject(
           new RuntimeError(
@@ -290,10 +353,48 @@ async function replay<O extends Json, R extends Json>(
             `Workflow child ${JSON.stringify(name)} changed during replay`,
           ),
         );
+      return Promise.resolve(
+        Object.freeze({
+          slot: name,
+          definition: selected as ChildDefinition<CO, CR>,
+        }),
+      );
+    },
+    join<CR extends Json>(name: string, call: CallHandle<any, CR>): Promise<CR> {
+      validateOperationName(name);
+      if (
+        !call ||
+        typeof call !== 'object' ||
+        typeof call.slot !== 'string' ||
+        typeof call.definition !== 'object'
+      )
+        throw new RuntimeError('INVALID_DEFINITION', 'flow.join requires a flow.start handle');
+      const selectedIdentity = executableIdentity(call.definition);
+      if (children.get(key(selectedIdentity)) !== call.definition)
+        throw new RuntimeError('INVALID_DEFINITION', 'flow.join must use a declared target');
+      if (pending) return blockedByPending<CR>();
+      const saved = view.children[call.slot];
+      if (!saved)
+        return Promise.reject(
+          new RuntimeError('INVALID_DEFINITION', 'flow.join target has not been started'),
+        );
+      if (key(saved.work.definition) !== key(selectedIdentity))
+        return Promise.reject(
+          new RuntimeError('INVALID_DEFINITION', 'Workflow join target changed during replay'),
+        );
+      if (saved.joinSlot !== null && saved.joinSlot !== name)
+        return Promise.reject(
+          new RuntimeError('INVALID_DEFINITION', 'Workflow child already has a different join'),
+        );
+      if (saved.joinSlot === null) {
+        pending = { type: 'join', state: null, join: { slot: name, child: call.slot } };
+        queueMicrotask(wakePending);
+        return new Promise<CR>(() => {});
+      }
       if (!saved.closure) return new Promise<CR>(() => {});
       if (saved.closure.status === 'completed')
-        return Promise.resolve(validate(selected.result, saved.closure.result));
-      return Promise.reject(new WorkflowFailure(saved.closure.reason));
+        return Promise.resolve(validate(call.definition.result, saved.closure.result));
+      return Promise.reject(executableClosureError(saved.work.id, saved.closure));
     },
     all<T extends readonly ChildTask<any, any>[]>(
       name: string,
@@ -314,10 +415,15 @@ async function replay<O extends Json, R extends Json>(
       const planned = tasks.map((task, index) => {
         const slot = `${name}:${index}`;
         validateOperationName(slot);
-        const selectedIdentity = childIdentity(task.definition);
+        const selectedIdentity = executableIdentity(task.definition);
         if (children.get(key(selectedIdentity)) !== task.definition)
           throw new RuntimeError('INVALID_DEFINITION', 'flow.all must use declared definitions');
-        return { slot, definition: selectedIdentity, objective: task.objective };
+        return {
+          slot,
+          definition: selectedIdentity,
+          objective: task.objective,
+          mode: 'sequential' as const,
+        };
       });
       const saved = planned.map((item) => view.children[item.slot]);
       if (saved.every((item) => item === undefined)) {
@@ -345,7 +451,7 @@ async function replay<O extends Json, R extends Json>(
           );
         if (!recorded.closure) return new Promise(() => {});
         if (recorded.closure.status !== 'completed')
-          return Promise.reject(new WorkflowFailure(recorded.closure.reason));
+          return Promise.reject(executableClosureError(recorded.work.id, recorded.closure));
         values.push(validate(tasks[index]!.definition.result, recorded.closure.result));
       }
       return Promise.resolve(values) as Promise<{
@@ -491,6 +597,8 @@ async function replay<O extends Json, R extends Json>(
       },
       (error): Proposal<null, R> => {
         if (error instanceof WorkflowFailure) return { type: 'fail', reason: error.reason };
+        if (error instanceof WorkFailedError || error instanceof WorkCanceledError)
+          return { type: 'fail', reason: error.reason };
         if (error instanceof ToolCallError)
           return { type: 'fail', reason: { code: 'TOOL_FAILED', message: error.message } };
         throw error;
@@ -506,6 +614,45 @@ async function replay<O extends Json, R extends Json>(
       return pending;
     }),
   ]);
+
+  function replayChild<CO extends Json, CR extends Json>(
+    name: string,
+    selected: ChildDefinition<CO, CR>,
+    objective: CO,
+    mode: 'sequential' | 'concurrent',
+  ): Promise<CR> {
+    const selectedIdentity = executableIdentity(selected);
+    if (pending) return blockedByPending<CR>();
+    const saved = view.children[name];
+    if (!saved) {
+      if (view.calls[name])
+        return Promise.reject(
+          new RuntimeError('INVALID_DEFINITION', 'Workflow operation kind changed during replay'),
+        );
+      pending = {
+        type: 'child',
+        state: null,
+        child: { slot: name, definition: selectedIdentity, objective, mode },
+      };
+      queueMicrotask(wakePending);
+      return new Promise<CR>(() => {});
+    }
+    if (
+      key(saved.work.definition) !== key(selectedIdentity) ||
+      canonical(saved.objective) !== canonical(objective) ||
+      saved.mode !== mode
+    )
+      return Promise.reject(
+        new RuntimeError(
+          'INVALID_DEFINITION',
+          `Workflow child ${JSON.stringify(name)} changed during replay`,
+        ),
+      );
+    if (!saved.closure) return new Promise<CR>(() => {});
+    if (saved.closure.status === 'completed')
+      return Promise.resolve(validate(selected.result, saved.closure.result));
+    return Promise.reject(executableClosureError(saved.work.id, saved.closure));
+  }
 }
 
 export function workflow<O extends Json, R extends Json>(
@@ -533,7 +680,7 @@ export function workflow<O extends Json, R extends Json>(
   const declaredChildren = definition.children ?? [];
   const children = new Map<string, ChildDefinition<any, any>>();
   for (const selected of declaredChildren) {
-    const childKey = key(childIdentity(selected));
+    const childKey = key(executableIdentity(selected));
     if (children.has(childKey))
       throw new RuntimeError('REGISTRATION_CONFLICT', 'Workflow children must be unique');
     children.set(childKey, selected);
@@ -541,12 +688,15 @@ export function workflow<O extends Json, R extends Json>(
   const limits = {
     operations: definition.limits?.operations ?? 1_000,
     toolExecutions: definition.limits?.toolExecutions ?? 100,
+    childWork: definition.limits?.childWork ?? 100,
   };
   if (
     !Number.isSafeInteger(limits.operations) ||
     limits.operations < 1 ||
     !Number.isSafeInteger(limits.toolExecutions) ||
-    limits.toolExecutions < 1
+    limits.toolExecutions < 1 ||
+    !Number.isSafeInteger(limits.childWork) ||
+    limits.childWork < 1
   )
     throw new RuntimeError('INVALID_POLICY', 'Workflow limits must be positive finite integers');
   const revision = definitionRevision('workflow', definition.id, {
@@ -554,7 +704,7 @@ export function workflow<O extends Json, R extends Json>(
     objective: definition.objective,
     result: definition.result,
     tools: declaredTools.map(toolIdentity),
-    children: declaredChildren.map(childIdentity),
+    children: declaredChildren.map(executableIdentity),
     limits,
   });
   const artifactDigest = revision.slice(4);
@@ -585,9 +735,10 @@ export function workflow<O extends Json, R extends Json>(
       maxAttempts: limits.toolExecutions,
       maxOperations: limits.operations,
       maxToolExecutions: limits.toolExecutions,
+      maxChildWork: limits.childWork,
     },
     tools: declaredTools.map(toolIdentity),
-    children: declaredChildren.map(childIdentity),
+    children: declaredChildren.map(executableIdentity),
     initial: () => null,
     decide: ((view: View<O, null, never>) =>
       replay(definition, tools, children, view)) as unknown as (
@@ -613,6 +764,21 @@ export function workflowIdentity(value: CoreWorkflow<any, any, any, any> | Workf
   return internal ? identity(internal.workflow) : identity(value as CoreWorkflow);
 }
 
-function childIdentity(value: ChildDefinition): { id: string; version: string } {
+function executableIdentity(value: ChildDefinition<any, any>): { id: string; version: string } {
   return { id: value.id, version: value.revision };
+}
+
+function isWorkflowTool(
+  value: WorkflowTool<any, any> | ChildDefinition<any, any>,
+): value is WorkflowTool<any, any> {
+  return 'effect' in value;
+}
+
+function executableClosureError(
+  workId: WorkId,
+  closure: Extract<Closure, { status: 'failed' | 'canceled' }>,
+): WorkFailedError | WorkCanceledError {
+  return closure.status === 'canceled'
+    ? new WorkCanceledError(closure.reason, { workId })
+    : new WorkFailedError(closure.reason, { workId });
 }
