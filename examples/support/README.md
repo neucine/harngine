@@ -8,7 +8,7 @@ continuing conversation and performs a write through an exact approval.
 
 ```bash
 bun run build
-node apps/support/dist/main.js
+node examples/support/dist/main.js
 ```
 
 The run prints the triage decision and its policy citation, the durable MCP and retrieval Calls,

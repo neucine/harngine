@@ -37,7 +37,7 @@ describe('Met provider', () => {
 
   it('rejects a modified replay recording', async () => {
     const path = join(mkdtempSync(join(tmpdir(), 'quest-recording-')), 'recording.json');
-    const source = join(process.cwd(), 'apps/quest/recordings/met-objects.json');
+    const source = join(process.cwd(), 'examples/quest/recordings/met-objects.json');
     const recording = JSON.parse(readFileSync(source, 'utf8'));
     recording.objects[0].payload.title = 'tampered';
     writeFileSync(path, JSON.stringify(recording));
@@ -52,7 +52,7 @@ describe('Met provider', () => {
 
   it('writes the replay cache only in explicit safe-write mode', async () => {
     const path = join(mkdtempSync(join(tmpdir(), 'quest-safe-write-')), 'recording.json');
-    const source = join(process.cwd(), 'apps/quest/recordings/met-objects.json');
+    const source = join(process.cwd(), 'examples/quest/recordings/met-objects.json');
     const recording = JSON.parse(readFileSync(source, 'utf8'));
     writeFileSync(path, JSON.stringify(recording));
     const provider = new MetProvider({
@@ -74,13 +74,13 @@ describe('Weiv product shell', () => {
     expect(html).toContain('src="/main.mjs"');
     expect(html).toContain('href="/styles.css"');
     expect(html).not.toContain('The Lost Navigator');
-    expect(readFileSync(join(process.cwd(), 'apps/quest/public/App.mjs'), 'utf8')).toContain(
+    expect(readFileSync(join(process.cwd(), 'examples/quest/public/App.mjs'), 'utf8')).toContain(
       'export function mount',
     );
   });
 
   it('makes the playable loop legible in the cold-start interface', () => {
-    const source = readFileSync(join(process.cwd(), 'apps/quest/src/ui/App.weiv'), 'utf8');
+    const source = readFileSync(join(process.cwd(), 'examples/quest/src/ui/App.weiv'), 'utf8');
     expect(source).toContain('Together, discover what connects these objects.');
     expect(source).toContain('1 · Choose a lens');
     expect(source).toContain('3 · Pull a thread');

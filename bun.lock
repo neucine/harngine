@@ -46,7 +46,7 @@
       "name": "@harngine/coding-desktop",
       "version": "0.1.0",
     },
-    "apps/due-diligence": {
+    "examples/due-diligence": {
       "name": "@harngine/due-diligence",
       "version": "0.1.0",
       "dependencies": {
@@ -54,7 +54,7 @@
         "harngine": "workspace:*",
       },
     },
-    "apps/hearth": {
+    "examples/hearth": {
       "name": "@harngine/hearth",
       "version": "0.1.0",
       "dependencies": {
@@ -64,7 +64,7 @@
         "weivjs": "0.1.0",
       },
     },
-    "apps/muse": {
+    "examples/muse": {
       "name": "@harngine/muse",
       "version": "0.1.0-alpha.0",
       "dependencies": {
@@ -72,7 +72,7 @@
         "weivjs": "0.1.0",
       },
     },
-    "apps/quest": {
+    "examples/quest": {
       "name": "@harngine/quest",
       "version": "0.1.0",
       "dependencies": {
@@ -81,7 +81,7 @@
         "weivjs": "0.1.0",
       },
     },
-    "apps/roam": {
+    "examples/roam": {
       "name": "@harngine/roam",
       "version": "0.1.0",
       "dependencies": {
@@ -91,7 +91,7 @@
         "weivjs": "0.1.0",
       },
     },
-    "apps/support": {
+    "examples/support": {
       "name": "@harngine/support",
       "version": "0.1.0",
       "dependencies": {
@@ -211,25 +211,25 @@
 
     "@harngine/coding-session-demo": ["@harngine/coding-session-demo@workspace:apps/coding/demo"],
 
-    "@harngine/due-diligence": ["@harngine/due-diligence@workspace:apps/due-diligence"],
+    "@harngine/due-diligence": ["@harngine/due-diligence@workspace:examples/due-diligence"],
 
     "@harngine/evaluation": ["@harngine/evaluation@workspace:packages/evaluation"],
 
-    "@harngine/hearth": ["@harngine/hearth@workspace:apps/hearth"],
+    "@harngine/hearth": ["@harngine/hearth@workspace:examples/hearth"],
 
     "@harngine/http": ["@harngine/http@workspace:packages/http"],
 
     "@harngine/mcp": ["@harngine/mcp@workspace:packages/mcp"],
 
-    "@harngine/muse": ["@harngine/muse@workspace:apps/muse"],
+    "@harngine/muse": ["@harngine/muse@workspace:examples/muse"],
 
-    "@harngine/quest": ["@harngine/quest@workspace:apps/quest"],
+    "@harngine/quest": ["@harngine/quest@workspace:examples/quest"],
 
     "@harngine/retrieval": ["@harngine/retrieval@workspace:packages/retrieval"],
 
-    "@harngine/roam": ["@harngine/roam@workspace:apps/roam"],
+    "@harngine/roam": ["@harngine/roam@workspace:examples/roam"],
 
-    "@harngine/support": ["@harngine/support@workspace:apps/support"],
+    "@harngine/support": ["@harngine/support@workspace:examples/support"],
 
     "@harngine/workbench": ["@harngine/workbench@workspace:packages/workbench"],
 

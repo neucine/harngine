@@ -9,7 +9,7 @@ Build the workspace, then run the compiled demo on Node.js:
 
 ```bash
 bun run build
-node apps/due-diligence/dist/main.js
+node examples/due-diligence/dist/main.js
 ```
 
 The default library contains a master services agreement and a renewal amendment. The run prints the

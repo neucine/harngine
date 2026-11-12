@@ -38,22 +38,22 @@
       "path": "apps/coding/demo"
     },
     {
-      "path": "apps/hearth"
+      "path": "examples/hearth"
     },
     {
-      "path": "apps/quest"
+      "path": "examples/quest"
     },
     {
-      "path": "apps/roam"
+      "path": "examples/roam"
     },
     {
-      "path": "apps/muse"
+      "path": "examples/muse"
     },
     {
-      "path": "apps/support"
+      "path": "examples/support"
     },
     {
-      "path": "apps/due-diligence"
+      "path": "examples/due-diligence"
     }
   ]
 }

@@ -48,7 +48,7 @@ also required. See the [Coding Desktop guide](../apps/coding/desktop/README.md) 
 
 ## Flagship reference application
 
-[Quest](../apps/quest/README.md) is a persistent social cultural world built from real Met collection
+[Quest](../examples/quest/README.md) is a persistent social cultural world built from real Met collection
 records. It demonstrates private durable perspectives, shared interpretation, visitor-made trails,
 parallel world reactions, reconnect, and provenance-preserving replay without a completion gate.
 
@@ -56,7 +56,7 @@ parallel world reactions, reconnect, and provenance-preserving replay without a 
 bun run demo:quest
 ```
 
-[Hearth](../apps/hearth/README.md) is an ambient shared home-world built on Harngine. Its living
+[Hearth](../examples/hearth/README.md) is an ambient shared home-world built on Harngine. Its living
 hearthscape, seasonal memory garden, consent-aware perspectives and gentle ritual composer combine
 durable household memory with live OpenStreetMap, Open-Meteo and data.govt.nz context. Moving home
 appears as one chapter in the household’s evolving story, not as the product definition.
@@ -65,7 +65,7 @@ appears as one chapter in the household’s evolving story, not as the product d
 bun run demo:hearth
 ```
 
-[Muse](../apps/muse/README.md) is an evidence-backed creator studio showing provenance, bounded
+[Muse](../examples/muse/README.md) is an evidence-backed creator studio showing provenance, bounded
 parallel research, rights gates, exact approval, and safe publication on the same execution
 substrate.
 
@@ -73,7 +73,7 @@ substrate.
 bun run demo:muse
 ```
 
-[Roam](../apps/roam/README.md) is a collaborative living atlas where shared moods, fascinations,
+[Roam](../examples/roam/README.md) is a collaborative living atlas where shared moods, fascinations,
 rhythms and constraints grow into evolving journey worlds, grounded by persistent place scouts
 and visible environmental observations.
 
@@ -99,7 +99,7 @@ success. Model adapters own provider transport. Tool adapters own integrations w
 systems. Harngine owns durable execution, validation, authority checks, waits, recovery, and the
 record of what ran.
 
-For a product-scale reference, see [Quest](../apps/quest/README.md), a living museum constellation
+For a product-scale reference, see [Quest](../examples/quest/README.md), a living museum constellation
 with persistent visitors, private perspectives, shared cultural memory, parallel child Work,
 deterministic replay of real Met records, provenance, and reconnect.
 
@@ -573,15 +573,16 @@ packages/claude-messages  Claude Messages compatible model adapter
 packages/mcp        MCP catalog discovery and selected Tool bridge
 packages/retrieval  versioned retrieval Tools and citation checks
 packages/evaluation inspection-based Work-tree metrics, scorers and benchmark reports
-apps/coding/agent   repository coding agent and local HTTP server
-apps/coding/cli     command line interface for the coding agent
-apps/coding/demo fictional workspace coding showcase
-apps/coding/desktop Neiv and Weiv coding desktop UI
-apps/quest          persistent social cultural-world reference application
-apps/roam           collaborative travel reference application
-apps/muse           evidence-backed creator-studio reference application
-apps/support        support triage, ownership handoff and approval-gated refund demo
-apps/due-diligence  attachment review, cited retrieval and approved report publication
+apps/coding/agent        repository coding agent and local HTTP server
+apps/coding/cli          command line interface for the coding agent
+apps/coding/demo         fictional workspace coding showcase
+apps/coding/desktop      Neiv and Weiv coding desktop UI
+examples/hearth          shared home-world reference application
+examples/quest           persistent social cultural-world reference application
+examples/roam            collaborative travel reference application
+examples/muse            evidence-backed creator-studio reference application
+examples/support         support triage, ownership handoff and approval-gated refund demo
+examples/due-diligence   attachment review, cited retrieval and approved report publication
 ```
 
 Run the project checks:
@@ -620,8 +621,8 @@ bun run agent:coding --repo . --task "Explain this repository"
 bun run agent:desktop --repo . # build the app, then open it in Finder
 bun run demo:quest
 bun run demo:roam
-node apps/support/dist/main.js
-node apps/due-diligence/dist/main.js
+node examples/support/dist/main.js
+node examples/due-diligence/dist/main.js
 ```
 
 Package documentation:
@@ -639,6 +640,6 @@ Package documentation:
 - [Coding CLI](../apps/coding/cli/README.md)
 - [Coding Session demo](../apps/coding/demo/README.md)
 - [Coding desktop](../apps/coding/desktop/README.md)
-- [Quest living cultural-world reference](../apps/quest/README.md)
-- [Roam travel reference](../apps/roam/README.md)
-- [Muse creator-studio reference](../apps/muse/README.md)
+- [Quest living cultural-world reference](../examples/quest/README.md)
+- [Roam travel reference](../examples/roam/README.md)
+- [Muse creator-studio reference](../examples/muse/README.md)

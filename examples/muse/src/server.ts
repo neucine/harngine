@@ -93,7 +93,7 @@ export async function serveMuse(options: MuseServerOptions) {
         request.method === 'GET' &&
         ['/main.mjs', '/App.mjs', '/styles.css'].includes(request.url ?? '')
       ) {
-        const assetPath = resolve(process.cwd(), 'apps/muse/public', request.url!.slice(1));
+        const assetPath = resolve(process.cwd(), 'examples/muse/public', request.url!.slice(1));
         if (!existsSync(assetPath)) return json(404, { error: 'UI asset not built' });
         response.writeHead(200, {
           'Content-Type':

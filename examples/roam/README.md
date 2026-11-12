@@ -24,7 +24,7 @@ The interface is a Weiv single-file component at `src/ui/App.weiv`. After changi
 checked-in direct-DOM assets from the repository root:
 
 ```bash
-sh apps/roam/scripts/build-ui.sh
+sh examples/roam/scripts/build-ui.sh
 ```
 
 ## Product promise

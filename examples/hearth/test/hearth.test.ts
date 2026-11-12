@@ -123,7 +123,7 @@ describe('Hearth living home-world', () => {
     const html = hearthPage('test-token');
     expect(html).toContain('globalThis.__WEIV_PROPS__={token:"test-token"}');
     expect(html).toContain('/main.mjs');
-    const component = readFileSync(join(process.cwd(), 'apps/hearth/src/ui/App.weiv'), 'utf8');
+    const component = readFileSync(join(process.cwd(), 'examples/hearth/src/ui/App.weiv'), 'utf8');
     expect(component).toContain('Living hearth');
     expect(component).toContain('Seasonal memory garden');
     expect(component).toContain('How Hearth listens');
@@ -133,6 +133,6 @@ describe('Hearth living home-world', () => {
     expect(component).toContain('Shape the shared hearth');
     expect(component).toContain('for="bloom in world.blooms"');
     expect(component).toContain('on:click="openPulse"');
-    expect(existsSync(join(process.cwd(), 'apps/hearth/public/App.mjs'))).toBe(true);
+    expect(existsSync(join(process.cwd(), 'examples/hearth/public/App.mjs'))).toBe(true);
   });
 });

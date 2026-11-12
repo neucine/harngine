@@ -152,7 +152,7 @@ test('the public page mounts a Weiv living atlas with signature interactions', (
   const html = roamPage('test-token');
   expect(html).toContain('globalThis.__WEIV_PROPS__={token:"test-token"}');
   expect(html).toContain('<script type="module" src="/main.mjs"></script>');
-  const component = readFileSync(join(process.cwd(), 'apps/roam/src/ui/App.weiv'), 'utf8');
+  const component = readFileSync(join(process.cwd(), 'examples/roam/src/ui/App.weiv'), 'utf8');
   expect(component).toContain('PULL A POSSIBILITY CLOSER');
   expect(component).toContain('Make one day everyone wants to live.');
   expect(component).toContain('drop it on the world');
@@ -167,5 +167,5 @@ test('the public page mounts a Weiv living atlas with signature interactions', (
   expect(component).not.toContain('plan to approve');
   expect(component).not.toContain('Approve shape');
   expect(component).not.toContain('planning estimate');
-  expect(existsSync(join(process.cwd(), 'apps/roam/public/App.mjs'))).toBe(true);
+  expect(existsSync(join(process.cwd(), 'examples/roam/public/App.mjs'))).toBe(true);
 });

@@ -6,10 +6,10 @@ const outputs = [
   'apps/coding/agent/dist',
   'apps/coding/cli/dist',
   'apps/coding/demo/dist',
-  'apps/hearth/dist',
-  'apps/quest/dist',
-  'apps/roam/dist',
-  'apps/muse/dist',
+  'examples/hearth/dist',
+  'examples/quest/dist',
+  'examples/roam/dist',
+  'examples/muse/dist',
 ];
 
 await Promise.all(outputs.map((output) => rm(output, { recursive: true, force: true })));

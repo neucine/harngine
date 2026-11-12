@@ -3,8 +3,8 @@
   "include": [
     "packages/*/src/**/*.ts",
     "packages/*/test/**/*.ts",
-    "apps/*/src/**/*.ts",
-    "apps/*/test/**/*.ts",
+    "examples/*/src/**/*.ts",
+    "examples/*/test/**/*.ts",
     "apps/coding/*/src/**/*.ts",
     "apps/coding/*/test/**/*.ts",
     "vitest.config.ts"
@@ -13,6 +13,7 @@
     "paths": {
       "harngine": ["./packages/harngine/src/index.ts"],
       "harngine/internal": ["./packages/harngine/src/internal/index.ts"],
+      "@harngine/http": ["./packages/http/src/index.ts"],
       "@harngine/codex-cli": ["./packages/codex-cli/src/index.ts"],
       "@harngine/codex-api": ["./packages/codex-api/src/index.ts"],
       "@harngine/claude-messages": ["./packages/claude-messages/src/index.ts"],
