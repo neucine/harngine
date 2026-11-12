@@ -48,6 +48,11 @@ const neiv = resolve(neivRoot, 'packages/neiv/bin/neiv.mjs');
 const weivPackage = resolve(neivRoot, '../weiv/packages/weiv');
 const selectedWeivPackage = process.env.WEIV_PACKAGE_ROOT || weivPackage;
 if (!existsSync(resolve(selectedWeivPackage, 'bin/weiv.mjs')))
-  throw new Error('Coding Desktop requires the current Weiv checkout. Set WEIV_PACKAGE_ROOT to its packages/weiv directory.');
-run(process.execPath, [neiv, 'build', desktop], neivRoot, { ...process.env, WEIV_PACKAGE_ROOT: selectedWeivPackage });
+  throw new Error(
+    'Coding Desktop requires the current Weiv checkout. Set WEIV_PACKAGE_ROOT to its packages/weiv directory.',
+  );
+run(process.execPath, [neiv, 'build', desktop], neivRoot, {
+  ...process.env,
+  WEIV_PACKAGE_ROOT: selectedWeivPackage,
+});
 console.log(`Desktop app ready: ${resolve(desktop, 'build/NeivApp.app')}`);

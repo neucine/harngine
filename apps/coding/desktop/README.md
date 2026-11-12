@@ -4,8 +4,9 @@ Harngine Coding is a macOS app for working with a repository through a coding ag
 
 ## Get started
 
-You need Bun, a local [Neiv](https://github.com/neucine/neiv) checkout, and either a working Codex
-CLI login or a compatible model endpoint. From the Harngine repository root, run:
+You need Bun plus local [Neiv](https://github.com/neucine/neiv) and
+[Weiv](https://github.com/neucine/weiv) checkouts, and either a working Codex CLI login or a
+compatible model endpoint. From the Harngine repository root, run:
 
 ```bash
 bun install
@@ -27,13 +28,13 @@ This Magpie example uses its local development token and a routable model:
 
 ```bash
 bun install
-bun run agent:desktop --repo $PWD --build-only
+bun run agent:desktop --repo "$PWD"
 
 launchctl setenv HARNGINE_CODING_PROVIDER openai-responses
 launchctl setenv HARNGINE_CODING_API_BASE_URL http://127.0.0.1:3425/v1
 launchctl setenv HARNGINE_CODING_API_TOKEN magpie
 launchctl setenv CODEX_MODEL opencode-go/deepseek-v4.1-flash
-open -n $PWD/apps/coding/desktop/build/NeivApp.app
+open -n "$PWD/apps/coding/desktop/build/NeivApp.app"
 launchctl unsetenv HARNGINE_CODING_PROVIDER
 launchctl unsetenv HARNGINE_CODING_API_BASE_URL
 launchctl unsetenv HARNGINE_CODING_API_TOKEN

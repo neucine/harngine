@@ -10,4 +10,5 @@ coverage/
 .harngine/
 # Preserve ignored data directories created before the Harngine rename.
 .pangent/
+.tmp-*
 *.tgz

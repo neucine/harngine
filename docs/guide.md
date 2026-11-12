@@ -18,10 +18,14 @@ Harngine Coding is a macOS desktop app that can inspect a repository, answer cod
 
 ```bash
 bun install
-bun run agent:desktop --repo /absolute/path/to/your/repository
+bun run agent:desktop --repo "$PWD"
+open -n apps/coding/desktop/build/NeivApp.app
 ```
 
-Open `apps/coding/desktop/build/NeivApp.app` in Finder after the build. A local Codex CLI login and a Neiv checkout at `../neiv` are required. See the [Coding Desktop guide](../apps/coding/desktop/README.md) for setup and use.
+The desktop build currently needs local [Neiv](https://github.com/neucine/neiv) and
+[Weiv](https://github.com/neucine/weiv) checkouts at `../neiv` and `../weiv`, with the matching
+Weiv compiler and package runtime built. A working Codex CLI login or compatible model endpoint is
+also required. See the [Coding Desktop guide](../apps/coding/desktop/README.md) for setup and use.
 
 ## What Harngine provides
 

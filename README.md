@@ -10,10 +10,14 @@ The macOS coding app can inspect a repository, answer questions, and propose edi
 
 ```bash
 bun install
-bun run agent:desktop --repo /absolute/path/to/your/repository
+bun run agent:desktop --repo "$PWD"
+open -n apps/coding/desktop/build/NeivApp.app
 ```
 
-Open `apps/coding/desktop/build/NeivApp.app` in Finder. You need a working Codex CLI login and a local Neiv checkout at `../neiv`. See the [Coding Desktop guide](apps/coding/desktop/README.md) for setup and use.
+The desktop build currently needs local [Neiv](https://github.com/neucine/neiv) and
+[Weiv](https://github.com/neucine/weiv) checkouts at `../neiv` and `../weiv`, with the matching
+Weiv compiler and package runtime built. You also need a working Codex CLI login or a compatible
+model endpoint. See the [Coding Desktop guide](apps/coding/desktop/README.md) for setup and use.
 
 ## Build with Harngine
 
@@ -45,3 +49,6 @@ Harngine currently runs as an embedded Node.js runtime backed by SQLite. Bun is 
 ## License
 
 Harngine is licensed under the [Mozilla Public License 2.0](LICENSE).
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the verification workflow. Report suspected
+vulnerabilities privately according to [SECURITY.md](SECURITY.md).
