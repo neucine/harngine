@@ -14,7 +14,7 @@ bun run agent:desktop --repo /absolute/path/to/your/repository
 
 The command builds `apps/coding/desktop/build/NeivApp.app`. Double click that app in Finder. You can close the terminal after the build finishes. The app starts its local server when it opens and stops the server when it closes.
 
-The repository path is saved in the app at build time. Run the build command again to point the app at a different repository. If Neiv is outside `../neiv`, set `NEIV_ROOT` to its checkout path before building.
+The repository path is saved in the app at build time. Run the build command again to point the app at a different repository. If Neiv is outside `../neiv`, set `NEIV_ROOT` to its checkout path before building. This desktop UI uses the current Weiv managed-state contract; the build selects the sibling Weiv checkout by default. Set `WEIV_PACKAGE_ROOT` to a different compatible `packages/weiv` directory when needed, and build that checkout's compiler and package runtime first.
 
 ## Live compatibility router check
 

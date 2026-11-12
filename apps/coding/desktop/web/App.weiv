@@ -23,6 +23,7 @@
             <details #if="row.kind === 'process'" class="process" :open="row.workId === activeWorkId"><summary>{{ row.summary }}</summary><div class="process-steps"><div #for="step in row.steps" class="process-step"><span class="step-icon">{{ step.icon }}</span><div class="step-body"><div class="step-title"><strong>{{ step.label }}</strong><span #if="step.target" class="step-target">{{ step.target }}</span><small>{{ step.status }}</small></div><p #if="step.note" class="step-note">{{ step.note }}</p><div #if="step.oldText" class="change-preview"><div class="removed">− {{ step.oldText }}</div><div class="added">+ {{ step.newText }}</div></div><details #if="step.args" class="step-detail"><summary>Arguments</summary><pre>{{ step.args }}</pre></details><details #if="step.result" class="step-detail"><summary>Result</summary><pre>{{ step.result }}</pre></details></div></div></div></details>
           </div>
           <div #if="busy" class="working"><i class="live-dot"></i><div class="working-copy"><span>{{ workStatus }}</span><p #if="activeModelPreview" class="model-preview">{{ activeModelPreview }}</p></div><span>{{ shortId(activeWorkId) }}</span></div>
+          <div #if="!busy && activeModelPreview && selectedWorkId === runSnapshot?.id" class="working"><div class="working-copy"><span>Model stream preview</span><p class="model-preview">{{ activeModelPreview }}</p></div></div>
         </section>
         <aside class="activity"><div class="right-tabs"><button :class="rightTab === 'activity' ? 'active' : ''" data-tab="activity" @click="selectRightTab">Activity</button><button :class="rightTab === 'files' ? 'active' : ''" data-tab="files" @click="selectRightTab">Files</button><button :class="rightTab === 'git' ? 'active' : ''" data-tab="git" @click="selectRightTab">Git</button></div>
           <div #if="rightTab === 'activity'" class="activity-head"><span class="muted-label">WORK ACTIVITY</span><strong>{{ selectedWorkId ? shortId(selectedWorkId) : 'No work selected' }}</strong></div><div #if="rightTab === 'activity'" class="activity-list"><div #for="item in activity" class="activity-item"><span class="activity-icon">{{ item.icon }}</span><div><strong>{{ item.title }}</strong><small>{{ item.summary }}</small></div></div><p #if="activity.length === 0" class="empty-list">Model decisions and tool calls appear here.</p></div>
@@ -39,8 +40,7 @@
 </template>
 <script lang="ts">
   import { workspace as configuredWorkspace } from './agent-config.ts';
-  import { localHttp } from 'neiv/http';
-  type LocalHttpEvent = { streamId: string; kind: 'data' | 'error' | 'closed'; value: unknown };
+  import { localHttp, type LocalHttpEvent } from 'neiv/http';
   type Session = { id: string; title: string; agent: { id: string; revision: string }; foregroundWorkId: string | null; updatedAt: number };
   type Message = { id: string; author: 'human' | 'agent'; content: unknown; workId?: string };
   type Activity = { id: string; icon: string; title: string; summary: string };
@@ -62,6 +62,7 @@
   let modelTokens: { input: number; output: number } | null = null;
   const activityCache = new Map<string, { entries: any[]; cursor: string }>();
   const streamStats = new Map<string, StreamStats>();
+  const streamPreviews = new Map<string, string>();
   let busy = false, writeEnabled = false, monitorGeneration = 0;
   let streamedWorkId = '', streamRefreshPending = false, streamFailed = false;
   let stopStream: (() => void) | null = null;
@@ -99,10 +100,10 @@
   async function selectSession(event: Event) { const id = (event.currentTarget as HTMLElement).dataset.sessionId; if (id) await loadSession(id); }
   async function loadSession(id: string) {
     stopWorkStream(); streamFailed = false; monitorGeneration++; const generation = monitorGeneration;
-    try { errorText = ''; interactions = []; effectResolution = null; activeModelPreview = ''; resetStreamStats(); const session = await api(`/sessions/${id}`); const history = await api(`/sessions/${id}/messages`); selectedSessionId = id; selectedTitle = session.title; sessionUnavailable = !availableAgents.some(agent => agent.id === session.agent.id && agent.revision === session.agent.revision && agent.availability === 'available'); writeEnabled = session.agent.id === 'coding.workspace-write'; queuedWorkIds = session.queuedWorkIds || []; activeWorkId = session.foregroundWorkId || ''; busy = !!activeWorkId; messages = history as Message[]; await loadTimeline(); const works = await api(`/works?sessionId=${id}`); selectedWorkId = session.foregroundWorkId || works.works?.[0]?.id || ''; runSnapshot = selectedWorkId ? await api(`/works/${selectedWorkId}`) : null; restoreStreamStats(selectedWorkId); activity = []; modelTokens = null; if (selectedWorkId) await loadActivity(selectedWorkId); status = busy ? 'Working' : sessionUnavailable ? 'Archived revision' : 'Ready'; if (activeWorkId) { if (runSnapshot?.waitingFor === 'effect-resolution') await loadEffectResolution(activeWorkId); monitorWork(activeWorkId, generation); } }
+    try { errorText = ''; interactions = []; effectResolution = null; activeModelPreview = ''; resetStreamStats(); const session = await api(`/sessions/${id}`); const history = await api(`/sessions/${id}/messages`); selectedSessionId = id; selectedTitle = session.title; sessionUnavailable = !availableAgents.some(agent => agent.id === session.agent.id && agent.revision === session.agent.revision && agent.availability === 'available'); writeEnabled = session.agent.id === 'coding.workspace-write'; queuedWorkIds = session.queuedWorkIds || []; activeWorkId = session.foregroundWorkId || ''; busy = !!activeWorkId; messages = history as Message[]; await loadTimeline(); const works = await api(`/works?sessionId=${id}`); selectedWorkId = session.foregroundWorkId || works.works?.[0]?.id || ''; runSnapshot = selectedWorkId ? await api(`/works/${selectedWorkId}`) : null; restoreStreamStats(selectedWorkId); activeModelPreview = streamPreviews.get(selectedWorkId) || ''; activity = []; modelTokens = null; if (selectedWorkId) await loadActivity(selectedWorkId); status = busy ? 'Working' : sessionUnavailable ? 'Archived revision' : 'Ready'; if (activeWorkId) { if (runSnapshot?.waitingFor === 'effect-resolution') await loadEffectResolution(activeWorkId); monitorWork(activeWorkId, generation); } }
     catch (error) { fail(error); }
   }
-  async function selectWork(event: Event) { const id = (event.currentTarget as HTMLElement).dataset.workId; if (id) { selectedWorkId = id; runSnapshot = await api(`/works/${id}`); await loadActivity(id); } }
+  async function selectWork(event: Event) { const id = (event.currentTarget as HTMLElement).dataset.workId; if (id) { selectedWorkId = id; runSnapshot = await api(`/works/${id}`); restoreStreamStats(id); activeModelPreview = streamPreviews.get(id) || ''; await loadActivity(id); } }
   async function loadActivity(id: string) {
     const cached = activityCache.get(id) || { entries: [] as any[], cursor: '' };
     activityCache.set(id, cached);
@@ -197,20 +198,19 @@
     if (!delta || (delta.object !== 'model_delta' && delta.type !== 'model.delta')) return false;
     if (delta.workId && delta.workId !== activeWorkId) return true;
     if (delta.item?.type === 'text' && typeof delta.item.text === 'string' && delta.item.text) {
-      weivUpdate(() => {
-        activeModelPreview = `${activeModelPreview}${delta.item.text}`.slice(-12000);
-        streamedModelDeltas += 1;
-        streamedModelChars += delta.item.text.length;
-        rememberStreamStats(activeWorkId);
-        workStatus = 'Streaming model response…';
-      });
+      activeModelPreview = `${activeModelPreview}${delta.item.text}`.slice(-12000);
+      streamPreviews.set(activeWorkId, activeModelPreview);
+      streamedModelDeltas += 1;
+      streamedModelChars += delta.item.text.length;
+      rememberStreamStats(activeWorkId);
+      workStatus = 'Streaming model response…';
     }
     return true;
   }
   function onWorkEvent(event: LocalHttpEvent) {
     if (event.streamId !== streamedWorkId || !activeWorkId) return;
     if (event.kind === 'closed' || event.kind === 'error') { stopWorkStream(); streamFailed = true; monitorWork(activeWorkId, monitorGeneration); return; }
-    weivUpdate(() => { streamedEventCount += 1; rememberStreamStats(activeWorkId); });
+    streamedEventCount += 1; rememberStreamStats(activeWorkId);
     if (event.kind === 'data' && acceptModelDelta(event.value)) return;
     if (streamRefreshPending) return;
     streamRefreshPending = true;
@@ -223,13 +223,13 @@
   async function refreshWork(id: string, generation: number) {
     const snapshot = await api(`/works/${id}`);
     if (generation !== monitorGeneration || activeWorkId !== id) return true;
-    weivUpdate(() => { workStatus = snapshot.status === 'waiting' ? snapshot.waitingFor === 'external-result' ? 'Thinking…' : `Waiting for ${snapshot.waitingFor || 'input'}` : snapshot.status === 'queued' ? 'Queued' : 'Agent working'; interactions = snapshot.interactions || []; if (selectedWorkId === id) runSnapshot = snapshot; });
+    workStatus = snapshot.status === 'waiting' ? snapshot.waitingFor === 'external-result' ? 'Thinking…' : `Waiting for ${snapshot.waitingFor || 'input'}` : snapshot.status === 'queued' ? 'Queued' : 'Agent working'; interactions = snapshot.interactions || []; if (selectedWorkId === id) runSnapshot = snapshot;
     if (selectedWorkId === id) await loadActivity(id);
     if (snapshot.waitingFor === 'effect-resolution') await loadEffectResolution(id); else effectResolution = null;
     await loadTimeline();
     if (['completed', 'failed', 'canceled'].includes(snapshot.status)) {
       stopWorkStream(); effectResolution = null;
-      weivUpdate(() => { busy = false; activeWorkId = ''; activeModelPreview = ''; interactions = []; status = snapshot.status === 'completed' ? 'Ready' : snapshot.status; if (snapshot.error) errorText = snapshot.error.message; });
+      busy = false; activeWorkId = ''; interactions = []; status = snapshot.status === 'completed' ? 'Ready' : snapshot.status; if (snapshot.error) errorText = snapshot.error.message;
       await refreshSessions(); await loadSession(selectedSessionId); return true;
     }
     return false;

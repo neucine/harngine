@@ -12,8 +12,8 @@ if (at < 0 || !args[at + 1]) throw new Error('Usage: bun run agent:desktop --rep
 const repo = resolve(args[at + 1]);
 if (!existsSync(repo) || !statSync(repo).isDirectory())
   throw new Error(`Repository directory does not exist: ${repo}`);
-const run = (command, commandArgs, cwd = root) => {
-  const result = spawnSync(command, commandArgs, { cwd, stdio: 'inherit' });
+const run = (command, commandArgs, cwd = root, env = process.env) => {
+  const result = spawnSync(command, commandArgs, { cwd, stdio: 'inherit', env });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`${command} failed with exit ${result.status}`);
 };
@@ -45,5 +45,9 @@ writeFileSync(
 );
 const neivRoot = process.env.NEIV_ROOT ?? resolve(desktop, '../../../../neiv');
 const neiv = resolve(neivRoot, 'packages/neiv/bin/neiv.mjs');
-run(process.execPath, [neiv, 'build', desktop], neivRoot);
+const weivPackage = resolve(neivRoot, '../weiv/packages/weiv');
+const selectedWeivPackage = process.env.WEIV_PACKAGE_ROOT || weivPackage;
+if (!existsSync(resolve(selectedWeivPackage, 'bin/weiv.mjs')))
+  throw new Error('Coding Desktop requires the current Weiv checkout. Set WEIV_PACKAGE_ROOT to its packages/weiv directory.');
+run(process.execPath, [neiv, 'build', desktop], neivRoot, { ...process.env, WEIV_PACKAGE_ROOT: selectedWeivPackage });
 console.log(`Desktop app ready: ${resolve(desktop, 'build/NeivApp.app')}`);
