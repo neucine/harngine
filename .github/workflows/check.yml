@@ -6,7 +6,7 @@ jobs:
   slice-a:
     strategy:
       matrix:
-        os: [macos-14, ubuntu-24.04]
+        os: [macos-26-intel, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

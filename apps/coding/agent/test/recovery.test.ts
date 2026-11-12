@@ -2,9 +2,17 @@ import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from '
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
+import type { ModelAdapter } from 'harngine';
 import { createCodingApp } from '../src/app.js';
 
 const roots: string[] = [];
+const model: ModelAdapter = {
+  id: 'coding-recovery-fixture',
+  capabilities: { tools: true, structuredOutput: false, streaming: false },
+  async generate() {
+    throw new Error('The recovery test does not run model turns');
+  },
+};
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -14,7 +22,11 @@ test('coding edit journal reconciles applied, absent, and ambiguous file effects
   roots.push(root);
   const file = join(root, 'note.txt');
   writeFileSync(file, 'before\n');
-  const { app, writeAssistant } = createCodingApp({ repo: root, writable: true });
+  const { app, writeAssistant } = createCodingApp({
+    repo: root,
+    writable: true,
+    modelAdapter: model,
+  });
   let reopened: ReturnType<typeof createCodingApp> | undefined;
   try {
     const edit = writeAssistant.tools.find((tool) => tool.id === 'coding.edit');
@@ -39,7 +51,7 @@ test('coding edit journal reconciles applied, absent, and ambiguous file effects
     expect(await edit.execute(input, context)).toBe('Edited note.txt');
     expect(readFileSync(file, 'utf8')).toBe('after\n');
     await app.close();
-    reopened = createCodingApp({ repo: root, writable: true });
+    reopened = createCodingApp({ repo: root, writable: true, modelAdapter: model });
     const recoveredEdit = reopened.writeAssistant.tools.find((tool) => tool.id === 'coding.edit');
     if (!recoveredEdit?.reconcile) throw new Error('Recovered edit Tool unavailable');
     expect(
