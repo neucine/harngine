@@ -50,9 +50,10 @@ test('serves stable browser routes and protects the public protocol with a local
   expect(page.status).toBe(200);
   const html = await page.text();
   expect(html).toContain('Harngine Workbench');
-  const script = html.match(/<script>([\s\S]+)<\/script>/)?.[1];
-  expect(script).toBeTruthy();
-  expect(() => new Function(script!)).not.toThrow();
+  const scripts = [...html.matchAll(/<script>([\s\S]+?)<\/script>/g)].map((match) => match[1]!);
+  expect(scripts).toHaveLength(2);
+  for (const script of scripts) expect(() => new Function(script)).not.toThrow();
+  const script = scripts[0]!;
   expect(script).not.toMatch(/\b(?:const|let|class|function)\s+top\b/);
   expect(script).not.toContain('prompt(');
   expect(script).not.toContain('randomUUID(');
@@ -60,6 +61,8 @@ test('serves stable browser routes and protects the public protocol with a local
   expect(script).not.toContain('&limit=200');
   expect(script).toContain('data-load-inspection');
   expect(script).toContain("'&after='+encodeURIComponent(after)");
+  expect(scripts[1]).toContain("addEventListener('model.delta'");
+  expect(scripts[1]).toContain('/audit');
 
   const denied = await fetch(`${server.url}api/v1/definitions`);
   expect(denied.status).toBe(401);
@@ -76,6 +79,94 @@ test('serves stable browser routes and protects the public protocol with a local
         availability: 'available',
       },
     ],
+  });
+});
+
+test('Workbench streams model previews and exposes its audit projection', async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const text = schema<string>({
+    id: 'workbench.stream',
+    version: '1',
+    jsonSchema: { type: 'string' },
+  });
+  const model: ModelAdapter = {
+    id: 'workbench.stream-model',
+    capabilities: { tools: false, structuredOutput: false, streaming: true },
+    async generate(_request, context) {
+      await gate;
+      context.emit({ type: 'text', text: 'live workbench' });
+      return {
+        object: 'model_response',
+        items: [{ type: 'text', text: 'durable workbench' }],
+        finishReason: 'stop',
+      };
+    },
+  };
+  const assistant = agent({
+    id: 'workbench.stream-agent',
+    instructions: 'Answer.',
+    objective: text,
+    model,
+  });
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'harngine-workbench-')));
+  directories.push(directory);
+  const app = createApp({ directory, agents: [assistant] });
+  apps.push(app);
+  const server = await serveWorkbench({ app });
+  servers.push(server);
+  const headers = {
+    authorization: `Bearer ${server.capability}`,
+    'content-type': 'application/json',
+  };
+  const startedWork = await fetch(`${server.url}api/v1/works`, {
+    method: 'POST',
+    headers: { ...headers, 'idempotency-key': 'req_stream_agent' },
+    body: JSON.stringify({
+      definition: {
+        object: 'agent',
+        kind: 'agent',
+        id: assistant.id,
+        revision: assistant.revision,
+      },
+      objective: 'hello',
+    }),
+  });
+  const work = (await startedWork.json()) as { id: string };
+  const events = await fetch(`${server.url}api/v1/works/${work.id}/events?modelDeltas=1`, {
+    headers: { authorization: headers.authorization },
+  });
+  expect(events.status).toBe(200);
+  release();
+  const stream = await events.text();
+  expect(stream).toContain('event: model.delta');
+  expect(stream).toContain('live workbench');
+
+  const audit = await fetch(`${server.url}api/v1/audit?limit=100`, {
+    headers: { authorization: headers.authorization },
+  });
+  expect(audit.status).toBe(200);
+  expect(await audit.json()).toMatchObject({
+    object: 'list',
+    entries: expect.arrayContaining([
+      expect.objectContaining({ category: 'work', correlation: { workId: work.id } }),
+    ]),
+  });
+});
+
+test('Workbench audit access requires its independent read permission', async () => {
+  const app = open();
+  const server = await serveWorkbench({
+    app,
+    authenticate: () => ({ principal: 'local', permissions: ['work:read'] }),
+  });
+  servers.push(server);
+  const response = await fetch(`${server.url}api/v1/audit`);
+  expect(response.status).toBe(403);
+  expect(await response.json()).toMatchObject({
+    error: { code: 'ACCESS_DENIED', message: 'Permission audit:read is required' },
   });
 });
 

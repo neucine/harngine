@@ -7,11 +7,13 @@ can use a different upstream model while preserving the Messages request and res
 import { createClaudeMessagesAdapter } from "@harngine/claude-messages";
 
 const model = createClaudeMessagesAdapter({
-  accessToken: "magpie",
   baseUrl: "http://127.0.0.1:3425/v1",
   model: "opencode-go/deepseek-v4.1-flash",
 });
 ```
+
+`accessToken` is optional when `baseUrl` names an unauthenticated local compatible router. The
+adapter still requires either a token or an explicit `baseUrl`.
 
 Provider-native image and PDF input is opt-in because a compatible router may target a model
 without vision or document support:
@@ -39,7 +41,9 @@ Messages 32 MB request limit. Override `maxArtifacts`, `maxArtifactBytes` or
 `maxTotalArtifactBytes` only after reviewing the router and upstream model limits. Without
 `resolveArtifact`, no native input capability is advertised and references remain metadata only.
 
-The adapter sends `POST /messages` with `x-api-key` and `anthropic-version` headers. It requests a
-Harngine structured response envelope, rejects truncated or incomplete messages, and normalizes
+The adapter sends a streaming `POST /messages` request with `anthropic-version` and, when
+configured, `x-api-key`. It supports both Messages SSE and a non-streaming compatible JSON
+fallback. Structured envelope text becomes normalized live previews while nested Tool fields stay
+out of the preview channel. The adapter rejects truncated or incomplete messages and normalizes
 token usage. A model ID is required. Harngine executes accepted Tool proposals; the adapter does
 not invoke tools itself.

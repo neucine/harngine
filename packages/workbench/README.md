@@ -1,8 +1,9 @@
 # Harngine Workbench
 
 Workbench is Harngine's browser application for discovering definitions, running Sessions and
-Work, responding to Interactions, and inspecting execution. It uses only the public `harngine`
-API.
+Work, responding to Interactions, inspecting execution and reviewing payload-safe audit evidence.
+It uses only the public `harngine` API. Work views show transient model previews when the selected
+adapter emits them; previews are clearly separated from the durable final result.
 
 ```ts
 import { serveWorkbench } from '@harngine/workbench';
@@ -24,3 +25,6 @@ capability:
 ```bash
 bunx harngine-workbench ./src/harngine.ts --host 192.168.1.20
 ```
+
+Host-provided Workbench identities may grant `definitions:read`, `work:read`, `work:control`,
+`audit:read` and `diagnostics:read` independently.

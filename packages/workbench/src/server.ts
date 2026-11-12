@@ -4,13 +4,17 @@ import type { AddressInfo } from 'node:net';
 import {
   ConflictError,
   type App,
+  type AuditCategory,
+  type AuditQuery,
   type DefinitionKind,
   type DefinitionReference,
   HarngineError,
   NotFoundError,
+  type SessionId,
   UnauthorizedError,
   UnavailableError,
   ValidationError,
+  type WorkId,
 } from 'harngine';
 import { workbenchHtml } from './ui.js';
 
@@ -18,6 +22,7 @@ export type WorkbenchPermission =
   | 'definitions:read'
   | 'work:read'
   | 'work:control'
+  | 'audit:read'
   | 'diagnostics:read';
 
 export interface WorkbenchIdentity {
@@ -49,6 +54,7 @@ const allPermissions: readonly WorkbenchPermission[] = [
   'definitions:read',
   'work:read',
   'work:control',
+  'audit:read',
   'diagnostics:read',
 ];
 const mutation = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -161,6 +167,35 @@ function routeParts(pathname: string): string[] {
   return pathname.slice('/api/v1/'.length).split('/').filter(Boolean).map(decodeURIComponent);
 }
 
+function auditQuery(url: URL): AuditQuery {
+  const category = url.searchParams
+    .getAll('category')
+    .flatMap((value) => value.split(','))
+    .filter(Boolean);
+  const integer = (name: string) => {
+    const raw = url.searchParams.get(name);
+    if (!raw) return undefined;
+    const value = Number(raw);
+    if (!Number.isSafeInteger(value) || value < 0)
+      throw new HttpError(400, 'INVALID_QUERY', `Audit query ${name} is invalid`);
+    return value;
+  };
+  const since = integer('since');
+  const until = integer('until');
+  const limit = integer('limit');
+  return {
+    ...(category.length ? { category: category as AuditCategory[] } : {}),
+    ...(url.searchParams.get('workId') ? { workId: url.searchParams.get('workId') as WorkId } : {}),
+    ...(url.searchParams.get('sessionId')
+      ? { sessionId: url.searchParams.get('sessionId') as SessionId }
+      : {}),
+    ...(since === undefined ? {} : { since }),
+    ...(until === undefined ? {} : { until }),
+    ...(url.searchParams.get('after') ? { after: url.searchParams.get('after')! } : {}),
+    ...(limit === undefined ? {} : { limit }),
+  };
+}
+
 export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<WorkbenchServer> {
   const host = options.host ?? '127.0.0.1';
   const local = host === '127.0.0.1' || host === 'localhost' || host === '::1';
@@ -245,6 +280,11 @@ export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<Wo
           200,
           await options.app.definitions.get(reference(parts[1]!, parts[2]!, parts[3]!)),
         );
+        return;
+      }
+      if (method === 'GET' && parts[0] === 'audit' && parts.length === 1) {
+        requirePermission(identity, 'audit:read');
+        json(response, 200, await scope.audit.list(auditQuery(url)));
         return;
       }
       if (parts[0] === 'works' && parts.length === 1 && method === 'GET') {
@@ -360,6 +400,13 @@ export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<Wo
                 ? { after: explicit ?? (header as string) }
                 : {}),
               signal,
+              ...(url.searchParams.get('modelDeltas') === '1'
+                ? {
+                    onModelDelta(delta) {
+                      if (!signal.aborted) writeSse(response, 'model.delta', delta);
+                    },
+                  }
+                : {}),
             }),
           );
           return;

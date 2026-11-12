@@ -1,4 +1,5 @@
 import {
+  createModelOutputTextPreview,
   modelEnvelopeInstructions,
   modelOutputSchema,
   modelResponseContract,
@@ -14,7 +15,8 @@ import type {
 } from 'harngine';
 
 export interface OpenAIResponsesOptions {
-  accessToken: string;
+  /** Omit for an unauthenticated local compatible router. */
+  accessToken?: string;
   model?: string;
   baseUrl?: string;
   fetch?: typeof globalThis.fetch;
@@ -51,7 +53,11 @@ function inputFile(artifact: ResolvedModelArtifact): object {
 }
 
 export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): ModelAdapter {
-  if (!options.accessToken.trim()) throw new Error('API access token is empty');
+  const accessToken = options.accessToken?.trim();
+  if (options.accessToken !== undefined && !accessToken)
+    throw new Error('API access token is empty');
+  if (!accessToken && !options.baseUrl)
+    throw new Error('API access token or an explicit compatible baseUrl is required');
   const baseUrl = (options.baseUrl ?? 'https://api.openai.com/v1').replace(/\/+$/, '');
   const request = options.fetch ?? globalThis.fetch;
   const timeoutMs = options.timeoutMs ?? 180000;
@@ -59,7 +65,7 @@ export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): M
   async function model(signal: AbortSignal): Promise<string> {
     if (selectedModel) return selectedModel;
     const response = await request(`${baseUrl}/models`, {
-      headers: { Authorization: `Bearer ${options.accessToken}` },
+      ...(accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {}),
       signal,
     });
     if (response.status === 401)
@@ -82,12 +88,12 @@ export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): M
     capabilities: {
       tools: true,
       structuredOutput: true,
-      streaming: false,
+      streaming: true,
       ...(options.resolveArtifact ? { inputModalities: ['image', 'document'] as const } : {}),
       contextWindow: 128_000,
       defaultOutputReserve: 4_000,
     },
-    async generate(input: ModelRequest, { signal }): Promise<ModelResponse> {
+    async generate(input: ModelRequest, { signal, emit }): Promise<ModelResponse> {
       const controller = new AbortController();
       const abort = () => controller.abort(signal.reason);
       signal.addEventListener('abort', abort, { once: true });
@@ -115,10 +121,11 @@ export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): M
           ? [{ type: 'input_text', text: JSON.stringify(input) }, ...artifacts.map(inputFile)]
           : JSON.stringify(input);
         const name = await model(controller.signal);
+        const preview = createModelOutputTextPreview();
         const response = await request(`${baseUrl}/responses`, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${options.accessToken}`,
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -170,9 +177,12 @@ export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): M
             commentary.add(eventWithItem.item.id);
           if (
             event.type === 'response.output_text.delta' &&
-            (!eventWithItem.item_id || !commentary.has(eventWithItem.item_id))
-          )
-            output += event.delta ?? '';
+            (!eventWithItem.item_id || !commentary.has(eventWithItem.item_id)) &&
+            typeof event.delta === 'string'
+          ) {
+            output += event.delta;
+            for (const text of preview.push(event.delta)) emit({ type: 'text', text });
+          }
           if (event.type === 'response.completed') complete = event.response;
           if (
             event.type === 'response.failed' ||
@@ -195,6 +205,8 @@ export function createOpenAIResponsesAdapter(options: OpenAIResponsesOptions): M
             pending = pending.slice(end + separator.length);
           }
         }
+        pending += decoder.decode();
+        if (pending.trim()) frame(pending);
         if (!complete)
           throw new Error('OpenAI Responses API stream ended without response.completed');
         if (!output) {

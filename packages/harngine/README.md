@@ -111,6 +111,10 @@ reconnect. The final validated `ModelResponse`, ordinary Work updates, snapshots
 remain authoritative. A model-output guardrail suppresses live previews because partial provider
 output cannot be trusted ahead of the complete output decision.
 
+Adapters for structured APIs can use `createModelOutputTextPreview()` to extract safe text from a
+streamed JSON response envelope. It emits only direct `items[*].text` string values, ignores nested
+Tool inputs, handles escape sequences across arbitrary chunks, and bounds preview output.
+
 `app.close()` aborts an active provider or Tool invocation by default. Model turns interrupted by
 shutdown remain durable and retry when the App reopens. Use `app.close({ abortInFlight: false })`
 to wait for the current invocation instead.

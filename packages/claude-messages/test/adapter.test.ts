@@ -94,6 +94,11 @@ const conformance: AdapterConformanceFactory = (reply, options) => {
 describeModelAdapterConformance('Claude Messages adapter', conformance);
 
 describe('Claude Messages adapter', () => {
+  it('requires a token or an explicit compatible base URL', () => {
+    expect(() => createClaudeMessagesAdapter({ model: 'test-model' })).toThrow(
+      'API access token or an explicit compatible baseUrl is required',
+    );
+  });
   it('encodes verified image and PDF references as native Messages content blocks', async () => {
     const imageBytes = Uint8Array.from([0xff, 0xd8, 0xff, 1, 2]);
     const pdfBytes = new TextEncoder().encode('%PDF-1.7\nfixture');
@@ -226,12 +231,98 @@ describe('Claude Messages adapter', () => {
     const body = JSON.parse(String(init?.body));
     expect(body).toMatchObject({
       model: 'codex/gpt-6-sol',
+      stream: true,
       output_config: { format: { type: 'json_schema' } },
     });
     expect(body.messages[0].content).toBe(JSON.stringify(request));
     expect(result.items).toEqual([{ type: 'text', text: 'OK' }]);
     expect(result.provider).toEqual({ name: 'claude-messages', model: 'codex/gpt-6-sol' });
     expect(result.usage?.totalTokens).toBe(15);
+  });
+
+  it('emits normalized preview text from Messages SSE events', async () => {
+    const result = JSON.stringify({
+      items: [
+        {
+          type: 'text',
+          text: 'Streamed answer',
+          providerCallId: null,
+          tool: null,
+          input: { text: 'must not preview' },
+          value: null,
+        },
+      ],
+      finishReason: 'stop',
+    });
+    const chunks = [...result.matchAll(/[\s\S]{1,5}/g)].map((match) => match[0]);
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        const events = [
+          {
+            type: 'message_start',
+            message: { type: 'message', model: 'claude-test', usage: { input_tokens: 11 } },
+          },
+          ...chunks.map((text) => ({
+            type: 'content_block_delta',
+            delta: { type: 'text_delta', text },
+          })),
+          {
+            type: 'message_delta',
+            delta: { stop_reason: 'end_turn' },
+            usage: { output_tokens: 4 },
+          },
+          { type: 'message_stop' },
+        ];
+        const wire = events
+          .map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`)
+          .join('');
+        for (let offset = 0; offset < wire.length; offset += 7)
+          controller.enqueue(encoder.encode(wire.slice(offset, offset + 7)));
+        controller.close();
+      },
+    });
+    const adapter = createClaudeMessagesAdapter({
+      accessToken: 'magpie',
+      model: 'claude-test',
+      fetch: (async () =>
+        new Response(body, {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        })) as typeof fetch,
+    });
+    const previews: string[] = [];
+    const response = await adapter.generate(request, {
+      signal: new AbortController().signal,
+      emit(item) {
+        if (item.type === 'text') previews.push(item.text);
+      },
+    });
+    expect(adapter.capabilities.streaming).toBe(true);
+    expect(previews.join('')).toBe('Streamed answer');
+    expect(previews.join('')).not.toContain('must not preview');
+    expect(response).toMatchObject({
+      items: [{ type: 'text', text: 'Streamed answer' }],
+      usage: { inputTokens: 11, outputTokens: 4, totalTokens: 15 },
+      provider: { name: 'claude-messages', model: 'claude-test' },
+    });
+  });
+
+  it('supports an unauthenticated local compatible router', async () => {
+    let headers: HeadersInit | undefined;
+    const adapter = createClaudeMessagesAdapter({
+      baseUrl: 'http://127.0.0.1:3425/v1',
+      model: 'local-model',
+      fetch: (async (_url, init) => {
+        headers = init?.headers;
+        return completedResponse();
+      }) as typeof fetch,
+    });
+    await adapter.generate(request, {
+      signal: new AbortController().signal,
+      emit() {},
+    });
+    expect(headers).not.toHaveProperty('x-api-key');
   });
 
   it('rejects truncated responses', async () => {

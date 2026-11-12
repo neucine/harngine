@@ -46,6 +46,83 @@ async function loadInspection(id,detail,after=null){try{const page=await api('/w
 async function render(){try{const p=route();if(!p.length){go('/definitions');return}if(p[0]==='definitions'&&p.length===1)await definitions();else if(p[0]==='definitions'&&p.length===4)await definition(p);else if(p[0]==='sessions'&&p.length===1)await sessions();else if(p[0]==='sessions'&&p[1])await sessionPage(p[1]);else if(p[0]==='work'&&p.length===1)await works();else if(p[0]==='work'&&p[1])await workPage(p[1]);else{app.innerHTML=heading('Not found',location.pathname)}}catch(e){app.innerHTML='';fail(e)}}render();
 </script></body></html>`;
 
+const enhancedExperience = String.raw`<script>
+const previewsByWork=new Map();
+const NativeEventSource=window.EventSource;
+class HarngineEventSource extends NativeEventSource{
+  constructor(url,options){
+    const parsed=new URL(url,location.origin);
+    if(parsed.pathname.includes('/works/')&&parsed.pathname.endsWith('/events')&&!parsed.searchParams.has('modelDeltas'))parsed.searchParams.set('modelDeltas','1');
+    super(parsed,options);
+    this.addEventListener('model.delta',event=>{
+      try{
+        const delta=JSON.parse(event.data);
+        if(delta.item?.type!=='text')return;
+        const current=previewsByWork.get(delta.workId)||'';
+        previewsByWork.set(delta.workId,(current+delta.item.text).slice(-131072));
+        queueMicrotask(showModelPreview);
+      }catch{}
+    });
+    this.addEventListener('ready',event=>{
+      try{
+        const value=JSON.parse(event.data).value;
+        if(terminal.has(value?.status))previewsByWork.delete(value.id);
+      }catch{}
+      queueMicrotask(showModelPreview);
+    });
+    this.addEventListener('update',event=>{
+      try{
+        const value=JSON.parse(event.data).value?.snapshot;
+        if(terminal.has(value?.status))previewsByWork.delete(value.id);
+      }catch{}
+      queueMicrotask(showModelPreview);
+    });
+  }
+}
+window.EventSource=HarngineEventSource;
+function showModelPreview(){
+  const workId=route()[1];if(route()[0]!=='work'||!workId)return;
+  const preview=previewsByWork.get(workId);if(!preview)return;
+  const stack=document.querySelector('main .split > .stack');if(!stack)return;
+  let panel=document.querySelector('#model-preview-panel');
+  if(!panel){
+    panel=document.createElement('section');
+    panel.id='model-preview-panel';panel.className='panel result-data';
+    const objective=stack.querySelector('.panel');
+    if(objective)objective.insertAdjacentElement('afterend',panel);
+    else stack.prepend(panel);
+  }
+  panel.innerHTML='<div class="section-head"><div><h2>Live model preview</h2><div class="muted">Transient provider text; the completed result remains authoritative.</div></div><span class="pill running">Live</span></div><div class="result" id="model-preview-text"></div>';
+  panel.querySelector('#model-preview-text').textContent=preview;
+}
+const auditLink=document.createElement('a');
+auditLink.href='/audit';auditLink.dataset.nav='audit';auditLink.textContent='Audit';
+document.querySelector('nav').append(auditLink);
+const baseRender=render;
+render=async function(){
+  if(route()[0]==='audit'&&route().length===1)return renderAudit();
+  return baseRender();
+};
+async function renderAudit(after=null){
+  navActive('audit');if(source){source.close();source=null}
+  const selected=new URLSearchParams(location.search).get('category')||'';
+  const query='limit=50'+(selected?'&category='+encodeURIComponent(selected):'')+(after?'&after='+encodeURIComponent(after):'');
+  const page=await api('/audit?'+query);
+  const entries=page.entries.map(entry=>{
+    const correlation=Object.entries(entry.correlation||{}).map(([name,value])=>'<span class="pill">'+esc(name)+' · '+esc(value)+'</span>').join('');
+    const reason=entry.reason?'<div><span class="label">Reason</span><div>'+esc(entry.reason.code)+' · '+esc(entry.reason.message)+'</div></div>':'';
+    return '<div class="entry '+esc(entry.category)+'"><div class="toolbar"><b>'+esc(entry.action)+'</b><span class="pill">'+esc(entry.category)+'</span></div><div class="muted mono">'+esc(entry.id)+'</div><div class="meta">'+correlation+'</div>'+(entry.outcome?'<div>Outcome: '+esc(entry.outcome)+'</div>':'')+reason+'<details><summary>Entry details</summary><pre>'+esc(pretty(entry))+'</pre></details></div>';
+  }).join('');
+  app.innerHTML=heading('Audit','Payload-safe operational evidence across Work, policy, Attempts, Interactions, and Sessions.','<label class="pill">Category <select id="audit-category"><option value="">All</option>'+['work','decision','authorization','guardrail','attempt','interaction','session'].map(value=>'<option value="'+value+'" '+(value===selected?'selected':'')+'>'+value+'</option>').join('')+'</select></label>')+
+    '<section class="panel"><div class="section-head"><div><h2>Retained evidence</h2><div class="muted">'+page.entries.length+' entries on this page</div></div></div><div class="timeline">'+(entries||'<div class="muted">No audit entries match this filter.</div>')+'</div>'+(page.next?'<button id="audit-more">Load more</button>':'')+'</section>';
+  document.querySelector('#audit-category').onchange=event=>{history.pushState({},'','/audit'+(event.target.value?'?category='+encodeURIComponent(event.target.value):''));renderAudit()};
+  document.querySelector('#audit-more')?.addEventListener('click',()=>renderAudit(page.next));
+}
+if(location.pathname==='/audit')renderAudit();
+</script>`;
+
 export function workbenchHtml(capability: string | null): string {
-  return html.replace('__CAPABILITY__', JSON.stringify(capability));
+  return html
+    .replace('__CAPABILITY__', JSON.stringify(capability))
+    .replace('</body>', `${enhancedExperience}</body>`);
 }

@@ -101,6 +101,11 @@ const conformance: AdapterConformanceFactory = (reply, options) => {
 describeModelAdapterConformance('OpenAI Responses adapter', conformance);
 
 describe('Codex API adapter', () => {
+  it('requires a token or an explicit compatible base URL', () => {
+    expect(() => createOpenAIResponsesAdapter({})).toThrow(
+      'API access token or an explicit compatible baseUrl is required',
+    );
+  });
   it('encodes verified image and PDF references as native Responses input parts', async () => {
     const imageBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
     const pdfBytes = new TextEncoder().encode('%PDF-1.7\nfixture');
@@ -248,6 +253,78 @@ describe('Codex API adapter', () => {
     expect(body).toMatchObject({ model: 'test-model', store: false, stream: true });
     expect(body.input[0].content).toBe(JSON.stringify(request));
     expect(body.text.format.type).toBe('json_schema');
+  });
+  it('emits normalized preview text across structured SSE chunks', async () => {
+    const result = JSON.stringify({
+      items: [
+        {
+          type: 'text',
+          text: 'Live "answer"',
+          providerCallId: null,
+          tool: null,
+          input: { text: 'must not preview' },
+          value: null,
+        },
+      ],
+      finishReason: 'stop',
+    });
+    const deltas: string[] = [];
+    const fetcher = async () =>
+      new Response(
+        stream([
+          ...[...result.matchAll(/[\s\S]{1,4}/g)].map(
+            (match) =>
+              `data: ${JSON.stringify({ type: 'response.output_text.delta', delta: match[0] })}\n\n`,
+          ),
+          `data: ${JSON.stringify({
+            type: 'response.completed',
+            response: { output: [{ content: [{ type: 'output_text', text: result }] }] },
+          })}\n\n`,
+        ]),
+        { status: 200, headers: { 'content-type': 'text/event-stream' } },
+      );
+    const adapter = createOpenAIResponsesAdapter({
+      accessToken: 'magpie',
+      model: 'test-model',
+      fetch: fetcher as typeof fetch,
+    });
+    await adapter.generate(request, {
+      signal: new AbortController().signal,
+      emit(item) {
+        if (item.type === 'text') deltas.push(item.text);
+      },
+    });
+    expect(adapter.capabilities.streaming).toBe(true);
+    expect(deltas.join('')).toBe('Live "answer"');
+    expect(deltas.join('')).not.toContain('must not preview');
+  });
+  it('supports an unauthenticated local compatible router', async () => {
+    const authorizations: unknown[] = [];
+    const fetcher = async (url: string | URL | Request, init?: RequestInit) => {
+      if (String(url).endsWith('/models')) {
+        authorizations.push((init?.headers as Record<string, string> | undefined)?.Authorization);
+        return Response.json({ data: [{ id: 'local-model' }] });
+      }
+      authorizations.push((init?.headers as Record<string, string> | undefined)?.Authorization);
+      const result = JSON.stringify({
+        items: [{ type: 'text', text: 'local' }],
+        finishReason: 'stop',
+      });
+      return new Response(
+        stream([
+          `data: ${JSON.stringify({ type: 'response.completed', response: { output: [{ content: [{ type: 'output_text', text: result }] }] } })}\n\n`,
+        ]),
+        { status: 200 },
+      );
+    };
+    const adapter = createOpenAIResponsesAdapter({
+      baseUrl: 'http://127.0.0.1:3425/v1',
+      fetch: fetcher as typeof fetch,
+    });
+    await expect(
+      adapter.generate(request, { signal: new AbortController().signal, emit() {} }),
+    ).resolves.toMatchObject({ items: [{ type: 'text', text: 'local' }] });
+    expect(authorizations).toEqual([undefined, undefined]);
   });
   it('ignores commentary output and parses only the final answer item', async () => {
     const commentaryId = 'commentary-output';

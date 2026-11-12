@@ -1,5 +1,15 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import { HarngineError, type App, type Json, type SessionId, type WorkId } from 'harngine';
+import {
+  HarngineError,
+  type App,
+  type AuditCategory,
+  type AuditExportSink,
+  type AuditQuery,
+  type Json,
+  type SessionId,
+  ValidationError,
+  type WorkId,
+} from 'harngine';
 
 export interface HttpAdapterOptions {
   app: App;
@@ -8,6 +18,8 @@ export interface HttpAdapterOptions {
   /** Exact browser origin permitted for a webview client, such as "null" for a local file page. */
   origin?: string | readonly string[];
   maxBodyBytes?: number;
+  /** Optional host-owned destination for authenticated audit export requests. */
+  auditSink?: AuditExportSink;
   /** Host-owned routes, called after authentication and before built-in routes. */
   route?: (
     request: IncomingMessage,
@@ -53,6 +65,24 @@ export function createHarngineHttpServer(options: HttpAdapterOptions): Server {
             limit: 100,
           }),
         );
+      if (request.method === 'GET' && url.pathname === '/audit')
+        return json(response, 200, await scope.audit.list(auditQuery(url)));
+      if (request.method === 'POST' && url.pathname === '/audit/export') {
+        if (!options.auditSink)
+          return json(response, 501, { error: 'Audit export sink is not configured' });
+        const format = url.searchParams.get('format') ?? 'json';
+        if (format !== 'json' && format !== 'otel')
+          throw new TypeError('Audit export format must be json or otel');
+        return json(
+          response,
+          200,
+          await scope.audit.export({
+            ...auditQuery(url),
+            format,
+            sink: options.auditSink,
+          }),
+        );
+      }
       if (request.method === 'GET' && url.pathname === '/works')
         return json(
           response,
@@ -111,7 +141,12 @@ export function createHarngineHttpServer(options: HttpAdapterOptions): Server {
             }),
           );
         if (request.method === 'GET' && parts[2] === 'events')
-          return events(response, work, url.searchParams.get('after') ?? undefined);
+          return events(
+            response,
+            work,
+            url.searchParams.get('after') ?? undefined,
+            url.searchParams.get('modelDeltas') === '1',
+          );
         if (request.method === 'POST' && parts[2] === 'cancel')
           return json(response, 200, await work.cancel('Canceled through HTTP'));
         if (request.method === 'POST' && parts[2] === 'steer')
@@ -164,7 +199,9 @@ export function createHarngineHttpServer(options: HttpAdapterOptions): Server {
       json(response, 404, { error: 'Not found' });
     } catch (error) {
       const status =
-        error instanceof SyntaxError || error instanceof TypeError
+        error instanceof SyntaxError ||
+        error instanceof TypeError ||
+        error instanceof ValidationError
           ? 400
           : error instanceof HarngineError
             ? 409
@@ -211,10 +248,22 @@ async function events(
   response: ServerResponse,
   work: Awaited<ReturnType<App['works']['get']>>,
   after?: string,
+  modelDeltas = false,
 ) {
   const controller = new AbortController();
   response.on('close', () => controller.abort());
-  const watcher = await work.watch({ ...(after ? { after } : {}), signal: controller.signal });
+  const watcher = await work.watch({
+    ...(after ? { after } : {}),
+    signal: controller.signal,
+    ...(modelDeltas
+      ? {
+          onModelDelta(delta) {
+            if (!controller.signal.aborted)
+              response.write(`event: model.delta\ndata: ${JSON.stringify(delta)}\n\n`);
+          },
+        }
+      : {}),
+  });
   response.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-store',
@@ -232,4 +281,32 @@ async function events(
   } finally {
     response.end();
   }
+}
+
+function auditQuery(url: URL): AuditQuery {
+  const category = url.searchParams
+    .getAll('category')
+    .flatMap((value) => value.split(','))
+    .filter(Boolean);
+  const limit = url.searchParams.get('limit');
+  const since = url.searchParams.get('since');
+  const until = url.searchParams.get('until');
+  return {
+    ...(category.length ? { category: category as AuditCategory[] } : {}),
+    ...(url.searchParams.get('workId') ? { workId: url.searchParams.get('workId') as WorkId } : {}),
+    ...(url.searchParams.get('sessionId')
+      ? { sessionId: url.searchParams.get('sessionId') as SessionId }
+      : {}),
+    ...(since ? { since: queryInteger(since, 'since') } : {}),
+    ...(until ? { until: queryInteger(until, 'until') } : {}),
+    ...(url.searchParams.get('after') ? { after: url.searchParams.get('after')! } : {}),
+    ...(limit ? { limit: queryInteger(limit, 'limit') } : {}),
+  };
+}
+
+function queryInteger(value: string, name: string): number {
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 0)
+    throw new TypeError(`Audit query ${name} must be a non-negative safe integer`);
+  return parsed;
 }

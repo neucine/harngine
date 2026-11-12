@@ -204,6 +204,16 @@ structured text, finish reasons, usage, Tool proposals, optional fields, malform
 failures, timeouts, and advertised capabilities. A new adapter should use the same suite before
 adding live provider smoke tests.
 
+The maintained OpenAI Responses and Claude Messages adapters consume provider streams, advertise
+`streaming`, and call `emit()` with preview text extracted from complete structured-envelope text
+fields. Their `accessToken` is optional only when `baseUrl` explicitly names a local compatible
+router. The development Codex CLI adapter remains non-streaming because its event protocol does
+not provide the same stable text-delta boundary.
+
+Other adapters that stream a JSON response envelope can use `createModelOutputTextPreview()`. Its
+incremental parser emits only direct `items[*].text` strings, ignores nested Tool inputs, handles
+JSON escapes across chunks, and enforces a bounded preview length.
+
 ## Discover MCP Tool contracts
 
 `discoverMcpTools()` captures selected MCP server contracts into a bounded, immutable catalog
@@ -533,7 +543,9 @@ gates.
 ## Use Workbench
 
 Workbench discovers definitions, creates Sessions and Work, accepts live prompts, handles
-Interactions, and displays story or diagnostic inspection.
+Interactions, displays transient model previews, reviews payload-safe audit evidence, and displays
+story or diagnostic inspection. The HTTP adapter enables model previews only when a Work event
+request opts in with `modelDeltas=1`.
 
 Export an App factory from a project module, then run:
 

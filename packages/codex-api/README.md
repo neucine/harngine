@@ -8,11 +8,14 @@ upstream model the router selects.
 import { createOpenAIResponsesAdapter } from "@harngine/codex-api";
 
 const model = createOpenAIResponsesAdapter({
-  accessToken: "magpie",
   baseUrl: "http://127.0.0.1:3425/v1",
   model: "codex/gpt-6-sol",
 });
 ```
+
+`accessToken` is optional when `baseUrl` names an unauthenticated local compatible router. The
+adapter still requires either a token or an explicit `baseUrl`, so an accidental request to the
+public OpenAI endpoint cannot silently omit authentication.
 
 Provider-native image and PDF input is opt-in because a compatible router may target a model
 without vision or document support:
@@ -42,8 +45,9 @@ native input capability is advertised and references remain metadata only.
 When `model` is omitted, the adapter chooses the first model from the `/models` endpoint. The
 adapter sends a bounded Model Context to `/responses`, requests Harngine's structured response
 envelope with strict JSON Schema, verifies that the SSE stream reaches `response.completed`, and
-normalizes provider usage. Harngine executes accepted Tool proposals; the adapter does not invoke
-tools itself.
+normalizes provider usage. It advertises streaming and extracts preview text only from complete
+`items[*].text` values in the structured response; tool inputs and nested fields are excluded.
+Harngine executes accepted Tool proposals; the adapter does not invoke tools itself.
 
 The deprecated `createCodexApiAdapter` and `CodexApiOptions` names remain as aliases for existing
 callers.

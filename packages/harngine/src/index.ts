@@ -157,4 +157,9 @@ export type {
   ModelResponse,
   ModelUsage,
 } from './model.js';
+export {
+  createModelOutputTextPreview,
+  type ModelOutputTextPreview,
+  type ModelOutputTextPreviewOptions,
+} from './model-preview.js';
 export type { TelemetryEvent, TelemetrySink } from './telemetry.js';
