@@ -6,22 +6,7 @@ Harngine 是一个用 TypeScript 编写智能体和工作流的运行时。它�
 
 Harngine 目前仍是预发布版本，公开 API 可能调整。
 
-**先看演示：**[两分钟恢复示例](examples/quickstart/README.md) ·
-[69 秒客服流程视频](https://github.com/neucine/harngine/releases/download/v0.1.0/walkthrough.mp4) ·
-[框架介绍视频](https://youtu.be/upyXdDo2EPY)
-
-恢复示例只使用已发布的框架包，不需要模型账号。它在 Workflow 等待持久化计时器时终止进程，再由新进程打开同一个 SQLite 目录，核对结果与工具调用记录。安装 Node.js 24.21 和 Bun 后运行：
-
-```bash
-mkdir harngine-recovery && cd harngine-recovery
-curl -fsSLO https://raw.githubusercontent.com/neucine/harngine/main/examples/quickstart/demo.mjs
-printf '{"private":true,"type":"module"}\n' > package.json
-npm install harngine@0.1.0
-bunx harngine-manifest
-node demo.mjs
-```
-
-预期输出包含 `Recovered ...: result=42, settled tool calls=1`。示例的验证范围和保留的 SQLite 数据见[示例说明](examples/quickstart/README.md)。
+[运行两分钟恢复示例](examples/quickstart/README.md)：只使用已发布的框架包，不需要模型账号。示例在持久化等待期间终止进程，再由新进程恢复结果。
 
 # 开始使用
 
@@ -31,18 +16,9 @@ Harngine 需要 Node.js 24.21。从 npm 安装框架包：
 npm install harngine
 ```
 
-可选的生态集成包发布在 `@harngine` scope 下。按应用需要安装：
+可选的生态集成包发布在 `@harngine` scope 下，仅安装应用所需的包。
 
-```bash
-npm install \
-  @harngine/openai-responses \
-  @harngine/claude-messages \
-  @harngine/mcp \
-  @harngine/retrieval \
-  @harngine/http
-```
-
-## 框架和示例应用
+## 框架示例
 
 `harngine` npm 包提供的是框架。你可以用它定义 Agent、Workflow 和 Tool，启动任务，并在任务中断后恢复或检查执行记录。[恢复示例](examples/quickstart/README.md)里的 Workflow 就包含一次具名工具调用和一个持久化计时器：
 
@@ -62,62 +38,19 @@ const calculation = workflow({
 
 这里的 `number` 和 `record` 分别是示例中定义的 Schema 和 Tool。完整用法见[框架指南](docs/guide.md)。
 
-下方的 Coding CLI 和 Support Desk 是**使用 Harngine 构建的应用**，用来展示框架能做什么。安装和使用 `harngine` 包并不需要运行这些应用。
+想先了解运行时与应用的关系，可看[框架介绍视频](https://youtu.be/upyXdDo2EPY)。下方的应用展示了使用场景。
 
 # 应用示例
 
-要运行 Coding CLI 和仓库中的示例，请克隆源码并安装工作区依赖：
-
-```bash
-git clone https://github.com/neucine/harngine.git
-cd harngine
-bun install
-```
+这些应用需要克隆源码后运行（`git clone https://github.com/neucine/harngine.git`，然后执行 `cd harngine` 和 `bun install`），与 npm 框架入门示例分开。
 
 ## Coding CLI
 
-Harngine Coding 是用于代码仓库工作的终端智能体。它默认以只读模式启动，实时显示进度，将工具调用压缩成紧凑状态，并在应用每一处精确文件修改前请求批准。
-
-```bash
-bun run coding:cli --repo .
-```
-
-输入 `/write` 可切换到编辑会话；`/sessions` 和 `--continue` 可以恢复之前的任务。自动化运行可以使用 `--task`，并加上 `--json` 输出一个机器可读结果。
-
-本地开发默认使用 Magpie 和 `codex/gpt-6.1-sol`。如果 Magpie 不可用，交互式设置会提供 OpenAI、Claude 或 Magpie 选项。也可以直接使用 OpenAI：
-
-```bash
-OPENAI_API_KEY=... bun run coding:cli \
-  --repo . \
-  --provider openai \
-  --model <model-id>
-```
-
-模型提供商、思考过程、审批、单次运行和会话命令见 [Coding CLI 指南](apps/coding/cli/README.md)。
-
-macOS 桌面应用使用同一套 Agent 和持久历史：
-
-```bash
-bun run coding:desktop --repo "$PWD"
-open -n apps/coding/desktop/build/NeivApp.app
-```
-
-目前构建桌面应用需要本地 [Neiv](https://github.com/neucine/neiv) 和
-[Weiv](https://github.com/neucine/weiv) 仓库。设置方法见
-[Coding Desktop 指南](apps/coding/desktop/README.md)。
+Harngine Coding 是用于代码仓库工作的终端智能体，提供可检查的执行进度，并在修改文件前请求批准。设置和命令见 [CLI 指南](apps/coding/cli/README.md)；另有 [macOS 桌面指南](apps/coding/desktop/README.md)。
 
 ## Support Desk
 
-离线 Support Desk 示例完整展示一笔重复扣款从客户请求到审批退款的过程：账户证据、退款政策查询、Triage → Billing 持久交接、精确审批，以及完成后的审计记录。
-
-```bash
-bun run demo:support
-```
-
-打开终端打印的地址，选择 **Run review**，然后批准这笔精确到 NZ$49 的退款。演示无需模型密钥、支付服务或网络连接。
-
-运行 `bun run demo:support:cli` 可以在终端查看同一个案例。详细步骤见
-[Support Desk 指南](examples/support/README.md)。
+离线 Support Desk 示例展示重复扣款经过人工审批后完成退款。可以观看[69 秒演示视频](https://github.com/neucine/harngine/releases/download/v0.1.0/walkthrough.mp4)，或按 [Support Desk 指南](examples/support/README.md)运行。
 
 ## 更多应用示例
 
