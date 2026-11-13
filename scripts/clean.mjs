@@ -10,6 +10,7 @@ const outputs = [
   'examples/quest/dist',
   'examples/roam/dist',
   'examples/muse/dist',
+  'examples/support/dist',
 ];
 
 await Promise.all(outputs.map((output) => rm(output, { recursive: true, force: true })));

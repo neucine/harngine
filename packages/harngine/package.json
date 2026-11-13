@@ -1,7 +1,22 @@
 {
   "name": "harngine",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "An execution framework for agent applications",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neucine/harngine.git",
+    "directory": "packages/harngine"
+  },
+  "homepage": "https://github.com/neucine/harngine#readme",
+  "bugs": {
+    "url": "https://github.com/neucine/harngine/issues"
+  },
+  "keywords": [
+    "agents",
+    "workflow",
+    "durable-execution",
+    "sqlite"
+  ],
   "license": "MPL-2.0",
   "type": "module",
   "engines": {

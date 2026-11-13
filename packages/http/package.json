@@ -20,5 +20,11 @@
     "LICENSE",
     "README.md",
     "openapi.yaml"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=24.21.0 <25"
+  }
 }

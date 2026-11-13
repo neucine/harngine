@@ -1,6 +1,7 @@
 {
   "name": "@harngine/workbench",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
+  "private": true,
   "description": "Development and inspection application for Harngine",
   "license": "MPL-2.0",
   "type": "module",
@@ -22,6 +23,6 @@
     "README.md"
   ],
   "peerDependencies": {
-    "harngine": "0.1.0-alpha.0"
+    "harngine": "0.1.0"
   }
 }

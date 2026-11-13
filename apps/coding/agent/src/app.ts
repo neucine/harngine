@@ -13,6 +13,12 @@ export function createCodingApp(options: {
   repo: string;
   writable: boolean;
   modelId?: string;
+  /** Provider selection. Defaults to the local Magpie gateway in development. */
+  provider?: string;
+  /** Token supplied by an embedding application instead of an environment variable. */
+  apiToken?: string;
+  /** Override the provider endpoint, including compatibility gateways. */
+  baseUrl?: string;
   /** Override provider selection for embedding and deterministic integration tests. */
   modelAdapter?: ModelAdapter;
   /** Runtime principal used by the desktop or another embedding application. */
@@ -113,7 +119,7 @@ export function createCodingApp(options: {
     output,
     effect: 'write',
     ...(options.requireEditApproval
-      ? { approval: { approvers: ['desktop'], timeoutMs: 24 * 60 * 60 * 1000 } }
+      ? { approval: { approvers: ['desktop', 'cli'], timeoutMs: 24 * 60 * 60 * 1000 } }
       : {}),
     capabilities: { idempotency: 'none', reversibility: 'reversible' },
     execute(value, context) {
@@ -234,40 +240,66 @@ export function createCodingApp(options: {
     },
   });
   const selectedModel = modelId || process.env.CODEX_MODEL;
-  const provider = process.env.HARNGINE_CODING_PROVIDER;
+  const provider =
+    options.provider?.trim() || process.env.HARNGINE_CODING_PROVIDER?.trim() || 'magpie';
+  const baseUrl = options.baseUrl?.trim() || process.env.HARNGINE_CODING_API_BASE_URL?.trim();
+  if (
+    ![
+      'magpie',
+      'api',
+      'openai',
+      'openai-responses',
+      'claude',
+      'claude-messages',
+      'codex',
+      'chatgpt',
+    ].includes(provider)
+  )
+    throw new Error(`Unsupported coding provider: ${provider}`);
+  const magpie = provider === 'magpie';
   const useApi =
     !options.modelAdapter &&
-    ['api', 'openai-responses', 'claude-messages'].includes(provider ?? '');
+    ['magpie', 'api', 'openai', 'openai-responses', 'claude', 'claude-messages'].includes(provider);
+  const claude = provider === 'claude' || provider === 'claude-messages';
+  const namedToken = claude
+    ? process.env.ANTHROPIC_API_KEY
+    : provider === 'openai' || provider === 'openai-responses'
+      ? process.env.OPENAI_API_KEY
+      : undefined;
   const accessToken = useApi
-    ? (process.env.HARNGINE_CODING_API_TOKEN ?? process.env.CODEX_ACCESS_TOKEN)?.trim()
+    ? (
+        options.apiToken ??
+        (magpie ? undefined : namedToken) ??
+        process.env.HARNGINE_CODING_API_TOKEN ??
+        process.env.CODEX_ACCESS_TOKEN ??
+        (magpie ? 'magpie' : undefined)
+      )?.trim()
     : undefined;
   if (useApi && !accessToken)
     throw new Error(
-      'HARNGINE_CODING_PROVIDER requires HARNGINE_CODING_API_TOKEN or CODEX_ACCESS_TOKEN',
+      claude
+        ? 'Claude requires ANTHROPIC_API_KEY, HARNGINE_CODING_API_TOKEN, or an embedding apiToken'
+        : 'OpenAI requires OPENAI_API_KEY, HARNGINE_CODING_API_TOKEN, or an embedding apiToken',
     );
-  if (provider === 'claude-messages' && !selectedModel)
-    throw new Error('Claude Messages provider requires CODEX_MODEL');
+  const routedModel = selectedModel ?? (provider === 'magpie' ? 'codex/gpt-6.1-sol' : undefined);
+  if (useApi && !routedModel) throw new Error('API providers require --model or CODEX_MODEL');
   const model =
     options.modelAdapter ??
-    (provider === 'claude-messages'
+    (claude
       ? createClaudeMessagesAdapter({
           accessToken: accessToken!,
-          model: selectedModel!,
-          ...(process.env.HARNGINE_CODING_API_BASE_URL
-            ? { baseUrl: process.env.HARNGINE_CODING_API_BASE_URL }
-            : {}),
+          model: routedModel!,
+          ...(baseUrl ? { baseUrl } : {}),
         })
       : useApi
         ? createOpenAIResponsesAdapter({
             accessToken: accessToken!,
-            ...(process.env.HARNGINE_CODING_API_BASE_URL
-              ? { baseUrl: process.env.HARNGINE_CODING_API_BASE_URL }
-              : {}),
-            ...(selectedModel ? { model: selectedModel } : {}),
+            ...(baseUrl || magpie ? { baseUrl: baseUrl ?? 'http://127.0.0.1:3425/v1' } : {}),
+            model: routedModel!,
           })
         : createCodexCliAdapter({
             cliVersion: execFileSync('codex', ['--version'], { encoding: 'utf8' }).trim(),
-            ...(modelId ? { model: modelId } : {}),
+            ...(selectedModel ? { model: selectedModel } : {}),
             timeoutMs: 180000,
           }));
   const task = schema<string>({ id: 'coding.task', version: '1', jsonSchema: string });
@@ -281,7 +313,7 @@ export function createCodingApp(options: {
   });
   const writeAssistant = agent({
     id: 'coding.workspace-write',
-    instructions: `You are the implementer specialist for a coding task in ${root}. Inspect files before proposing changes. Use relative paths. The coding.edit Tool requires exactly three string fields: path, oldText, and newText. Set oldText to one exact, unique fragment copied from the file and newText to its replacement; never omit either field. A desktop reviewer must approve the exact edit before execution. After an approved edit, run a focused coding.check command. Report actual changes and check results accurately.`,
+    instructions: `You are the implementer specialist for a coding task in ${root}. Inspect files before proposing changes. Use relative paths. The coding.edit Tool requires exactly three string fields: path, oldText, and newText. Set oldText to one exact, unique fragment copied from the file and newText to its replacement; never omit either field. A human reviewer in Harngine Coding must approve the exact edit before execution. After an approved edit, run a focused coding.check command. Report actual changes and check results accurately.`,
     objective: task,
     model,
     tools: [read, search, edit, check],
@@ -360,5 +392,7 @@ export function createCodingApp(options: {
     reviewer,
     collaborativeReview,
     root,
+    provider,
+    model: routedModel ?? 'codex-cli-default',
   };
 }

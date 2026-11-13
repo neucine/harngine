@@ -284,80 +284,80 @@ function createConditionalFragment_10(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_36 = document.createElement('section');
     refs[36] = __ref_36;
-    __ref_36.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_36.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_36.setAttribute('class', 'entrance');
     const __ref_18 = document.createElement('div');
     refs[18] = __ref_18;
-    __ref_18.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_18.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_18.setAttribute('class', 'entrance-art');
     const __ref_13 = document.createElement('div');
     refs[13] = __ref_13;
-    __ref_13.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_13.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_13.setAttribute('class', 'orbit orbit-one');
     __ref_18.append(__ref_13);
     const __ref_14 = document.createElement('div');
     refs[14] = __ref_14;
-    __ref_14.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_14.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_14.setAttribute('class', 'orbit orbit-two');
     __ref_18.append(__ref_14);
     const __ref_15 = document.createElement('span');
     refs[15] = __ref_15;
-    __ref_15.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_15.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_15.setAttribute('class', 'star star-one');
     __ref_15.append(document.createTextNode('✦'));
     __ref_18.append(__ref_15);
     const __ref_16 = document.createElement('span');
     refs[16] = __ref_16;
-    __ref_16.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_16.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_16.setAttribute('class', 'star star-two');
     __ref_16.append(document.createTextNode('·'));
     __ref_18.append(__ref_16);
     const __ref_17 = document.createElement('span');
     refs[17] = __ref_17;
-    __ref_17.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_17.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_17.setAttribute('class', 'star star-three');
     __ref_17.append(document.createTextNode('✦'));
     __ref_18.append(__ref_17);
     __ref_36.append(__ref_18);
     const __ref_23 = document.createElement('div');
     refs[23] = __ref_23;
-    __ref_23.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_23.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_23.setAttribute('class', 'entrance-copy');
     const __ref_19 = document.createElement('div');
     refs[19] = __ref_19;
-    __ref_19.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_19.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_19.setAttribute('class', 'overline');
     __ref_19.append(document.createTextNode('A shared cultural world'));
     __ref_23.append(__ref_19);
     const __ref_21 = document.createElement('h1');
     refs[21] = __ref_21;
-    __ref_21.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_21.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_21.append(document.createTextNode('The Museum'));
     const __ref_20 = document.createElement('br');
     refs[20] = __ref_20;
-    __ref_20.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_20.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_21.append(__ref_20);
     __ref_21.append(document.createTextNode('of Nearby Things'));
     __ref_23.append(__ref_21);
     const __ref_22 = document.createElement('p');
     refs[22] = __ref_22;
-    __ref_22.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_22.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_22.append(document.createTextNode('Together, discover what connects these objects.'));
     __ref_23.append(__ref_22);
     __ref_36.append(__ref_23);
     const __ref_35 = document.createElement('div');
     refs[35] = __ref_35;
-    __ref_35.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_35.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_35.setAttribute('class', 'enter-card');
     const __ref_24 = document.createElement('div');
     refs[24] = __ref_24;
-    __ref_24.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_24.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_24.setAttribute('class', 'expedition-mark');
     __ref_24.append(document.createTextNode('First expedition · about 3 minutes'));
     __ref_35.append(__ref_24);
     const __ref_25 = document.createElement('p');
     refs[25] = __ref_25;
-    __ref_25.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_25.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_25.append(
       document.createTextNode(
         'Choose a lens, inspect two real artifacts, and pull a thread between them. The world will answer.',
@@ -366,11 +366,11 @@ function createConditionalFragment_10(instance, scope, isConsequent) {
     __ref_35.append(__ref_25);
     const __ref_27 = document.createElement('label');
     refs[27] = __ref_27;
-    __ref_27.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_27.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_27.append(document.createTextNode('What should we call you?'));
     const __ref_26 = document.createElement('input');
     refs[26] = __ref_26;
-    __ref_26.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_26.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_26.setAttribute('maxlength', '32');
     __ref_26.setAttribute('placeholder', 'Your name');
     __ref_26.addEventListener('input', (event) => {
@@ -383,7 +383,7 @@ function createConditionalFragment_10(instance, scope, isConsequent) {
     __ref_35.append(__ref_27);
     const __ref_29 = document.createElement('button');
     refs[29] = __ref_29;
-    __ref_29.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_29.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_29.addEventListener('click', (event) => {
       const resolved = scope.enterWorld;
       if (typeof resolved === 'function') {
@@ -442,7 +442,7 @@ function createConditionalFragment_30(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_34 = document.createElement('small');
     refs[34] = __ref_34;
-    __ref_34.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_34.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_34.setAttribute('role', 'alert');
     const __ref_33 = document.createTextNode('');
     refs[33] = __ref_33;
@@ -481,52 +481,52 @@ function createConditionalFragment_37(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_316 = document.createElement('main');
     refs[316] = __ref_316;
-    __ref_316.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_316.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_316.setAttribute('class', 'world');
     const __ref_69 = document.createElement('aside');
     refs[69] = __ref_69;
-    __ref_69.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_69.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_69.setAttribute('class', 'left-rail');
     const __ref_46 = document.createElement('div');
     refs[46] = __ref_46;
-    __ref_46.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_46.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_46.setAttribute('class', 'you');
     const __ref_41 = document.createElement('span');
     refs[41] = __ref_41;
-    __ref_41.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_41.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_40 = document.createTextNode('');
     refs[40] = __ref_40;
     __ref_41.append(__ref_40);
     __ref_46.append(__ref_41);
     const __ref_45 = document.createElement('div');
     refs[45] = __ref_45;
-    __ref_45.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_45.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_43 = document.createElement('b');
     refs[43] = __ref_43;
-    __ref_43.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_43.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_42 = document.createTextNode('');
     refs[42] = __ref_42;
     __ref_43.append(__ref_42);
     __ref_45.append(__ref_43);
     const __ref_44 = document.createElement('small');
     refs[44] = __ref_44;
-    __ref_44.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_44.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_44.append(document.createTextNode('Your path is remembered'));
     __ref_45.append(__ref_44);
     __ref_46.append(__ref_45);
     __ref_69.append(__ref_46);
     const __ref_57 = document.createElement('section');
     refs[57] = __ref_57;
-    __ref_57.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_57.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_47 = document.createElement('div');
     refs[47] = __ref_47;
-    __ref_47.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_47.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_47.setAttribute('class', 'rail-title');
     __ref_47.append(document.createTextNode('Here now'));
     __ref_57.append(__ref_47);
     const __ref_56 = document.createElement('div');
     refs[56] = __ref_56;
-    __ref_56.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_56.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_56.setAttribute('class', 'visitors');
     const __ref_48 = document.createComment('for:start');
     const __ref_49 = document.createComment('for:end');
@@ -539,16 +539,16 @@ function createConditionalFragment_37(instance, scope, isConsequent) {
     __ref_69.append(__ref_57);
     const __ref_65 = document.createElement('section');
     refs[65] = __ref_65;
-    __ref_65.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_65.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_58 = document.createElement('div');
     refs[58] = __ref_58;
-    __ref_58.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_58.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_58.setAttribute('class', 'rail-title');
     __ref_58.append(document.createTextNode('Motifs surfacing'));
     __ref_65.append(__ref_58);
     const __ref_64 = document.createElement('div');
     refs[64] = __ref_64;
-    __ref_64.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_64.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_64.setAttribute('class', 'chips');
     const __ref_59 = document.createComment('for:start');
     const __ref_60 = document.createComment('for:end');
@@ -561,7 +561,7 @@ function createConditionalFragment_37(instance, scope, isConsequent) {
     __ref_69.append(__ref_65);
     const __ref_68 = document.createElement('button');
     refs[68] = __ref_68;
-    __ref_68.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_68.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_68.setAttribute('class', 'how-link');
     __ref_68.addEventListener('click', (event) => {
       const resolved = scope.toggleHow;
@@ -574,14 +574,14 @@ function createConditionalFragment_37(instance, scope, isConsequent) {
     __ref_68.append(__ref_66);
     const __ref_67 = document.createElement('span');
     refs[67] = __ref_67;
-    __ref_67.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_67.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_67.append(document.createTextNode('↗'));
     __ref_68.append(__ref_67);
     __ref_69.append(__ref_68);
     __ref_316.append(__ref_69);
     const __ref_315 = document.createElement('div');
     refs[315] = __ref_315;
-    __ref_315.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_315.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_315.setAttribute('class', 'main-stage');
     const __ref_70 = document.createComment('if:start');
     const __ref_71 = document.createComment('if:end');
@@ -757,18 +757,18 @@ function createForEntry_48(instance, scope, item, reference) {
   const fragment = document.createDocumentFragment();
   const __ref_55 = document.createElement('div');
   entryRefs[55] = __ref_55;
-  __ref_55.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_55.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_55.setAttribute('class', 'visitor');
   const __ref_52 = document.createElement('i');
   entryRefs[52] = __ref_52;
-  __ref_52.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_52.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_51 = document.createTextNode('');
   entryRefs[51] = __ref_51;
   __ref_52.append(__ref_51);
   __ref_55.append(__ref_52);
   const __ref_54 = document.createElement('span');
   entryRefs[54] = __ref_54;
-  __ref_54.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_54.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_53 = document.createTextNode('');
   entryRefs[53] = __ref_53;
   __ref_54.append(__ref_53);
@@ -829,7 +829,7 @@ function createForEntry_59(instance, scope, item, reference) {
   const fragment = document.createDocumentFragment();
   const __ref_63 = document.createElement('span');
   entryRefs[63] = __ref_63;
-  __ref_63.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_63.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_62 = document.createTextNode('');
   entryRefs[62] = __ref_62;
   __ref_63.append(__ref_62);
@@ -877,7 +877,7 @@ function createConditionalFragment_70(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_74 = document.createElement('div');
     refs[74] = __ref_74;
-    __ref_74.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_74.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_74.setAttribute('class', 'error');
     __ref_74.setAttribute('role', 'alert');
     const __ref_73 = document.createTextNode('');
@@ -917,27 +917,27 @@ function createConditionalFragment_75(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_112 = document.createElement('section');
     refs[112] = __ref_112;
-    __ref_112.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_112.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_112.setAttribute('class', 'how-view');
     const __ref_78 = document.createElement('div');
     refs[78] = __ref_78;
-    __ref_78.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_78.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_78.setAttribute('class', 'overline');
     __ref_78.append(document.createTextNode('Under the surface'));
     __ref_112.append(__ref_78);
     const __ref_80 = document.createElement('h1');
     refs[80] = __ref_80;
-    __ref_80.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_80.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_80.append(document.createTextNode('A world that remembers'));
     const __ref_79 = document.createElement('br');
     refs[79] = __ref_79;
-    __ref_79.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_79.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_80.append(__ref_79);
     __ref_80.append(document.createTextNode('without keeping score.'));
     __ref_112.append(__ref_80);
     const __ref_81 = document.createElement('p');
     refs[81] = __ref_81;
-    __ref_81.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_81.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_81.setAttribute('class', 'lede');
     __ref_81.append(
       document.createTextNode(
@@ -947,24 +947,24 @@ function createConditionalFragment_75(instance, scope, isConsequent) {
     __ref_112.append(__ref_81);
     const __ref_94 = document.createElement('div');
     refs[94] = __ref_94;
-    __ref_94.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_94.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_94.setAttribute('class', 'how-grid');
     const __ref_85 = document.createElement('article');
     refs[85] = __ref_85;
-    __ref_85.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_85.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_82 = document.createElement('span');
     refs[82] = __ref_82;
-    __ref_82.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_82.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_82.append(document.createTextNode('01'));
     __ref_85.append(__ref_82);
     const __ref_83 = document.createElement('h3');
     refs[83] = __ref_83;
-    __ref_83.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_83.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_83.append(document.createTextNode('Your perspective travels with you'));
     __ref_85.append(__ref_83);
     const __ref_84 = document.createElement('p');
     refs[84] = __ref_84;
-    __ref_84.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_84.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_84.append(
       document.createTextNode(
         'Each visitor has a private, durable companion that remembers where they have wandered and offers a different question on return.',
@@ -974,20 +974,20 @@ function createConditionalFragment_75(instance, scope, isConsequent) {
     __ref_94.append(__ref_85);
     const __ref_89 = document.createElement('article');
     refs[89] = __ref_89;
-    __ref_89.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_89.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_86 = document.createElement('span');
     refs[86] = __ref_86;
-    __ref_86.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_86.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_86.append(document.createTextNode('02'));
     __ref_89.append(__ref_86);
     const __ref_87 = document.createElement('h3');
     refs[87] = __ref_87;
-    __ref_87.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_87.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_87.append(document.createTextNode('Meaning changes the shared world'));
     __ref_89.append(__ref_87);
     const __ref_88 = document.createElement('p');
     refs[88] = __ref_88;
-    __ref_88.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_88.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_88.append(
       document.createTextNode(
         'Leave a thought or draw a connection. A durable reaction listens across both source records and lets a new correspondence surface for everyone.',
@@ -997,20 +997,20 @@ function createConditionalFragment_75(instance, scope, isConsequent) {
     __ref_94.append(__ref_89);
     const __ref_93 = document.createElement('article');
     refs[93] = __ref_93;
-    __ref_93.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_93.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_90 = document.createElement('span');
     refs[90] = __ref_90;
-    __ref_90.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_90.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_90.append(document.createTextNode('03'));
     __ref_93.append(__ref_90);
     const __ref_91 = document.createElement('h3');
     refs[91] = __ref_91;
-    __ref_91.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_91.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_91.append(document.createTextNode('Facts keep their roots'));
     __ref_93.append(__ref_91);
     const __ref_92 = document.createElement('p');
     refs[92] = __ref_92;
-    __ref_92.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_92.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_92.append(
       document.createTextNode(
         'Objects and dates remain attached to museum records. Interpretations are visibly human; they never masquerade as collection facts.',
@@ -1021,11 +1021,11 @@ function createConditionalFragment_75(instance, scope, isConsequent) {
     __ref_112.append(__ref_94);
     const __ref_111 = document.createElement('section');
     refs[111] = __ref_111;
-    __ref_111.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_111.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_111.setAttribute('class', 'memory-ledger');
     const __ref_95 = document.createElement('h2');
     refs[95] = __ref_95;
-    __ref_95.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_95.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_95.append(document.createTextNode('Recent world reactions'));
     __ref_111.append(__ref_95);
     const __ref_96 = document.createComment('if:start');
@@ -1089,7 +1089,7 @@ function createConditionalFragment_96(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_99 = document.createElement('div');
     refs[99] = __ref_99;
-    __ref_99.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_99.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_99.setAttribute('class', 'quiet');
     __ref_99.append(document.createTextNode('The world is waiting for its first new association.'));
     fragment.append(__ref_99);
@@ -1139,26 +1139,26 @@ function createForEntry_100(instance, scope, item, reference) {
   const fragment = document.createDocumentFragment();
   const __ref_110 = document.createElement('article');
   entryRefs[110] = __ref_110;
-  __ref_110.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_110.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_110.setAttribute('class', 'ledger-row');
   const __ref_103 = document.createElement('i');
   entryRefs[103] = __ref_103;
-  __ref_103.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_103.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_103.append(document.createTextNode('✦'));
   __ref_110.append(__ref_103);
   const __ref_109 = document.createElement('div');
   entryRefs[109] = __ref_109;
-  __ref_109.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_109.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_105 = document.createElement('p');
   entryRefs[105] = __ref_105;
-  __ref_105.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_105.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_104 = document.createTextNode('');
   entryRefs[104] = __ref_104;
   __ref_105.append(__ref_104);
   __ref_109.append(__ref_105);
   const __ref_108 = document.createElement('small');
   entryRefs[108] = __ref_108;
-  __ref_108.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_108.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_108.append(document.createTextNode('Remembered after '));
   const __ref_106 = document.createTextNode('');
   entryRefs[106] = __ref_106;
@@ -1213,7 +1213,7 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_314 = document.createElement('div');
     refs[314] = __ref_314;
-    __ref_314.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_314.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_116 = document.createComment('if:start');
     const __ref_117 = document.createComment('if:end');
     refs[116] = __ref_116;
@@ -1230,7 +1230,7 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_314.append(__ref_201);
     const __ref_236 = document.createElement('section');
     refs[236] = __ref_236;
-    __ref_236.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_236.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_236.setAttribute('class', 'constellation');
     __ref_236.setAttribute('aria-label', 'Museum object constellation');
     const __ref_220 = document.createComment('for:start');
@@ -1242,39 +1242,39 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_236.append(__ref_221);
     const __ref_233 = document.createElement('div');
     refs[233] = __ref_233;
-    __ref_233.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_233.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_233.setAttribute('class', 'thread-line thread-a');
     __ref_236.append(__ref_233);
     const __ref_234 = document.createElement('div');
     refs[234] = __ref_234;
-    __ref_234.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_234.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_234.setAttribute('class', 'thread-line thread-b');
     __ref_236.append(__ref_234);
     const __ref_235 = document.createElement('div');
     refs[235] = __ref_235;
-    __ref_235.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_235.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_235.setAttribute('class', 'thread-line thread-c');
     __ref_236.append(__ref_235);
     __ref_314.append(__ref_236);
     const __ref_273 = document.createElement('section');
     refs[273] = __ref_273;
-    __ref_273.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_273.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_273.setAttribute('class', 'encounter');
     const __ref_255 = document.createElement('div');
     refs[255] = __ref_255;
-    __ref_255.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_255.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_255.setAttribute('class', 'object-view');
     const __ref_240 = document.createElement('div');
     refs[240] = __ref_240;
-    __ref_240.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_240.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_240.setAttribute('class', 'object-image');
     const __ref_237 = document.createElement('img');
     refs[237] = __ref_237;
-    __ref_237.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_237.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_240.append(__ref_237);
     const __ref_239 = document.createElement('span');
     refs[239] = __ref_239;
-    __ref_239.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_239.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_238 = document.createTextNode('');
     refs[238] = __ref_238;
     __ref_239.append(__ref_238);
@@ -1282,11 +1282,11 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_255.append(__ref_240);
     const __ref_254 = document.createElement('div');
     refs[254] = __ref_254;
-    __ref_254.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_254.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_254.setAttribute('class', 'object-story');
     const __ref_242 = document.createElement('div');
     refs[242] = __ref_242;
-    __ref_242.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_242.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_242.setAttribute('class', 'overline');
     __ref_242.append(document.createTextNode('You are near · Met '));
     const __ref_241 = document.createTextNode('');
@@ -1295,14 +1295,14 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_254.append(__ref_242);
     const __ref_244 = document.createElement('h2');
     refs[244] = __ref_244;
-    __ref_244.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_244.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_243 = document.createTextNode('');
     refs[243] = __ref_243;
     __ref_244.append(__ref_243);
     __ref_254.append(__ref_244);
     const __ref_247 = document.createElement('p');
     refs[247] = __ref_247;
-    __ref_247.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_247.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_247.setAttribute('class', 'maker');
     const __ref_245 = document.createTextNode('');
     refs[245] = __ref_245;
@@ -1314,18 +1314,18 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_254.append(__ref_247);
     const __ref_249 = document.createElement('p');
     refs[249] = __ref_249;
-    __ref_249.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_249.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_248 = document.createTextNode('');
     refs[248] = __ref_248;
     __ref_249.append(__ref_248);
     __ref_254.append(__ref_249);
     const __ref_253 = document.createElement('div');
     refs[253] = __ref_253;
-    __ref_253.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_253.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_253.setAttribute('class', 'source-line');
     const __ref_251 = document.createElement('span');
     refs[251] = __ref_251;
-    __ref_251.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_251.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_251.append(document.createTextNode('Collection record · '));
     const __ref_250 = document.createTextNode('');
     refs[250] = __ref_250;
@@ -1333,7 +1333,7 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_253.append(__ref_251);
     const __ref_252 = document.createElement('a');
     refs[252] = __ref_252;
-    __ref_252.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_252.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_252.setAttribute('target', '_blank');
     __ref_252.setAttribute('rel', 'noreferrer');
     __ref_252.append(document.createTextNode('Visit The Met ↗'));
@@ -1343,22 +1343,22 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_273.append(__ref_255);
     const __ref_272 = document.createElement('aside');
     refs[272] = __ref_272;
-    __ref_272.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_272.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_272.setAttribute('class', 'leave-something');
     const __ref_256 = document.createElement('div');
     refs[256] = __ref_256;
-    __ref_256.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_256.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_256.setAttribute('class', 'overline');
     __ref_256.append(document.createTextNode('Leave something behind'));
     __ref_272.append(__ref_256);
     const __ref_257 = document.createElement('h3');
     refs[257] = __ref_257;
-    __ref_257.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_257.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_257.append(document.createTextNode('What did this object make you notice?'));
     __ref_272.append(__ref_257);
     const __ref_258 = document.createElement('textarea');
     refs[258] = __ref_258;
-    __ref_258.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_258.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_258.setAttribute('maxlength', '360');
     __ref_258.setAttribute('placeholder', 'An interpretation, a question, an image…');
     __ref_258.addEventListener('input', (event) => {
@@ -1370,7 +1370,7 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_272.append(__ref_258);
     const __ref_259 = document.createElement('button');
     refs[259] = __ref_259;
-    __ref_259.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_259.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_259.addEventListener('click', (event) => {
       const resolved = scope.leaveThought;
       if (typeof resolved === 'function') {
@@ -1381,21 +1381,21 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_272.append(__ref_259);
     const __ref_262 = document.createElement('div');
     refs[262] = __ref_262;
-    __ref_262.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_262.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_262.setAttribute('class', 'or');
     const __ref_260 = document.createElement('span');
     refs[260] = __ref_260;
-    __ref_260.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_260.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_262.append(__ref_260);
     __ref_262.append(document.createTextNode('or draw a trail'));
     const __ref_261 = document.createElement('span');
     refs[261] = __ref_261;
-    __ref_261.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_261.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_262.append(__ref_261);
     __ref_272.append(__ref_262);
     const __ref_269 = document.createElement('select');
     refs[269] = __ref_269;
-    __ref_269.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_269.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_269.addEventListener('change', (event) => {
       const resolved = scope.updateTrailTarget;
       if (typeof resolved === 'function') {
@@ -1404,7 +1404,7 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     });
     const __ref_263 = document.createElement('option');
     refs[263] = __ref_263;
-    __ref_263.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_263.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_263.setAttribute('value', '');
     __ref_263.append(document.createTextNode('Choose another object'));
     __ref_269.append(__ref_263);
@@ -1418,7 +1418,7 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_272.append(__ref_269);
     const __ref_270 = document.createElement('input');
     refs[270] = __ref_270;
-    __ref_270.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_270.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_270.setAttribute('maxlength', '120');
     __ref_270.setAttribute('placeholder', 'Name the connection');
     __ref_270.addEventListener('input', (event) => {
@@ -1430,7 +1430,7 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_272.append(__ref_270);
     const __ref_271 = document.createElement('button');
     refs[271] = __ref_271;
-    __ref_271.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_271.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_271.setAttribute('class', 'secondary');
     __ref_271.addEventListener('click', (event) => {
       const resolved = scope.drawTrail;
@@ -1451,30 +1451,30 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_314.append(__ref_275);
     const __ref_313 = document.createElement('section');
     refs[313] = __ref_313;
-    __ref_313.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_313.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_313.setAttribute('class', 'shared-memory');
     const __ref_287 = document.createElement('div');
     refs[287] = __ref_287;
-    __ref_287.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_287.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_287.setAttribute('class', 'section-head');
     const __ref_283 = document.createElement('div');
     refs[283] = __ref_283;
-    __ref_283.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_283.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_281 = document.createElement('div');
     refs[281] = __ref_281;
-    __ref_281.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_281.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_281.setAttribute('class', 'overline');
     __ref_281.append(document.createTextNode('Shared memory'));
     __ref_283.append(__ref_281);
     const __ref_282 = document.createElement('h2');
     refs[282] = __ref_282;
-    __ref_282.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_282.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_282.append(document.createTextNode('What people have left nearby'));
     __ref_283.append(__ref_282);
     __ref_287.append(__ref_283);
     const __ref_286 = document.createElement('small');
     refs[286] = __ref_286;
-    __ref_286.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_286.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_284 = document.createTextNode('');
     refs[284] = __ref_284;
     __ref_286.append(__ref_284);
@@ -1494,7 +1494,7 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_313.append(__ref_289);
     const __ref_301 = document.createElement('div');
     refs[301] = __ref_301;
-    __ref_301.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_301.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_301.setAttribute('class', 'thought-grid');
     const __ref_292 = document.createComment('for:start');
     const __ref_293 = document.createComment('for:end');
@@ -1506,7 +1506,7 @@ function createConditionalFragment_113(instance, scope, isConsequent) {
     __ref_313.append(__ref_301);
     const __ref_312 = document.createElement('div');
     refs[312] = __ref_312;
-    __ref_312.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_312.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_312.setAttribute('class', 'trail-list');
     const __ref_302 = document.createComment('for:start');
     const __ref_303 = document.createComment('for:end');
@@ -1637,20 +1637,20 @@ function createConditionalFragment_116(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_199 = document.createElement('section');
     refs[199] = __ref_199;
-    __ref_199.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_199.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_199.setAttribute('class', 'guide-card');
     const __ref_122 = document.createElement('div');
     refs[122] = __ref_122;
-    __ref_122.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_122.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_122.setAttribute('class', 'guide-progress');
     const __ref_119 = document.createElement('span');
     refs[119] = __ref_119;
-    __ref_119.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_119.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_119.append(document.createTextNode('First expedition'));
     __ref_122.append(__ref_119);
     const __ref_121 = document.createElement('b');
     refs[121] = __ref_121;
-    __ref_121.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_121.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_120 = document.createTextNode('');
     refs[120] = __ref_120;
     __ref_121.append(__ref_120);
@@ -1658,26 +1658,26 @@ function createConditionalFragment_116(instance, scope, isConsequent) {
     __ref_199.append(__ref_122);
     const __ref_127 = document.createElement('div');
     refs[127] = __ref_127;
-    __ref_127.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_127.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_127.setAttribute('class', 'guide-head');
     const __ref_125 = document.createElement('div');
     refs[125] = __ref_125;
-    __ref_125.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_125.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_123 = document.createElement('div');
     refs[123] = __ref_123;
-    __ref_123.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_123.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_123.setAttribute('class', 'overline');
     __ref_123.append(document.createTextNode('A small purpose, not a right answer'));
     __ref_125.append(__ref_123);
     const __ref_124 = document.createElement('h1');
     refs[124] = __ref_124;
-    __ref_124.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_124.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_124.append(document.createTextNode('Together, discover what connects these objects.'));
     __ref_125.append(__ref_124);
     __ref_127.append(__ref_125);
     const __ref_126 = document.createElement('p');
     refs[126] = __ref_126;
-    __ref_126.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_126.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_126.append(
       document.createTextNode(
         'Your thread will become part of the shared world. Another visitor can follow it—or challenge it.',
@@ -1774,34 +1774,34 @@ function createConditionalFragment_128(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_145 = document.createElement('div');
     refs[145] = __ref_145;
-    __ref_145.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_145.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_145.setAttribute('class', 'guide-action');
     const __ref_134 = document.createElement('div');
     refs[134] = __ref_134;
-    __ref_134.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_134.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_131 = document.createElement('span');
     refs[131] = __ref_131;
-    __ref_131.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_131.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_131.append(document.createTextNode('1 · Choose a lens'));
     __ref_134.append(__ref_131);
     const __ref_132 = document.createElement('h2');
     refs[132] = __ref_132;
-    __ref_132.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_132.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_132.append(document.createTextNode('What will you look for?'));
     __ref_134.append(__ref_132);
     const __ref_133 = document.createElement('p');
     refs[133] = __ref_133;
-    __ref_133.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_133.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_133.append(document.createTextNode('A lens changes the question, not the facts.'));
     __ref_134.append(__ref_133);
     __ref_145.append(__ref_134);
     const __ref_144 = document.createElement('div');
     refs[144] = __ref_144;
-    __ref_144.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_144.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_144.setAttribute('class', 'lens-row');
     const __ref_137 = document.createElement('button');
     refs[137] = __ref_137;
-    __ref_137.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_137.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_137.addEventListener('click', (event) => {
       const resolved = scope.choosePower;
       if (typeof resolved === 'function') {
@@ -1810,18 +1810,18 @@ function createConditionalFragment_128(instance, scope, isConsequent) {
     });
     const __ref_135 = document.createElement('b');
     refs[135] = __ref_135;
-    __ref_135.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_135.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_135.append(document.createTextNode('Power'));
     __ref_137.append(__ref_135);
     const __ref_136 = document.createElement('small');
     refs[136] = __ref_136;
-    __ref_136.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_136.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_136.append(document.createTextNode('Who gets to name, own, or command?'));
     __ref_137.append(__ref_136);
     __ref_144.append(__ref_137);
     const __ref_140 = document.createElement('button');
     refs[140] = __ref_140;
-    __ref_140.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_140.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_140.addEventListener('click', (event) => {
       const resolved = scope.chooseMeasure;
       if (typeof resolved === 'function') {
@@ -1830,18 +1830,18 @@ function createConditionalFragment_128(instance, scope, isConsequent) {
     });
     const __ref_138 = document.createElement('b');
     refs[138] = __ref_138;
-    __ref_138.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_138.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_138.append(document.createTextNode('Measure'));
     __ref_140.append(__ref_138);
     const __ref_139 = document.createElement('small');
     refs[139] = __ref_139;
-    __ref_139.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_139.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_139.append(document.createTextNode('How is the world made graspable?'));
     __ref_140.append(__ref_139);
     __ref_144.append(__ref_140);
     const __ref_143 = document.createElement('button');
     refs[143] = __ref_143;
-    __ref_143.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_143.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_143.addEventListener('click', (event) => {
       const resolved = scope.chooseMemory;
       if (typeof resolved === 'function') {
@@ -1850,12 +1850,12 @@ function createConditionalFragment_128(instance, scope, isConsequent) {
     });
     const __ref_141 = document.createElement('b');
     refs[141] = __ref_141;
-    __ref_141.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_141.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_141.append(document.createTextNode('Memory'));
     __ref_143.append(__ref_141);
     const __ref_142 = document.createElement('small');
     refs[142] = __ref_142;
-    __ref_142.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_142.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_142.append(document.createTextNode('What survives, and what disappears?'));
     __ref_143.append(__ref_142);
     __ref_144.append(__ref_143);
@@ -1893,14 +1893,14 @@ function createConditionalFragment_146(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_156 = document.createElement('div');
     refs[156] = __ref_156;
-    __ref_156.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_156.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_156.setAttribute('class', 'guide-action compact');
     const __ref_154 = document.createElement('div');
     refs[154] = __ref_154;
-    __ref_154.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_154.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_150 = document.createElement('span');
     refs[150] = __ref_150;
-    __ref_150.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_150.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_150.append(document.createTextNode('2 · Inspect one artifact through '));
     const __ref_149 = document.createTextNode('');
     refs[149] = __ref_149;
@@ -1908,7 +1908,7 @@ function createConditionalFragment_146(instance, scope, isConsequent) {
     __ref_154.append(__ref_150);
     const __ref_152 = document.createElement('h2');
     refs[152] = __ref_152;
-    __ref_152.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_152.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_152.append(document.createTextNode('Begin with '));
     const __ref_151 = document.createTextNode('');
     refs[151] = __ref_151;
@@ -1917,7 +1917,7 @@ function createConditionalFragment_146(instance, scope, isConsequent) {
     __ref_154.append(__ref_152);
     const __ref_153 = document.createElement('p');
     refs[153] = __ref_153;
-    __ref_153.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_153.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_153.append(
       document.createTextNode(
         'Notice one detail in its image or record. There is no hidden answer.',
@@ -1927,7 +1927,7 @@ function createConditionalFragment_146(instance, scope, isConsequent) {
     __ref_156.append(__ref_154);
     const __ref_155 = document.createElement('button');
     refs[155] = __ref_155;
-    __ref_155.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_155.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_155.setAttribute('class', 'guide-primary');
     __ref_155.addEventListener('click', (event) => {
       const resolved = scope.beginThread;
@@ -1972,24 +1972,24 @@ function createConditionalFragment_157(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_172 = document.createElement('div');
     refs[172] = __ref_172;
-    __ref_172.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_172.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_172.setAttribute('class', 'guide-action compact');
     const __ref_164 = document.createElement('div');
     refs[164] = __ref_164;
-    __ref_164.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_164.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_160 = document.createElement('span');
     refs[160] = __ref_160;
-    __ref_160.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_160.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_160.append(document.createTextNode('3 · Pull a thread'));
     __ref_164.append(__ref_160);
     const __ref_161 = document.createElement('h2');
     refs[161] = __ref_161;
-    __ref_161.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_161.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_161.append(document.createTextNode('Choose a second object.'));
     __ref_164.append(__ref_161);
     const __ref_163 = document.createElement('p');
     refs[163] = __ref_163;
-    __ref_163.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_163.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_163.append(
       document.createTextNode(
         'Which one changes what the first artifact means through the lens of ',
@@ -2003,11 +2003,11 @@ function createConditionalFragment_157(instance, scope, isConsequent) {
     __ref_172.append(__ref_164);
     const __ref_171 = document.createElement('div');
     refs[171] = __ref_171;
-    __ref_171.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_171.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_171.setAttribute('class', 'target-row');
     const __ref_166 = document.createElement('button');
     refs[166] = __ref_166;
-    __ref_166.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_166.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_166.addEventListener('click', (event) => {
       const resolved = scope.chooseTargetZero;
       if (typeof resolved === 'function') {
@@ -2021,7 +2021,7 @@ function createConditionalFragment_157(instance, scope, isConsequent) {
     __ref_171.append(__ref_166);
     const __ref_168 = document.createElement('button');
     refs[168] = __ref_168;
-    __ref_168.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_168.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_168.addEventListener('click', (event) => {
       const resolved = scope.chooseTargetOne;
       if (typeof resolved === 'function') {
@@ -2035,7 +2035,7 @@ function createConditionalFragment_157(instance, scope, isConsequent) {
     __ref_171.append(__ref_168);
     const __ref_170 = document.createElement('button');
     refs[170] = __ref_170;
-    __ref_170.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_170.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_170.addEventListener('click', (event) => {
       const resolved = scope.chooseTargetTwo;
       if (typeof resolved === 'function') {
@@ -2085,26 +2085,26 @@ function createConditionalFragment_173(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_187 = document.createElement('div');
     refs[187] = __ref_187;
-    __ref_187.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_187.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_187.setAttribute('class', 'guide-action connection-step');
     const __ref_180 = document.createElement('div');
     refs[180] = __ref_180;
-    __ref_180.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_180.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_176 = document.createElement('span');
     refs[176] = __ref_176;
-    __ref_176.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_176.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_176.append(document.createTextNode('4 · Make or challenge a connection'));
     __ref_180.append(__ref_176);
     const __ref_178 = document.createElement('h2');
     refs[178] = __ref_178;
-    __ref_178.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_178.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_177 = document.createTextNode('');
     refs[177] = __ref_177;
     __ref_178.append(__ref_177);
     __ref_180.append(__ref_178);
     const __ref_179 = document.createElement('p');
     refs[179] = __ref_179;
-    __ref_179.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_179.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_179.append(
       document.createTextNode(
         'Say what holds the two together—or why the obvious connection breaks.',
@@ -2114,11 +2114,11 @@ function createConditionalFragment_173(instance, scope, isConsequent) {
     __ref_187.append(__ref_180);
     const __ref_183 = document.createElement('div');
     refs[183] = __ref_183;
-    __ref_183.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_183.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_183.setAttribute('class', 'stance-row');
     const __ref_181 = document.createElement('button');
     refs[181] = __ref_181;
-    __ref_181.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_181.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_181.addEventListener('click', (event) => {
       const resolved = scope.chooseMake;
       if (typeof resolved === 'function') {
@@ -2129,7 +2129,7 @@ function createConditionalFragment_173(instance, scope, isConsequent) {
     __ref_183.append(__ref_181);
     const __ref_182 = document.createElement('button');
     refs[182] = __ref_182;
-    __ref_182.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_182.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_182.addEventListener('click', (event) => {
       const resolved = scope.chooseChallenge;
       if (typeof resolved === 'function') {
@@ -2141,7 +2141,7 @@ function createConditionalFragment_173(instance, scope, isConsequent) {
     __ref_187.append(__ref_183);
     const __ref_184 = document.createElement('input');
     refs[184] = __ref_184;
-    __ref_184.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_184.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_184.setAttribute('maxlength', '120');
     __ref_184.setAttribute('placeholder', 'Because both… / Unlike the first…');
     __ref_184.addEventListener('input', (event) => {
@@ -2153,7 +2153,7 @@ function createConditionalFragment_173(instance, scope, isConsequent) {
     __ref_187.append(__ref_184);
     const __ref_186 = document.createElement('button');
     refs[186] = __ref_186;
-    __ref_186.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_186.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_186.setAttribute('class', 'guide-primary');
     __ref_186.addEventListener('click', (event) => {
       const resolved = scope.revealEcho;
@@ -2204,31 +2204,31 @@ function createConditionalFragment_188(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_198 = document.createElement('div');
     refs[198] = __ref_198;
-    __ref_198.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_198.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_198.setAttribute('class', 'guide-action echo-step');
     const __ref_196 = document.createElement('div');
     refs[196] = __ref_196;
-    __ref_196.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_196.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_191 = document.createElement('span');
     refs[191] = __ref_191;
-    __ref_191.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_191.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_191.append(document.createTextNode('✦ The world answered'));
     __ref_196.append(__ref_191);
     const __ref_192 = document.createElement('h2');
     refs[192] = __ref_192;
-    __ref_192.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_192.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_192.append(document.createTextNode('Your thread is now part of the constellation.'));
     __ref_196.append(__ref_192);
     const __ref_194 = document.createElement('p');
     refs[194] = __ref_194;
-    __ref_194.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_194.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_193 = document.createTextNode('');
     refs[193] = __ref_193;
     __ref_194.append(__ref_193);
     __ref_196.append(__ref_194);
     const __ref_195 = document.createElement('small');
     refs[195] = __ref_195;
-    __ref_195.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_195.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_195.append(
       document.createTextNode('It will remain here for the next visitor to follow or challenge.'),
     );
@@ -2236,7 +2236,7 @@ function createConditionalFragment_188(instance, scope, isConsequent) {
     __ref_198.append(__ref_196);
     const __ref_197 = document.createElement('button');
     refs[197] = __ref_197;
-    __ref_197.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_197.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_197.setAttribute('class', 'guide-primary');
     __ref_197.addEventListener('click', (event) => {
       const resolved = scope.finishGuide;
@@ -2280,14 +2280,14 @@ function createConditionalFragment_200(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_219 = document.createElement('section');
     refs[219] = __ref_219;
-    __ref_219.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_219.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_219.setAttribute('class', 'world-intro');
     const __ref_209 = document.createElement('div');
     refs[209] = __ref_209;
-    __ref_209.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_209.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_204 = document.createElement('div');
     refs[204] = __ref_204;
-    __ref_204.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_204.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_204.setAttribute('class', 'overline');
     __ref_204.append(document.createTextNode('A living constellation · '));
     const __ref_203 = document.createTextNode('');
@@ -2296,14 +2296,14 @@ function createConditionalFragment_200(instance, scope, isConsequent) {
     __ref_209.append(__ref_204);
     const __ref_206 = document.createElement('h1');
     refs[206] = __ref_206;
-    __ref_206.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_206.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_205 = document.createTextNode('');
     refs[205] = __ref_205;
     __ref_206.append(__ref_205);
     __ref_209.append(__ref_206);
     const __ref_208 = document.createElement('p');
     refs[208] = __ref_208;
-    __ref_208.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_208.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_207 = document.createTextNode('');
     refs[207] = __ref_207;
     __ref_208.append(__ref_207);
@@ -2356,23 +2356,23 @@ function createConditionalFragment_210(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_218 = document.createElement('div');
     refs[218] = __ref_218;
-    __ref_218.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_218.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_218.setAttribute('class', 'return-note');
     const __ref_213 = document.createElement('span');
     refs[213] = __ref_213;
-    __ref_213.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_213.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_213.append(document.createTextNode('The Keeper of Nearness'));
     __ref_218.append(__ref_213);
     const __ref_215 = document.createElement('p');
     refs[215] = __ref_215;
-    __ref_215.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_215.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_214 = document.createTextNode('');
     refs[214] = __ref_214;
     __ref_215.append(__ref_214);
     __ref_218.append(__ref_215);
     const __ref_217 = document.createElement('b');
     refs[217] = __ref_217;
-    __ref_217.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_217.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_216 = document.createTextNode('');
     refs[216] = __ref_216;
     __ref_217.append(__ref_216);
@@ -2430,7 +2430,7 @@ function createForEntry_220(instance, scope, item, reference) {
   const fragment = document.createDocumentFragment();
   const __ref_232 = document.createElement('button');
   entryRefs[232] = __ref_232;
-  __ref_232.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_232.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_232.addEventListener('click', (event) => {
     const resolved = loopScope.wanderTo(loopScope.item.id);
     if (typeof resolved === 'function') {
@@ -2439,12 +2439,12 @@ function createForEntry_220(instance, scope, item, reference) {
   });
   const __ref_223 = document.createElement('img');
   entryRefs[223] = __ref_223;
-  __ref_223.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_223.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_223.setAttribute('alt', '');
   __ref_232.append(__ref_223);
   const __ref_225 = document.createElement('span');
   entryRefs[225] = __ref_225;
-  __ref_225.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_225.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_225.setAttribute('class', 'node-number');
   const __ref_224 = document.createTextNode('');
   entryRefs[224] = __ref_224;
@@ -2452,18 +2452,18 @@ function createForEntry_220(instance, scope, item, reference) {
   __ref_232.append(__ref_225);
   const __ref_231 = document.createElement('span');
   entryRefs[231] = __ref_231;
-  __ref_231.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_231.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_231.setAttribute('class', 'node-copy');
   const __ref_227 = document.createElement('b');
   entryRefs[227] = __ref_227;
-  __ref_227.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_227.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_226 = document.createTextNode('');
   entryRefs[226] = __ref_226;
   __ref_227.append(__ref_226);
   __ref_231.append(__ref_227);
   const __ref_230 = document.createElement('small');
   entryRefs[230] = __ref_230;
-  __ref_230.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_230.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_228 = document.createTextNode('');
   entryRefs[228] = __ref_228;
   __ref_230.append(__ref_228);
@@ -2530,7 +2530,7 @@ function createForEntry_264(instance, scope, item, reference) {
   const fragment = document.createDocumentFragment();
   const __ref_268 = document.createElement('option');
   entryRefs[268] = __ref_268;
-  __ref_268.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_268.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_267 = document.createTextNode('');
   entryRefs[267] = __ref_267;
   __ref_268.append(__ref_267);
@@ -2578,16 +2578,16 @@ function createConditionalFragment_274(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_280 = document.createElement('section');
     refs[280] = __ref_280;
-    __ref_280.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_280.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_280.setAttribute('class', 'bloom');
     const __ref_277 = document.createElement('span');
     refs[277] = __ref_277;
-    __ref_277.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_277.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_277.append(document.createTextNode('✦ The constellation shifted'));
     __ref_280.append(__ref_277);
     const __ref_279 = document.createElement('p');
     refs[279] = __ref_279;
-    __ref_279.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_279.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     const __ref_278 = document.createTextNode('');
     refs[278] = __ref_278;
     __ref_279.append(__ref_278);
@@ -2626,7 +2626,7 @@ function createConditionalFragment_288(instance, scope, isConsequent) {
   if (isConsequent) {
     const __ref_291 = document.createElement('div');
     refs[291] = __ref_291;
-    __ref_291.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+    __ref_291.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
     __ref_291.setAttribute('class', 'quiet');
     __ref_291.append(
       document.createTextNode(
@@ -2680,10 +2680,10 @@ function createForEntry_292(instance, scope, item, reference) {
   const fragment = document.createDocumentFragment();
   const __ref_300 = document.createElement('blockquote');
   entryRefs[300] = __ref_300;
-  __ref_300.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_300.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_296 = document.createElement('p');
   entryRefs[296] = __ref_296;
-  __ref_296.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_296.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_296.append(document.createTextNode('“'));
   const __ref_295 = document.createTextNode('');
   entryRefs[295] = __ref_295;
@@ -2692,7 +2692,7 @@ function createForEntry_292(instance, scope, item, reference) {
   __ref_300.append(__ref_296);
   const __ref_299 = document.createElement('footer');
   entryRefs[299] = __ref_299;
-  __ref_299.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_299.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_297 = document.createTextNode('');
   entryRefs[297] = __ref_297;
   __ref_299.append(__ref_297);
@@ -2758,25 +2758,25 @@ function createForEntry_302(instance, scope, item, reference) {
   const fragment = document.createDocumentFragment();
   const __ref_311 = document.createElement('article');
   entryRefs[311] = __ref_311;
-  __ref_311.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_311.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_305 = document.createElement('i');
   entryRefs[305] = __ref_305;
-  __ref_305.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_305.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_305.append(document.createTextNode('↝'));
   __ref_311.append(__ref_305);
   const __ref_310 = document.createElement('div');
   entryRefs[310] = __ref_310;
-  __ref_310.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_310.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_307 = document.createElement('b');
   entryRefs[307] = __ref_307;
-  __ref_307.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_307.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_306 = document.createTextNode('');
   entryRefs[306] = __ref_306;
   __ref_307.append(__ref_306);
   __ref_310.append(__ref_307);
   const __ref_309 = document.createElement('small');
   entryRefs[309] = __ref_309;
-  __ref_309.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_309.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   const __ref_308 = document.createTextNode('');
   entryRefs[308] = __ref_308;
   __ref_309.append(__ref_308);
@@ -3110,7 +3110,7 @@ function setup(__weiv_props, __weiv_event_handlers = {}) {
   function guidePair() {
     const left = data.objects.find((item) => item.id === guideFrom);
     const right = data.objects.find((item) => item.id === guideTo);
-    return left && right ? `${left.title} ↝ ${right.title}` : 'Two objects, one thread';
+    return left && right ? 'What holds these two objects together?' : 'Two objects, one thread';
   }
   async function revealEcho() {
     if (busy || !guideTo || !guideStance || tooShort(guideReason)) return;
@@ -3264,9 +3264,9 @@ function setup(__weiv_props, __weiv_event_handlers = {}) {
   };
 }
 
-export const scopeId = 'wA579BFDD41CFAA32';
+export const scopeId = 'w916B78B02BD1EF70';
 export const css =
-  '\n  [data-weiv-scope="wA579BFDD41CFAA32"]:global(:root), [data-weiv-scope="wA579BFDD41CFAA32"] :global(:root) { --night:#121815; --forest:#1d2823; --paper:#f0eadb; --cream:#faf6eb; --ink:#17201d; --gold:#d5ad5c; --rust:#9b4c3d; --sage:#91a99a; --line:#d8cfbb; }\n  [data-weiv-scope="wA579BFDD41CFAA32"]:global(*), [data-weiv-scope="wA579BFDD41CFAA32"] :global(*) { box-sizing:border-box; }\n  [data-weiv-scope="wA579BFDD41CFAA32"]:global(body), [data-weiv-scope="wA579BFDD41CFAA32"] :global(body) { margin:0; background:var(--night); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,sans-serif; }\n  [data-weiv-scope="wA579BFDD41CFAA32"]:global(button), [data-weiv-scope="wA579BFDD41CFAA32"] :global(button), [data-weiv-scope="wA579BFDD41CFAA32"]:global(input), [data-weiv-scope="wA579BFDD41CFAA32"] :global(input), [data-weiv-scope="wA579BFDD41CFAA32"]:global(textarea), [data-weiv-scope="wA579BFDD41CFAA32"] :global(textarea), [data-weiv-scope="wA579BFDD41CFAA32"]:global(select), [data-weiv-scope="wA579BFDD41CFAA32"] :global(select) { font:inherit; }\n  [data-weiv-scope="wA579BFDD41CFAA32"].bootstrap, [data-weiv-scope="wA579BFDD41CFAA32"] .bootstrap {display:none}[data-weiv-scope="wA579BFDD41CFAA32"].world-shell, [data-weiv-scope="wA579BFDD41CFAA32"] .world-shell {min-height:100vh;background:var(--paper);background-image:radial-gradient(#614e3420 1px,transparent 1px);background-size:20px 20px}[data-weiv-scope="wA579BFDD41CFAA32"].mast, [data-weiv-scope="wA579BFDD41CFAA32"] .mast {position:sticky;z-index:10;top:0;height:64px;padding:0 3.5vw;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:#121815f5;color:#fff;border-bottom:1px solid #ffffff15;backdrop-filter:blur(10px)}[data-weiv-scope="wA579BFDD41CFAA32"].brand, [data-weiv-scope="wA579BFDD41CFAA32"] .brand {display:flex;gap:10px;align-items:center;text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:700}[data-weiv-scope="wA579BFDD41CFAA32"].brand i, [data-weiv-scope="wA579BFDD41CFAA32"] .brand i {display:grid;place-items:center;width:31px;height:31px;border:1px solid var(--gold);border-radius:50%;color:var(--gold);font:16px Georgia;font-style:normal}[data-weiv-scope="wA579BFDD41CFAA32"].world-name, [data-weiv-scope="wA579BFDD41CFAA32"] .world-name {font:16px Georgia;color:#eae2d1}[data-weiv-scope="wA579BFDD41CFAA32"].presence, [data-weiv-scope="wA579BFDD41CFAA32"] .presence {justify-self:end;display:flex;gap:9px;align-items:center;color:#b8c1bb;font-size:10px}[data-weiv-scope="wA579BFDD41CFAA32"].presence i, [data-weiv-scope="wA579BFDD41CFAA32"] .presence i {width:6px;height:6px;border-radius:50%;background:#80a888;box-shadow:0 0 0 4px #80a88820}[data-weiv-scope="wA579BFDD41CFAA32"].entrance, [data-weiv-scope="wA579BFDD41CFAA32"] .entrance {position:relative;min-height:calc(100vh - 64px);padding:8vh 8vw;overflow:hidden;display:grid;grid-template-columns:1.2fr .8fr;align-content:center;gap:8vw;background:var(--forest);color:white}[data-weiv-scope="wA579BFDD41CFAA32"].entrance-copy, [data-weiv-scope="wA579BFDD41CFAA32"] .entrance-copy {position:relative;z-index:2}[data-weiv-scope="wA579BFDD41CFAA32"].overline, [data-weiv-scope="wA579BFDD41CFAA32"] .overline {text-transform:uppercase;letter-spacing:.18em;font-size:9px;font-weight:800;color:var(--rust)}[data-weiv-scope="wA579BFDD41CFAA32"].entrance .overline, [data-weiv-scope="wA579BFDD41CFAA32"] .entrance .overline {color:#e0bd73}[data-weiv-scope="wA579BFDD41CFAA32"].entrance h1, [data-weiv-scope="wA579BFDD41CFAA32"] .entrance h1, [data-weiv-scope="wA579BFDD41CFAA32"].world-intro h1, [data-weiv-scope="wA579BFDD41CFAA32"] .world-intro h1, [data-weiv-scope="wA579BFDD41CFAA32"].how-view>h1, [data-weiv-scope="wA579BFDD41CFAA32"] .how-view>h1 {margin:14px 0 24px;font:normal clamp(56px,8vw,105px)/.86 Georgia,serif;letter-spacing:-.06em}[data-weiv-scope="wA579BFDD41CFAA32"].entrance-copy p, [data-weiv-scope="wA579BFDD41CFAA32"] .entrance-copy p {max-width:660px;font:24px/1.5 Georgia;color:#e2ded2}[data-weiv-scope="wA579BFDD41CFAA32"].enter-card, [data-weiv-scope="wA579BFDD41CFAA32"] .enter-card {position:relative;z-index:2;padding:30px;background:var(--cream);color:var(--ink);box-shadow:0 30px 90px #0005}[data-weiv-scope="wA579BFDD41CFAA32"].expedition-mark, [data-weiv-scope="wA579BFDD41CFAA32"] .expedition-mark {margin-bottom:10px;color:var(--rust);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}[data-weiv-scope="wA579BFDD41CFAA32"].enter-card p, [data-weiv-scope="wA579BFDD41CFAA32"] .enter-card p {margin:0 0 25px;font:18px/1.5 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].enter-card label, [data-weiv-scope="wA579BFDD41CFAA32"] .enter-card label {display:block;margin-bottom:7px;color:#716b60;font-size:10px;text-transform:uppercase;letter-spacing:.12em}[data-weiv-scope="wA579BFDD41CFAA32"].enter-card input, [data-weiv-scope="wA579BFDD41CFAA32"] .enter-card input {width:100%;padding:14px;border:1px solid var(--line);background:white}[data-weiv-scope="wA579BFDD41CFAA32"].enter-card button, [data-weiv-scope="wA579BFDD41CFAA32"] .enter-card button, [data-weiv-scope="wA579BFDD41CFAA32"].leave-something button, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something button {width:100%;margin-top:11px;padding:13px;border:0;background:var(--rust);color:white;font-weight:700;cursor:pointer}[data-weiv-scope="wA579BFDD41CFAA32"].enter-card small, [data-weiv-scope="wA579BFDD41CFAA32"] .enter-card small {display:block;margin-top:10px;color:var(--rust)}[data-weiv-scope="wA579BFDD41CFAA32"].entrance-art, [data-weiv-scope="wA579BFDD41CFAA32"] .entrance-art {position:absolute;inset:0;opacity:.6}[data-weiv-scope="wA579BFDD41CFAA32"].orbit, [data-weiv-scope="wA579BFDD41CFAA32"] .orbit {position:absolute;border:1px solid #dabf7d22;border-radius:50%}[data-weiv-scope="wA579BFDD41CFAA32"].orbit-one, [data-weiv-scope="wA579BFDD41CFAA32"] .orbit-one {width:70vw;height:70vw;left:-20vw;top:-25vw}[data-weiv-scope="wA579BFDD41CFAA32"].orbit-two, [data-weiv-scope="wA579BFDD41CFAA32"] .orbit-two {width:50vw;height:50vw;right:-10vw;bottom:-25vw}[data-weiv-scope="wA579BFDD41CFAA32"].star, [data-weiv-scope="wA579BFDD41CFAA32"] .star {position:absolute;color:var(--gold)}[data-weiv-scope="wA579BFDD41CFAA32"].star-one, [data-weiv-scope="wA579BFDD41CFAA32"] .star-one {left:22%;top:24%;font-size:28px}[data-weiv-scope="wA579BFDD41CFAA32"].star-two, [data-weiv-scope="wA579BFDD41CFAA32"] .star-two {left:63%;top:15%;font-size:55px}[data-weiv-scope="wA579BFDD41CFAA32"].star-three, [data-weiv-scope="wA579BFDD41CFAA32"] .star-three {right:14%;bottom:20%;font-size:17px}[data-weiv-scope="wA579BFDD41CFAA32"].world, [data-weiv-scope="wA579BFDD41CFAA32"] .world {display:grid;grid-template-columns:230px minmax(0,1fr);max-width:1700px;margin:auto}[data-weiv-scope="wA579BFDD41CFAA32"].left-rail, [data-weiv-scope="wA579BFDD41CFAA32"] .left-rail {position:sticky;top:64px;height:calc(100vh - 64px);padding:28px 20px;display:flex;flex-direction:column;border-right:1px solid var(--line);background:#f4efe2}[data-weiv-scope="wA579BFDD41CFAA32"].you, [data-weiv-scope="wA579BFDD41CFAA32"] .you {display:flex;gap:10px;align-items:center;padding-bottom:24px;border-bottom:1px solid var(--line)}[data-weiv-scope="wA579BFDD41CFAA32"].you>span, [data-weiv-scope="wA579BFDD41CFAA32"] .you>span, [data-weiv-scope="wA579BFDD41CFAA32"].visitor i, [data-weiv-scope="wA579BFDD41CFAA32"] .visitor i {display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--forest);color:white;font-style:normal;font-size:11px}[data-weiv-scope="wA579BFDD41CFAA32"].you b, [data-weiv-scope="wA579BFDD41CFAA32"] .you b, [data-weiv-scope="wA579BFDD41CFAA32"].you small, [data-weiv-scope="wA579BFDD41CFAA32"] .you small {display:block}[data-weiv-scope="wA579BFDD41CFAA32"].you small, [data-weiv-scope="wA579BFDD41CFAA32"] .you small {color:#827b6e;font-size:9px}[data-weiv-scope="wA579BFDD41CFAA32"].left-rail section, [data-weiv-scope="wA579BFDD41CFAA32"] .left-rail section {margin-top:25px}[data-weiv-scope="wA579BFDD41CFAA32"].rail-title, [data-weiv-scope="wA579BFDD41CFAA32"] .rail-title {text-transform:uppercase;letter-spacing:.13em;font-size:9px;color:#81796a;margin-bottom:11px}[data-weiv-scope="wA579BFDD41CFAA32"].visitors, [data-weiv-scope="wA579BFDD41CFAA32"] .visitors {display:grid;gap:8px}[data-weiv-scope="wA579BFDD41CFAA32"].visitor, [data-weiv-scope="wA579BFDD41CFAA32"] .visitor {display:flex;gap:8px;align-items:center;font-size:11px}[data-weiv-scope="wA579BFDD41CFAA32"].visitor i, [data-weiv-scope="wA579BFDD41CFAA32"] .visitor i {width:24px;height:24px;background:#5c7467;font-size:9px}[data-weiv-scope="wA579BFDD41CFAA32"].chips, [data-weiv-scope="wA579BFDD41CFAA32"] .chips {display:flex;flex-wrap:wrap;gap:5px}[data-weiv-scope="wA579BFDD41CFAA32"].chips span, [data-weiv-scope="wA579BFDD41CFAA32"] .chips span {padding:4px 7px;border:1px solid #cfc4ad;border-radius:20px;font-size:9px;color:#675f54}[data-weiv-scope="wA579BFDD41CFAA32"].how-link, [data-weiv-scope="wA579BFDD41CFAA32"] .how-link {margin-top:auto;padding:11px 3px;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;color:#44594d;font-size:11px;cursor:pointer}[data-weiv-scope="wA579BFDD41CFAA32"].how-link span, [data-weiv-scope="wA579BFDD41CFAA32"] .how-link span {float:right}[data-weiv-scope="wA579BFDD41CFAA32"].main-stage, [data-weiv-scope="wA579BFDD41CFAA32"] .main-stage {padding:38px clamp(25px,4vw,65px) 80px;min-width:0}[data-weiv-scope="wA579BFDD41CFAA32"].error, [data-weiv-scope="wA579BFDD41CFAA32"] .error {padding:12px;margin-bottom:16px;background:#f5dcd5;color:#833a2e}[data-weiv-scope="wA579BFDD41CFAA32"].world-intro, [data-weiv-scope="wA579BFDD41CFAA32"] .world-intro {display:grid;grid-template-columns:1.2fr .8fr;gap:50px;align-items:end}[data-weiv-scope="wA579BFDD41CFAA32"].world-intro h1, [data-weiv-scope="wA579BFDD41CFAA32"] .world-intro h1 {font-size:clamp(46px,6vw,82px);margin:10px 0 15px}[data-weiv-scope="wA579BFDD41CFAA32"].world-intro>div>p, [data-weiv-scope="wA579BFDD41CFAA32"] .world-intro>div>p {max-width:680px;margin:0;color:#6f6a60;font:17px/1.6 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].return-note, [data-weiv-scope="wA579BFDD41CFAA32"] .return-note {padding:20px;border-left:2px solid var(--gold);background:#f8f3e7}[data-weiv-scope="wA579BFDD41CFAA32"].return-note span, [data-weiv-scope="wA579BFDD41CFAA32"] .return-note span {color:var(--rust);font-size:9px;text-transform:uppercase;letter-spacing:.12em}[data-weiv-scope="wA579BFDD41CFAA32"].return-note p, [data-weiv-scope="wA579BFDD41CFAA32"] .return-note p {margin:9px 0;color:#3d463f;font:15px/1.5 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].return-note b, [data-weiv-scope="wA579BFDD41CFAA32"] .return-note b {font-size:11px;color:#59685e}[data-weiv-scope="wA579BFDD41CFAA32"].guide-card, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-card {padding:28px;background:var(--forest);color:white;border:1px solid #ffffff18;box-shadow:0 22px 70px #24312924}[data-weiv-scope="wA579BFDD41CFAA32"].guide-progress, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-progress {display:flex;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid #ffffff1a;color:#d5caa9;font-size:9px;text-transform:uppercase;letter-spacing:.16em}[data-weiv-scope="wA579BFDD41CFAA32"].guide-head, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-head {display:grid;grid-template-columns:1.4fr .6fr;gap:35px;align-items:end;padding:24px 0}[data-weiv-scope="wA579BFDD41CFAA32"].guide-head .overline, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-head .overline {color:var(--gold)}[data-weiv-scope="wA579BFDD41CFAA32"].guide-head h1, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-head h1 {max-width:780px;margin:8px 0 0;font:normal clamp(34px,4.3vw,62px)/.96 Georgia;letter-spacing:-.04em}[data-weiv-scope="wA579BFDD41CFAA32"].guide-head>p, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-head>p {margin:0;color:#b9c2bc;font:15px/1.5 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].guide-action, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-action {padding:22px;background:var(--cream);color:var(--ink)}[data-weiv-scope="wA579BFDD41CFAA32"].guide-action>div>span, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-action>div>span {color:var(--rust);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em}[data-weiv-scope="wA579BFDD41CFAA32"].guide-action h2, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-action h2 {margin:6px 0;font:27px/1.15 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].guide-action p, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-action p {margin:5px 0;color:#6e695f;font:14px/1.5 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].lens-row, [data-weiv-scope="wA579BFDD41CFAA32"] .lens-row {display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:18px}[data-weiv-scope="wA579BFDD41CFAA32"].lens-row button, [data-weiv-scope="wA579BFDD41CFAA32"] .lens-row button {padding:15px;border:1px solid var(--line);background:white;text-align:left;cursor:pointer}[data-weiv-scope="wA579BFDD41CFAA32"].lens-row b, [data-weiv-scope="wA579BFDD41CFAA32"] .lens-row b, [data-weiv-scope="wA579BFDD41CFAA32"].lens-row small, [data-weiv-scope="wA579BFDD41CFAA32"] .lens-row small {display:block}[data-weiv-scope="wA579BFDD41CFAA32"].lens-row b, [data-weiv-scope="wA579BFDD41CFAA32"] .lens-row b {margin-bottom:5px;color:var(--rust);font:19px Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].lens-row small, [data-weiv-scope="wA579BFDD41CFAA32"] .lens-row small {color:#746e62;font-size:10px;line-height:1.4}[data-weiv-scope="wA579BFDD41CFAA32"].guide-action.compact, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-action.compact {display:flex;justify-content:space-between;gap:25px;align-items:center}[data-weiv-scope="wA579BFDD41CFAA32"].guide-primary, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-primary {padding:12px 18px;border:0;background:var(--rust);color:white;font-weight:700;cursor:pointer}[data-weiv-scope="wA579BFDD41CFAA32"].guide-primary:disabled, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-primary:disabled {opacity:.45}[data-weiv-scope="wA579BFDD41CFAA32"].target-row, [data-weiv-scope="wA579BFDD41CFAA32"] .target-row {display:grid;min-width:340px;gap:6px}[data-weiv-scope="wA579BFDD41CFAA32"].target-row button, [data-weiv-scope="wA579BFDD41CFAA32"] .target-row button {padding:9px 12px;border:1px solid var(--line);background:white;text-align:left;color:var(--ink);cursor:pointer}[data-weiv-scope="wA579BFDD41CFAA32"].target-row button:hover, [data-weiv-scope="wA579BFDD41CFAA32"] .target-row button:hover {border-color:var(--rust);color:var(--rust)}[data-weiv-scope="wA579BFDD41CFAA32"].connection-step, [data-weiv-scope="wA579BFDD41CFAA32"] .connection-step {display:grid;grid-template-columns:1.2fr auto minmax(230px,.8fr) auto;gap:12px;align-items:center}[data-weiv-scope="wA579BFDD41CFAA32"].stance-row, [data-weiv-scope="wA579BFDD41CFAA32"] .stance-row {display:flex;gap:5px}[data-weiv-scope="wA579BFDD41CFAA32"].stance-row button, [data-weiv-scope="wA579BFDD41CFAA32"] .stance-row button {padding:9px 12px;border:1px solid var(--line);background:white;cursor:pointer}[data-weiv-scope="wA579BFDD41CFAA32"].stance-row button.active, [data-weiv-scope="wA579BFDD41CFAA32"] .stance-row button.active {background:var(--forest);color:white}[data-weiv-scope="wA579BFDD41CFAA32"].connection-step input, [data-weiv-scope="wA579BFDD41CFAA32"] .connection-step input {min-width:0;padding:11px;border:1px solid var(--line)}[data-weiv-scope="wA579BFDD41CFAA32"].echo-step, [data-weiv-scope="wA579BFDD41CFAA32"] .echo-step {display:flex;justify-content:space-between;gap:30px;align-items:center;background:#f3dfb5}[data-weiv-scope="wA579BFDD41CFAA32"].echo-step small, [data-weiv-scope="wA579BFDD41CFAA32"] .echo-step small {display:block;margin-top:10px;color:#7a6950}[data-weiv-scope="wA579BFDD41CFAA32"].constellation, [data-weiv-scope="wA579BFDD41CFAA32"] .constellation {position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:30px 0}[data-weiv-scope="wA579BFDD41CFAA32"].object-node, [data-weiv-scope="wA579BFDD41CFAA32"] .object-node {position:relative;z-index:2;padding:0;border:1px solid #cfc5b1;background:#f8f4e9;text-align:left;cursor:pointer;transition:.25s;overflow:hidden}[data-weiv-scope="wA579BFDD41CFAA32"].object-node:hover, [data-weiv-scope="wA579BFDD41CFAA32"] .object-node:hover {transform:translateY(-4px);box-shadow:0 18px 45px #30271a22}[data-weiv-scope="wA579BFDD41CFAA32"].object-node.selected, [data-weiv-scope="wA579BFDD41CFAA32"] .object-node.selected {outline:3px solid var(--rust);outline-offset:2px}[data-weiv-scope="wA579BFDD41CFAA32"].object-node.visited:after, [data-weiv-scope="wA579BFDD41CFAA32"] .object-node.visited:after {content:\'visited\';position:absolute;top:9px;right:9px;padding:3px 6px;background:#18231fd9;color:white;text-transform:uppercase;letter-spacing:.1em;font-size:7px}[data-weiv-scope="wA579BFDD41CFAA32"].object-node img, [data-weiv-scope="wA579BFDD41CFAA32"] .object-node img {width:100%;height:155px;object-fit:cover;filter:saturate(.82)}[data-weiv-scope="wA579BFDD41CFAA32"].node-number, [data-weiv-scope="wA579BFDD41CFAA32"] .node-number {display:block;margin:10px 12px 2px;color:var(--rust);font:10px Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].node-copy, [data-weiv-scope="wA579BFDD41CFAA32"] .node-copy {display:block;padding:0 12px 14px}[data-weiv-scope="wA579BFDD41CFAA32"].node-copy b, [data-weiv-scope="wA579BFDD41CFAA32"] .node-copy b, [data-weiv-scope="wA579BFDD41CFAA32"].node-copy small, [data-weiv-scope="wA579BFDD41CFAA32"] .node-copy small {display:block}[data-weiv-scope="wA579BFDD41CFAA32"].node-copy b, [data-weiv-scope="wA579BFDD41CFAA32"] .node-copy b {min-height:39px;font:15px/1.2 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].node-copy small, [data-weiv-scope="wA579BFDD41CFAA32"] .node-copy small {margin-top:7px;color:#777064;font-size:9px}[data-weiv-scope="wA579BFDD41CFAA32"].thread-line, [data-weiv-scope="wA579BFDD41CFAA32"] .thread-line {position:absolute;z-index:1;top:75px;height:1px;background:#a7823d66;transform-origin:left}[data-weiv-scope="wA579BFDD41CFAA32"].thread-a, [data-weiv-scope="wA579BFDD41CFAA32"] .thread-a {left:20%;width:20%;transform:rotate(4deg)}[data-weiv-scope="wA579BFDD41CFAA32"].thread-b, [data-weiv-scope="wA579BFDD41CFAA32"] .thread-b {left:45%;width:21%;transform:rotate(-3deg)}[data-weiv-scope="wA579BFDD41CFAA32"].thread-c, [data-weiv-scope="wA579BFDD41CFAA32"] .thread-c {left:70%;width:18%;transform:rotate(5deg)}[data-weiv-scope="wA579BFDD41CFAA32"].encounter, [data-weiv-scope="wA579BFDD41CFAA32"] .encounter {display:grid;grid-template-columns:minmax(0,1.35fr) minmax(285px,.65fr);gap:18px}[data-weiv-scope="wA579BFDD41CFAA32"].object-view, [data-weiv-scope="wA579BFDD41CFAA32"] .object-view {display:grid;grid-template-columns:minmax(220px,.75fr) minmax(280px,1fr);background:var(--forest);color:white;min-height:390px}[data-weiv-scope="wA579BFDD41CFAA32"].object-image, [data-weiv-scope="wA579BFDD41CFAA32"] .object-image {position:relative}[data-weiv-scope="wA579BFDD41CFAA32"].object-image img, [data-weiv-scope="wA579BFDD41CFAA32"] .object-image img {width:100%;height:100%;min-height:390px;object-fit:cover}[data-weiv-scope="wA579BFDD41CFAA32"].object-image span, [data-weiv-scope="wA579BFDD41CFAA32"] .object-image span {position:absolute;left:13px;bottom:13px;padding:5px 8px;background:#121815d9;font-size:9px;text-transform:uppercase;letter-spacing:.1em}[data-weiv-scope="wA579BFDD41CFAA32"].object-story, [data-weiv-scope="wA579BFDD41CFAA32"] .object-story {display:flex;flex-direction:column;justify-content:center;padding:35px}[data-weiv-scope="wA579BFDD41CFAA32"].object-story .overline, [data-weiv-scope="wA579BFDD41CFAA32"] .object-story .overline {color:#e0bd73}[data-weiv-scope="wA579BFDD41CFAA32"].object-story h2, [data-weiv-scope="wA579BFDD41CFAA32"] .object-story h2 {margin:10px 0;font:normal 35px/1.05 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].object-story .maker, [data-weiv-scope="wA579BFDD41CFAA32"] .object-story .maker {color:#d8cba9}[data-weiv-scope="wA579BFDD41CFAA32"].object-story>p, [data-weiv-scope="wA579BFDD41CFAA32"] .object-story>p {font:14px/1.55 Georgia;color:#bdc5bf}[data-weiv-scope="wA579BFDD41CFAA32"].source-line, [data-weiv-scope="wA579BFDD41CFAA32"] .source-line {display:flex;justify-content:space-between;gap:12px;margin-top:20px;padding-top:14px;border-top:1px solid #ffffff20;font-size:9px;color:#aebbb3}[data-weiv-scope="wA579BFDD41CFAA32"].source-line a, [data-weiv-scope="wA579BFDD41CFAA32"] .source-line a {color:#e0bd73}[data-weiv-scope="wA579BFDD41CFAA32"].leave-something, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something {padding:23px;border:1px solid var(--line);background:var(--cream)}[data-weiv-scope="wA579BFDD41CFAA32"].leave-something h3, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something h3 {margin:7px 0 13px;font:24px/1.1 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].leave-something textarea, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something textarea, [data-weiv-scope="wA579BFDD41CFAA32"].leave-something input, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something input, [data-weiv-scope="wA579BFDD41CFAA32"].leave-something select, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something select {width:100%;padding:11px;border:1px solid var(--line);background:white;color:var(--ink)}[data-weiv-scope="wA579BFDD41CFAA32"].leave-something textarea, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something textarea {min-height:100px;resize:vertical}[data-weiv-scope="wA579BFDD41CFAA32"].leave-something button.secondary, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something button.secondary {background:#435b4e}[data-weiv-scope="wA579BFDD41CFAA32"].leave-something button:disabled, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something button:disabled, [data-weiv-scope="wA579BFDD41CFAA32"].enter-card button:disabled, [data-weiv-scope="wA579BFDD41CFAA32"] .enter-card button:disabled {opacity:.45;cursor:not-allowed}[data-weiv-scope="wA579BFDD41CFAA32"].or, [data-weiv-scope="wA579BFDD41CFAA32"] .or {display:flex;gap:8px;align-items:center;margin:18px 0;color:#9a9284;font-size:9px;text-transform:uppercase;letter-spacing:.1em}[data-weiv-scope="wA579BFDD41CFAA32"].or span, [data-weiv-scope="wA579BFDD41CFAA32"] .or span {flex:1;height:1px;background:var(--line)}[data-weiv-scope="wA579BFDD41CFAA32"].leave-something select, [data-weiv-scope="wA579BFDD41CFAA32"] .leave-something select {margin-bottom:8px}[data-weiv-scope="wA579BFDD41CFAA32"].bloom, [data-weiv-scope="wA579BFDD41CFAA32"] .bloom {margin-top:18px;padding:20px 24px;background:#733e36;color:white}[data-weiv-scope="wA579BFDD41CFAA32"].bloom span, [data-weiv-scope="wA579BFDD41CFAA32"] .bloom span {text-transform:uppercase;letter-spacing:.14em;font-size:9px;color:#e6c67f}[data-weiv-scope="wA579BFDD41CFAA32"].bloom p, [data-weiv-scope="wA579BFDD41CFAA32"] .bloom p {margin:8px 0 0;font:17px/1.45 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].shared-memory, [data-weiv-scope="wA579BFDD41CFAA32"] .shared-memory {margin-top:42px}[data-weiv-scope="wA579BFDD41CFAA32"].section-head, [data-weiv-scope="wA579BFDD41CFAA32"] .section-head {display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:16px}[data-weiv-scope="wA579BFDD41CFAA32"].section-head h2, [data-weiv-scope="wA579BFDD41CFAA32"] .section-head h2, [data-weiv-scope="wA579BFDD41CFAA32"].memory-ledger h2, [data-weiv-scope="wA579BFDD41CFAA32"] .memory-ledger h2 {margin:5px 0 0;font:30px Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].section-head small, [data-weiv-scope="wA579BFDD41CFAA32"] .section-head small {color:#7b7468}[data-weiv-scope="wA579BFDD41CFAA32"].quiet, [data-weiv-scope="wA579BFDD41CFAA32"] .quiet {padding:35px;border:1px dashed var(--line);color:#817a6d;text-align:center;font:15px Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].thought-grid, [data-weiv-scope="wA579BFDD41CFAA32"] .thought-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:12px}[data-weiv-scope="wA579BFDD41CFAA32"].thought-grid blockquote, [data-weiv-scope="wA579BFDD41CFAA32"] .thought-grid blockquote {margin:0;padding:20px;background:var(--cream);border:1px solid var(--line)}[data-weiv-scope="wA579BFDD41CFAA32"].thought-grid p, [data-weiv-scope="wA579BFDD41CFAA32"] .thought-grid p {margin:0;font:17px/1.4 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].thought-grid footer, [data-weiv-scope="wA579BFDD41CFAA32"] .thought-grid footer {margin-top:16px;color:#817a6d;font-size:9px}[data-weiv-scope="wA579BFDD41CFAA32"].trail-list, [data-weiv-scope="wA579BFDD41CFAA32"] .trail-list {display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}[data-weiv-scope="wA579BFDD41CFAA32"].trail-list article, [data-weiv-scope="wA579BFDD41CFAA32"] .trail-list article {display:flex;gap:9px;align-items:center;padding:9px 12px;border:1px solid var(--line);background:#f7f1e4}[data-weiv-scope="wA579BFDD41CFAA32"].trail-list i, [data-weiv-scope="wA579BFDD41CFAA32"] .trail-list i {color:var(--rust);font-style:normal}[data-weiv-scope="wA579BFDD41CFAA32"].trail-list b, [data-weiv-scope="wA579BFDD41CFAA32"] .trail-list b, [data-weiv-scope="wA579BFDD41CFAA32"].trail-list small, [data-weiv-scope="wA579BFDD41CFAA32"] .trail-list small {display:block}[data-weiv-scope="wA579BFDD41CFAA32"].trail-list b, [data-weiv-scope="wA579BFDD41CFAA32"] .trail-list b {font-size:10px}[data-weiv-scope="wA579BFDD41CFAA32"].trail-list small, [data-weiv-scope="wA579BFDD41CFAA32"] .trail-list small {color:#827a6d;font-size:8px}[data-weiv-scope="wA579BFDD41CFAA32"].how-view>.overline, [data-weiv-scope="wA579BFDD41CFAA32"] .how-view>.overline {margin-top:5vh}[data-weiv-scope="wA579BFDD41CFAA32"].how-view>h1, [data-weiv-scope="wA579BFDD41CFAA32"] .how-view>h1 {font-size:clamp(52px,7vw,90px);margin:12px 0 22px}[data-weiv-scope="wA579BFDD41CFAA32"].how-view .lede, [data-weiv-scope="wA579BFDD41CFAA32"] .how-view .lede {max-width:720px;font:19px/1.6 Georgia;color:#666158}[data-weiv-scope="wA579BFDD41CFAA32"].how-grid, [data-weiv-scope="wA579BFDD41CFAA32"] .how-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:35px}[data-weiv-scope="wA579BFDD41CFAA32"].how-grid article, [data-weiv-scope="wA579BFDD41CFAA32"] .how-grid article {padding:24px;background:var(--cream);border:1px solid var(--line)}[data-weiv-scope="wA579BFDD41CFAA32"].how-grid span, [data-weiv-scope="wA579BFDD41CFAA32"] .how-grid span {color:var(--rust);font:20px Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].how-grid h3, [data-weiv-scope="wA579BFDD41CFAA32"] .how-grid h3 {font:23px/1.15 Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].how-grid p, [data-weiv-scope="wA579BFDD41CFAA32"] .how-grid p {color:#746e63;font-size:12px;line-height:1.55}[data-weiv-scope="wA579BFDD41CFAA32"].memory-ledger, [data-weiv-scope="wA579BFDD41CFAA32"] .memory-ledger {margin-top:30px}[data-weiv-scope="wA579BFDD41CFAA32"].ledger-row, [data-weiv-scope="wA579BFDD41CFAA32"] .ledger-row {display:grid;grid-template-columns:30px 1fr;gap:11px;padding:14px 0;border-top:1px solid var(--line)}[data-weiv-scope="wA579BFDD41CFAA32"].ledger-row i, [data-weiv-scope="wA579BFDD41CFAA32"] .ledger-row i {color:var(--rust);font-style:normal}[data-weiv-scope="wA579BFDD41CFAA32"].ledger-row p, [data-weiv-scope="wA579BFDD41CFAA32"] .ledger-row p {margin:0;font:15px Georgia}[data-weiv-scope="wA579BFDD41CFAA32"].ledger-row small, [data-weiv-scope="wA579BFDD41CFAA32"] .ledger-row small {color:#817a6e;font-size:9px}\n  @media(max-width:1100px){[data-weiv-scope="wA579BFDD41CFAA32"].constellation, [data-weiv-scope="wA579BFDD41CFAA32"] .constellation {grid-template-columns:repeat(2,1fr)}[data-weiv-scope="wA579BFDD41CFAA32"].thread-line, [data-weiv-scope="wA579BFDD41CFAA32"] .thread-line {display:none}[data-weiv-scope="wA579BFDD41CFAA32"].encounter, [data-weiv-scope="wA579BFDD41CFAA32"] .encounter, [data-weiv-scope="wA579BFDD41CFAA32"].world-intro, [data-weiv-scope="wA579BFDD41CFAA32"] .world-intro {grid-template-columns:1fr}[data-weiv-scope="wA579BFDD41CFAA32"].return-note, [data-weiv-scope="wA579BFDD41CFAA32"] .return-note {max-width:700px}[data-weiv-scope="wA579BFDD41CFAA32"].thought-grid, [data-weiv-scope="wA579BFDD41CFAA32"] .thought-grid {grid-template-columns:repeat(2,1fr)}[data-weiv-scope="wA579BFDD41CFAA32"].connection-step, [data-weiv-scope="wA579BFDD41CFAA32"] .connection-step {grid-template-columns:1fr 1fr}[data-weiv-scope="wA579BFDD41CFAA32"].connection-step>div:first-child, [data-weiv-scope="wA579BFDD41CFAA32"] .connection-step>div:first-child {grid-column:1/-1}}\n  @media(max-width:760px){[data-weiv-scope="wA579BFDD41CFAA32"].mast, [data-weiv-scope="wA579BFDD41CFAA32"] .mast {grid-template-columns:1fr auto}[data-weiv-scope="wA579BFDD41CFAA32"].world-name, [data-weiv-scope="wA579BFDD41CFAA32"] .world-name {display:none}[data-weiv-scope="wA579BFDD41CFAA32"].world, [data-weiv-scope="wA579BFDD41CFAA32"] .world {grid-template-columns:1fr}[data-weiv-scope="wA579BFDD41CFAA32"].left-rail, [data-weiv-scope="wA579BFDD41CFAA32"] .left-rail {position:static;height:auto;display:grid;grid-template-columns:1fr 1fr;padding:18px}[data-weiv-scope="wA579BFDD41CFAA32"].left-rail section, [data-weiv-scope="wA579BFDD41CFAA32"] .left-rail section {display:none}[data-weiv-scope="wA579BFDD41CFAA32"].how-link, [data-weiv-scope="wA579BFDD41CFAA32"] .how-link {margin:0;border:0;text-align:right}[data-weiv-scope="wA579BFDD41CFAA32"].main-stage, [data-weiv-scope="wA579BFDD41CFAA32"] .main-stage {padding:28px 16px 60px}[data-weiv-scope="wA579BFDD41CFAA32"].entrance, [data-weiv-scope="wA579BFDD41CFAA32"] .entrance {grid-template-columns:1fr;padding:45px 22px}[data-weiv-scope="wA579BFDD41CFAA32"].entrance h1, [data-weiv-scope="wA579BFDD41CFAA32"] .entrance h1 {font-size:57px}[data-weiv-scope="wA579BFDD41CFAA32"].enter-card, [data-weiv-scope="wA579BFDD41CFAA32"] .enter-card {max-width:520px}[data-weiv-scope="wA579BFDD41CFAA32"].guide-card, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-card {padding:17px}[data-weiv-scope="wA579BFDD41CFAA32"].guide-head, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-head, [data-weiv-scope="wA579BFDD41CFAA32"].lens-row, [data-weiv-scope="wA579BFDD41CFAA32"] .lens-row {grid-template-columns:1fr}[data-weiv-scope="wA579BFDD41CFAA32"].guide-action.compact, [data-weiv-scope="wA579BFDD41CFAA32"] .guide-action.compact, [data-weiv-scope="wA579BFDD41CFAA32"].echo-step, [data-weiv-scope="wA579BFDD41CFAA32"] .echo-step {display:grid}[data-weiv-scope="wA579BFDD41CFAA32"].target-row, [data-weiv-scope="wA579BFDD41CFAA32"] .target-row {min-width:0}[data-weiv-scope="wA579BFDD41CFAA32"].connection-step, [data-weiv-scope="wA579BFDD41CFAA32"] .connection-step {grid-template-columns:1fr}[data-weiv-scope="wA579BFDD41CFAA32"].connection-step>div:first-child, [data-weiv-scope="wA579BFDD41CFAA32"] .connection-step>div:first-child {grid-column:auto}[data-weiv-scope="wA579BFDD41CFAA32"].constellation, [data-weiv-scope="wA579BFDD41CFAA32"] .constellation {grid-template-columns:1fr 1fr}[data-weiv-scope="wA579BFDD41CFAA32"].object-node img, [data-weiv-scope="wA579BFDD41CFAA32"] .object-node img {height:125px}[data-weiv-scope="wA579BFDD41CFAA32"].object-view, [data-weiv-scope="wA579BFDD41CFAA32"] .object-view {grid-template-columns:1fr}[data-weiv-scope="wA579BFDD41CFAA32"].object-image img, [data-weiv-scope="wA579BFDD41CFAA32"] .object-image img {height:330px;min-height:0}[data-weiv-scope="wA579BFDD41CFAA32"].thought-grid, [data-weiv-scope="wA579BFDD41CFAA32"] .thought-grid, [data-weiv-scope="wA579BFDD41CFAA32"].how-grid, [data-weiv-scope="wA579BFDD41CFAA32"] .how-grid {grid-template-columns:1fr}[data-weiv-scope="wA579BFDD41CFAA32"].section-head, [data-weiv-scope="wA579BFDD41CFAA32"] .section-head {align-items:start;flex-direction:column}}\n  @media(max-width:480px){[data-weiv-scope="wA579BFDD41CFAA32"].constellation, [data-weiv-scope="wA579BFDD41CFAA32"] .constellation {grid-template-columns:1fr}[data-weiv-scope="wA579BFDD41CFAA32"].object-node, [data-weiv-scope="wA579BFDD41CFAA32"] .object-node {display:grid;grid-template-columns:110px 1fr}[data-weiv-scope="wA579BFDD41CFAA32"].object-node img, [data-weiv-scope="wA579BFDD41CFAA32"] .object-node img {width:110px;height:120px;grid-row:1/3}[data-weiv-scope="wA579BFDD41CFAA32"].node-copy b, [data-weiv-scope="wA579BFDD41CFAA32"] .node-copy b {min-height:0}[data-weiv-scope="wA579BFDD41CFAA32"].object-story h2, [data-weiv-scope="wA579BFDD41CFAA32"] .object-story h2 {font-size:29px}[data-weiv-scope="wA579BFDD41CFAA32"].mast, [data-weiv-scope="wA579BFDD41CFAA32"] .mast {padding:0 15px}[data-weiv-scope="wA579BFDD41CFAA32"].presence, [data-weiv-scope="wA579BFDD41CFAA32"] .presence {font-size:0}[data-weiv-scope="wA579BFDD41CFAA32"].presence i, [data-weiv-scope="wA579BFDD41CFAA32"] .presence i {display:block}}\n';
+  '\n  [data-weiv-scope="w916B78B02BD1EF70"].bootstrap, [data-weiv-scope="w916B78B02BD1EF70"] .bootstrap {display:none}[data-weiv-scope="w916B78B02BD1EF70"].world-shell, [data-weiv-scope="w916B78B02BD1EF70"] .world-shell {min-height:100vh;background:var(--paper);background-image:radial-gradient(#614e3420 1px,transparent 1px);background-size:20px 20px}[data-weiv-scope="w916B78B02BD1EF70"].mast, [data-weiv-scope="w916B78B02BD1EF70"] .mast {position:sticky;z-index:10;top:0;height:64px;padding:0 3.5vw;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:#121815f5;color:#fff;border-bottom:1px solid #ffffff15;backdrop-filter:blur(10px)}[data-weiv-scope="w916B78B02BD1EF70"].brand, [data-weiv-scope="w916B78B02BD1EF70"] .brand {display:flex;gap:10px;align-items:center;text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:700}[data-weiv-scope="w916B78B02BD1EF70"].brand i, [data-weiv-scope="w916B78B02BD1EF70"] .brand i {display:grid;place-items:center;width:31px;height:31px;border:1px solid var(--gold);border-radius:50%;color:var(--gold);font:16px Georgia;font-style:normal}[data-weiv-scope="w916B78B02BD1EF70"].world-name, [data-weiv-scope="w916B78B02BD1EF70"] .world-name {font:16px Georgia;color:#eae2d1}[data-weiv-scope="w916B78B02BD1EF70"].presence, [data-weiv-scope="w916B78B02BD1EF70"] .presence {justify-self:end;display:flex;gap:9px;align-items:center;color:#b8c1bb;font-size:10px}[data-weiv-scope="w916B78B02BD1EF70"].presence i, [data-weiv-scope="w916B78B02BD1EF70"] .presence i {width:6px;height:6px;border-radius:50%;background:#80a888;box-shadow:0 0 0 4px #80a88820}[data-weiv-scope="w916B78B02BD1EF70"].entrance, [data-weiv-scope="w916B78B02BD1EF70"] .entrance {position:relative;min-height:calc(100vh - 64px);padding:8vh 8vw;overflow:hidden;display:grid;grid-template-columns:1.2fr .8fr;align-content:center;gap:8vw;background:var(--forest);color:white}[data-weiv-scope="w916B78B02BD1EF70"].entrance-copy, [data-weiv-scope="w916B78B02BD1EF70"] .entrance-copy {position:relative;z-index:2}[data-weiv-scope="w916B78B02BD1EF70"].overline, [data-weiv-scope="w916B78B02BD1EF70"] .overline {text-transform:uppercase;letter-spacing:.18em;font-size:9px;font-weight:800;color:var(--rust)}[data-weiv-scope="w916B78B02BD1EF70"].entrance .overline, [data-weiv-scope="w916B78B02BD1EF70"] .entrance .overline {color:#e0bd73}[data-weiv-scope="w916B78B02BD1EF70"].entrance h1, [data-weiv-scope="w916B78B02BD1EF70"] .entrance h1, [data-weiv-scope="w916B78B02BD1EF70"].world-intro h1, [data-weiv-scope="w916B78B02BD1EF70"] .world-intro h1, [data-weiv-scope="w916B78B02BD1EF70"].how-view>h1, [data-weiv-scope="w916B78B02BD1EF70"] .how-view>h1 {margin:14px 0 24px;font:normal clamp(56px,8vw,105px)/.86 Georgia,serif;letter-spacing:-.06em}[data-weiv-scope="w916B78B02BD1EF70"].entrance-copy p, [data-weiv-scope="w916B78B02BD1EF70"] .entrance-copy p {max-width:660px;font:24px/1.5 Georgia;color:#e2ded2}[data-weiv-scope="w916B78B02BD1EF70"].enter-card, [data-weiv-scope="w916B78B02BD1EF70"] .enter-card {position:relative;z-index:2;padding:30px;background:var(--cream);color:var(--ink);box-shadow:0 30px 90px #0005}[data-weiv-scope="w916B78B02BD1EF70"].expedition-mark, [data-weiv-scope="w916B78B02BD1EF70"] .expedition-mark {margin-bottom:10px;color:var(--rust);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}[data-weiv-scope="w916B78B02BD1EF70"].enter-card p, [data-weiv-scope="w916B78B02BD1EF70"] .enter-card p {margin:0 0 25px;font:18px/1.5 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].enter-card label, [data-weiv-scope="w916B78B02BD1EF70"] .enter-card label {display:block;margin-bottom:7px;color:#716b60;font-size:10px;text-transform:uppercase;letter-spacing:.12em}[data-weiv-scope="w916B78B02BD1EF70"].enter-card input, [data-weiv-scope="w916B78B02BD1EF70"] .enter-card input {width:100%;padding:14px;border:1px solid var(--line);background:white}[data-weiv-scope="w916B78B02BD1EF70"].enter-card button, [data-weiv-scope="w916B78B02BD1EF70"] .enter-card button, [data-weiv-scope="w916B78B02BD1EF70"].leave-something button, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something button {width:100%;margin-top:11px;padding:13px;border:0;background:var(--rust);color:white;font-weight:700;cursor:pointer}[data-weiv-scope="w916B78B02BD1EF70"].enter-card small, [data-weiv-scope="w916B78B02BD1EF70"] .enter-card small {display:block;margin-top:10px;color:var(--rust)}[data-weiv-scope="w916B78B02BD1EF70"].entrance-art, [data-weiv-scope="w916B78B02BD1EF70"] .entrance-art {position:absolute;inset:0;opacity:.6}[data-weiv-scope="w916B78B02BD1EF70"].orbit, [data-weiv-scope="w916B78B02BD1EF70"] .orbit {position:absolute;border:1px solid #dabf7d22;border-radius:50%}[data-weiv-scope="w916B78B02BD1EF70"].orbit-one, [data-weiv-scope="w916B78B02BD1EF70"] .orbit-one {width:70vw;height:70vw;left:-20vw;top:-25vw}[data-weiv-scope="w916B78B02BD1EF70"].orbit-two, [data-weiv-scope="w916B78B02BD1EF70"] .orbit-two {width:50vw;height:50vw;right:-10vw;bottom:-25vw}[data-weiv-scope="w916B78B02BD1EF70"].star, [data-weiv-scope="w916B78B02BD1EF70"] .star {position:absolute;color:var(--gold)}[data-weiv-scope="w916B78B02BD1EF70"].star-one, [data-weiv-scope="w916B78B02BD1EF70"] .star-one {left:22%;top:24%;font-size:28px}[data-weiv-scope="w916B78B02BD1EF70"].star-two, [data-weiv-scope="w916B78B02BD1EF70"] .star-two {left:63%;top:15%;font-size:55px}[data-weiv-scope="w916B78B02BD1EF70"].star-three, [data-weiv-scope="w916B78B02BD1EF70"] .star-three {right:14%;bottom:20%;font-size:17px}[data-weiv-scope="w916B78B02BD1EF70"].world, [data-weiv-scope="w916B78B02BD1EF70"] .world {display:grid;grid-template-columns:230px minmax(0,1fr);max-width:1700px;margin:auto}[data-weiv-scope="w916B78B02BD1EF70"].left-rail, [data-weiv-scope="w916B78B02BD1EF70"] .left-rail {position:sticky;top:64px;height:calc(100vh - 64px);padding:28px 20px;display:flex;flex-direction:column;border-right:1px solid var(--line);background:#f4efe2}[data-weiv-scope="w916B78B02BD1EF70"].you, [data-weiv-scope="w916B78B02BD1EF70"] .you {display:flex;gap:10px;align-items:center;padding-bottom:24px;border-bottom:1px solid var(--line)}[data-weiv-scope="w916B78B02BD1EF70"].you>span, [data-weiv-scope="w916B78B02BD1EF70"] .you>span, [data-weiv-scope="w916B78B02BD1EF70"].visitor i, [data-weiv-scope="w916B78B02BD1EF70"] .visitor i {display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--forest);color:white;font-style:normal;font-size:11px}[data-weiv-scope="w916B78B02BD1EF70"].you b, [data-weiv-scope="w916B78B02BD1EF70"] .you b, [data-weiv-scope="w916B78B02BD1EF70"].you small, [data-weiv-scope="w916B78B02BD1EF70"] .you small {display:block}[data-weiv-scope="w916B78B02BD1EF70"].you small, [data-weiv-scope="w916B78B02BD1EF70"] .you small {color:#827b6e;font-size:9px}[data-weiv-scope="w916B78B02BD1EF70"].left-rail section, [data-weiv-scope="w916B78B02BD1EF70"] .left-rail section {margin-top:25px}[data-weiv-scope="w916B78B02BD1EF70"].rail-title, [data-weiv-scope="w916B78B02BD1EF70"] .rail-title {text-transform:uppercase;letter-spacing:.13em;font-size:9px;color:#81796a;margin-bottom:11px}[data-weiv-scope="w916B78B02BD1EF70"].visitors, [data-weiv-scope="w916B78B02BD1EF70"] .visitors {display:grid;gap:8px}[data-weiv-scope="w916B78B02BD1EF70"].visitor, [data-weiv-scope="w916B78B02BD1EF70"] .visitor {display:flex;gap:8px;align-items:center;font-size:11px}[data-weiv-scope="w916B78B02BD1EF70"].visitor i, [data-weiv-scope="w916B78B02BD1EF70"] .visitor i {width:24px;height:24px;background:#5c7467;font-size:9px}[data-weiv-scope="w916B78B02BD1EF70"].chips, [data-weiv-scope="w916B78B02BD1EF70"] .chips {display:flex;flex-wrap:wrap;gap:5px}[data-weiv-scope="w916B78B02BD1EF70"].chips span, [data-weiv-scope="w916B78B02BD1EF70"] .chips span {padding:4px 7px;border:1px solid #cfc4ad;border-radius:20px;font-size:9px;color:#675f54}[data-weiv-scope="w916B78B02BD1EF70"].how-link, [data-weiv-scope="w916B78B02BD1EF70"] .how-link {margin-top:auto;padding:11px 3px;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;color:#44594d;font-size:11px;cursor:pointer}[data-weiv-scope="w916B78B02BD1EF70"].how-link span, [data-weiv-scope="w916B78B02BD1EF70"] .how-link span {float:right}[data-weiv-scope="w916B78B02BD1EF70"].main-stage, [data-weiv-scope="w916B78B02BD1EF70"] .main-stage {padding:38px clamp(25px,4vw,65px) 80px;min-width:0}[data-weiv-scope="w916B78B02BD1EF70"].error, [data-weiv-scope="w916B78B02BD1EF70"] .error {padding:12px;margin-bottom:16px;background:#f5dcd5;color:#833a2e}[data-weiv-scope="w916B78B02BD1EF70"].world-intro, [data-weiv-scope="w916B78B02BD1EF70"] .world-intro {display:grid;grid-template-columns:1.2fr .8fr;gap:50px;align-items:end}[data-weiv-scope="w916B78B02BD1EF70"].world-intro h1, [data-weiv-scope="w916B78B02BD1EF70"] .world-intro h1 {font-size:clamp(46px,6vw,82px);margin:10px 0 15px}[data-weiv-scope="w916B78B02BD1EF70"].world-intro>div>p, [data-weiv-scope="w916B78B02BD1EF70"] .world-intro>div>p {max-width:680px;margin:0;color:#6f6a60;font:17px/1.6 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].return-note, [data-weiv-scope="w916B78B02BD1EF70"] .return-note {padding:20px;border-left:2px solid var(--gold);background:#f8f3e7}[data-weiv-scope="w916B78B02BD1EF70"].return-note span, [data-weiv-scope="w916B78B02BD1EF70"] .return-note span {color:var(--rust);font-size:9px;text-transform:uppercase;letter-spacing:.12em}[data-weiv-scope="w916B78B02BD1EF70"].return-note p, [data-weiv-scope="w916B78B02BD1EF70"] .return-note p {margin:9px 0;color:#3d463f;font:15px/1.5 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].return-note b, [data-weiv-scope="w916B78B02BD1EF70"] .return-note b {font-size:11px;color:#59685e}[data-weiv-scope="w916B78B02BD1EF70"].guide-card, [data-weiv-scope="w916B78B02BD1EF70"] .guide-card {padding:28px;background:var(--forest);color:white;border:1px solid #ffffff18;box-shadow:0 22px 70px #24312924}[data-weiv-scope="w916B78B02BD1EF70"].guide-progress, [data-weiv-scope="w916B78B02BD1EF70"] .guide-progress {display:flex;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid #ffffff1a;color:#d5caa9;font-size:9px;text-transform:uppercase;letter-spacing:.16em}[data-weiv-scope="w916B78B02BD1EF70"].guide-head, [data-weiv-scope="w916B78B02BD1EF70"] .guide-head {display:grid;grid-template-columns:1.4fr .6fr;gap:35px;align-items:end;padding:24px 0}[data-weiv-scope="w916B78B02BD1EF70"].guide-head .overline, [data-weiv-scope="w916B78B02BD1EF70"] .guide-head .overline {color:var(--gold)}[data-weiv-scope="w916B78B02BD1EF70"].guide-head h1, [data-weiv-scope="w916B78B02BD1EF70"] .guide-head h1 {max-width:780px;margin:8px 0 0;font:normal clamp(34px,4.3vw,62px)/.96 Georgia;letter-spacing:-.04em}[data-weiv-scope="w916B78B02BD1EF70"].guide-head>p, [data-weiv-scope="w916B78B02BD1EF70"] .guide-head>p {margin:0;color:#b9c2bc;font:15px/1.5 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].guide-action, [data-weiv-scope="w916B78B02BD1EF70"] .guide-action {padding:22px;background:var(--cream);color:var(--ink)}[data-weiv-scope="w916B78B02BD1EF70"].guide-action>div>span, [data-weiv-scope="w916B78B02BD1EF70"] .guide-action>div>span {color:var(--rust);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em}[data-weiv-scope="w916B78B02BD1EF70"].guide-action h2, [data-weiv-scope="w916B78B02BD1EF70"] .guide-action h2 {margin:6px 0;font:27px/1.15 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].guide-action p, [data-weiv-scope="w916B78B02BD1EF70"] .guide-action p {margin:5px 0;color:#6e695f;font:14px/1.5 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].lens-row, [data-weiv-scope="w916B78B02BD1EF70"] .lens-row {display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:18px}[data-weiv-scope="w916B78B02BD1EF70"].lens-row button, [data-weiv-scope="w916B78B02BD1EF70"] .lens-row button {padding:15px;border:1px solid var(--line);background:white;text-align:left;cursor:pointer}[data-weiv-scope="w916B78B02BD1EF70"].lens-row b, [data-weiv-scope="w916B78B02BD1EF70"] .lens-row b, [data-weiv-scope="w916B78B02BD1EF70"].lens-row small, [data-weiv-scope="w916B78B02BD1EF70"] .lens-row small {display:block}[data-weiv-scope="w916B78B02BD1EF70"].lens-row b, [data-weiv-scope="w916B78B02BD1EF70"] .lens-row b {margin-bottom:5px;color:var(--rust);font:19px Georgia}[data-weiv-scope="w916B78B02BD1EF70"].lens-row small, [data-weiv-scope="w916B78B02BD1EF70"] .lens-row small {color:#746e62;font-size:10px;line-height:1.4}[data-weiv-scope="w916B78B02BD1EF70"].guide-action.compact, [data-weiv-scope="w916B78B02BD1EF70"] .guide-action.compact {display:flex;justify-content:space-between;gap:25px;align-items:center}[data-weiv-scope="w916B78B02BD1EF70"].guide-primary, [data-weiv-scope="w916B78B02BD1EF70"] .guide-primary {padding:12px 18px;border:0;background:var(--rust);color:white;font-weight:700;cursor:pointer}[data-weiv-scope="w916B78B02BD1EF70"].guide-primary:disabled, [data-weiv-scope="w916B78B02BD1EF70"] .guide-primary:disabled {opacity:.45}[data-weiv-scope="w916B78B02BD1EF70"].target-row, [data-weiv-scope="w916B78B02BD1EF70"] .target-row {display:grid;min-width:340px;gap:6px}[data-weiv-scope="w916B78B02BD1EF70"].target-row button, [data-weiv-scope="w916B78B02BD1EF70"] .target-row button {padding:9px 12px;border:1px solid var(--line);background:white;text-align:left;color:var(--ink);cursor:pointer}[data-weiv-scope="w916B78B02BD1EF70"].target-row button:hover, [data-weiv-scope="w916B78B02BD1EF70"] .target-row button:hover {border-color:var(--rust);color:var(--rust)}[data-weiv-scope="w916B78B02BD1EF70"].connection-step, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step {display:grid;grid-template-columns:1.2fr auto minmax(230px,.8fr) auto;gap:12px;align-items:center}[data-weiv-scope="w916B78B02BD1EF70"].stance-row, [data-weiv-scope="w916B78B02BD1EF70"] .stance-row {display:flex;gap:5px}[data-weiv-scope="w916B78B02BD1EF70"].stance-row button, [data-weiv-scope="w916B78B02BD1EF70"] .stance-row button {padding:9px 12px;border:1px solid var(--line);background:white;cursor:pointer}[data-weiv-scope="w916B78B02BD1EF70"].stance-row button.active, [data-weiv-scope="w916B78B02BD1EF70"] .stance-row button.active {background:var(--forest);color:white}[data-weiv-scope="w916B78B02BD1EF70"].connection-step input, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step input {min-width:0;padding:11px;border:1px solid var(--line)}[data-weiv-scope="w916B78B02BD1EF70"].echo-step, [data-weiv-scope="w916B78B02BD1EF70"] .echo-step {display:flex;justify-content:space-between;gap:30px;align-items:center;background:#f3dfb5}[data-weiv-scope="w916B78B02BD1EF70"].echo-step small, [data-weiv-scope="w916B78B02BD1EF70"] .echo-step small {display:block;margin-top:10px;color:#7a6950}[data-weiv-scope="w916B78B02BD1EF70"].constellation, [data-weiv-scope="w916B78B02BD1EF70"] .constellation {position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:30px 0}[data-weiv-scope="w916B78B02BD1EF70"].object-node, [data-weiv-scope="w916B78B02BD1EF70"] .object-node {position:relative;z-index:2;padding:0;border:1px solid #cfc5b1;background:#f8f4e9;text-align:left;cursor:pointer;transition:.25s;overflow:hidden}[data-weiv-scope="w916B78B02BD1EF70"].object-node:hover, [data-weiv-scope="w916B78B02BD1EF70"] .object-node:hover {transform:translateY(-4px);box-shadow:0 18px 45px #30271a22}[data-weiv-scope="w916B78B02BD1EF70"].object-node.selected, [data-weiv-scope="w916B78B02BD1EF70"] .object-node.selected {outline:3px solid var(--rust);outline-offset:2px}[data-weiv-scope="w916B78B02BD1EF70"].object-node.visited:after, [data-weiv-scope="w916B78B02BD1EF70"] .object-node.visited:after {content:\'visited\';position:absolute;top:9px;right:9px;padding:3px 6px;background:#18231fd9;color:white;text-transform:uppercase;letter-spacing:.1em;font-size:7px}[data-weiv-scope="w916B78B02BD1EF70"].object-node img, [data-weiv-scope="w916B78B02BD1EF70"] .object-node img {width:100%;height:155px;object-fit:cover;filter:saturate(.82)}[data-weiv-scope="w916B78B02BD1EF70"].node-number, [data-weiv-scope="w916B78B02BD1EF70"] .node-number {display:block;margin:10px 12px 2px;color:var(--rust);font:10px Georgia}[data-weiv-scope="w916B78B02BD1EF70"].node-copy, [data-weiv-scope="w916B78B02BD1EF70"] .node-copy {display:block;padding:0 12px 14px}[data-weiv-scope="w916B78B02BD1EF70"].node-copy b, [data-weiv-scope="w916B78B02BD1EF70"] .node-copy b, [data-weiv-scope="w916B78B02BD1EF70"].node-copy small, [data-weiv-scope="w916B78B02BD1EF70"] .node-copy small {display:block}[data-weiv-scope="w916B78B02BD1EF70"].node-copy b, [data-weiv-scope="w916B78B02BD1EF70"] .node-copy b {min-height:39px;font:15px/1.2 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].node-copy small, [data-weiv-scope="w916B78B02BD1EF70"] .node-copy small {margin-top:7px;color:#777064;font-size:9px}[data-weiv-scope="w916B78B02BD1EF70"].thread-line, [data-weiv-scope="w916B78B02BD1EF70"] .thread-line {position:absolute;z-index:1;top:75px;height:1px;background:#a7823d66;transform-origin:left}[data-weiv-scope="w916B78B02BD1EF70"].thread-a, [data-weiv-scope="w916B78B02BD1EF70"] .thread-a {left:20%;width:20%;transform:rotate(4deg)}[data-weiv-scope="w916B78B02BD1EF70"].thread-b, [data-weiv-scope="w916B78B02BD1EF70"] .thread-b {left:45%;width:21%;transform:rotate(-3deg)}[data-weiv-scope="w916B78B02BD1EF70"].thread-c, [data-weiv-scope="w916B78B02BD1EF70"] .thread-c {left:70%;width:18%;transform:rotate(5deg)}[data-weiv-scope="w916B78B02BD1EF70"].encounter, [data-weiv-scope="w916B78B02BD1EF70"] .encounter {display:grid;grid-template-columns:minmax(0,1.35fr) minmax(285px,.65fr);gap:18px}[data-weiv-scope="w916B78B02BD1EF70"].object-view, [data-weiv-scope="w916B78B02BD1EF70"] .object-view {display:grid;grid-template-columns:minmax(220px,.75fr) minmax(280px,1fr);background:var(--forest);color:white;min-height:390px}[data-weiv-scope="w916B78B02BD1EF70"].object-image, [data-weiv-scope="w916B78B02BD1EF70"] .object-image {position:relative}[data-weiv-scope="w916B78B02BD1EF70"].object-image img, [data-weiv-scope="w916B78B02BD1EF70"] .object-image img {width:100%;height:100%;min-height:390px;object-fit:cover}[data-weiv-scope="w916B78B02BD1EF70"].object-image span, [data-weiv-scope="w916B78B02BD1EF70"] .object-image span {position:absolute;left:13px;bottom:13px;padding:5px 8px;background:#121815d9;font-size:9px;text-transform:uppercase;letter-spacing:.1em}[data-weiv-scope="w916B78B02BD1EF70"].object-story, [data-weiv-scope="w916B78B02BD1EF70"] .object-story {display:flex;flex-direction:column;justify-content:center;padding:35px}[data-weiv-scope="w916B78B02BD1EF70"].object-story .overline, [data-weiv-scope="w916B78B02BD1EF70"] .object-story .overline {color:#e0bd73}[data-weiv-scope="w916B78B02BD1EF70"].object-story h2, [data-weiv-scope="w916B78B02BD1EF70"] .object-story h2 {margin:10px 0;font:normal 35px/1.05 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].object-story .maker, [data-weiv-scope="w916B78B02BD1EF70"] .object-story .maker {color:#d8cba9}[data-weiv-scope="w916B78B02BD1EF70"].object-story>p, [data-weiv-scope="w916B78B02BD1EF70"] .object-story>p {font:14px/1.55 Georgia;color:#bdc5bf}[data-weiv-scope="w916B78B02BD1EF70"].source-line, [data-weiv-scope="w916B78B02BD1EF70"] .source-line {display:flex;justify-content:space-between;gap:12px;margin-top:20px;padding-top:14px;border-top:1px solid #ffffff20;font-size:9px;color:#aebbb3}[data-weiv-scope="w916B78B02BD1EF70"].source-line a, [data-weiv-scope="w916B78B02BD1EF70"] .source-line a {color:#e0bd73}[data-weiv-scope="w916B78B02BD1EF70"].leave-something, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something {padding:23px;border:1px solid var(--line);background:var(--cream)}[data-weiv-scope="w916B78B02BD1EF70"].leave-something h3, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something h3 {margin:7px 0 13px;font:24px/1.1 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].leave-something textarea, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something textarea, [data-weiv-scope="w916B78B02BD1EF70"].leave-something input, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something input, [data-weiv-scope="w916B78B02BD1EF70"].leave-something select, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something select {width:100%;padding:11px;border:1px solid var(--line);background:white;color:var(--ink)}[data-weiv-scope="w916B78B02BD1EF70"].leave-something textarea, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something textarea {min-height:100px;resize:vertical}[data-weiv-scope="w916B78B02BD1EF70"].leave-something button.secondary, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something button.secondary {background:#435b4e}[data-weiv-scope="w916B78B02BD1EF70"].leave-something button:disabled, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something button:disabled, [data-weiv-scope="w916B78B02BD1EF70"].enter-card button:disabled, [data-weiv-scope="w916B78B02BD1EF70"] .enter-card button:disabled {opacity:.45;cursor:not-allowed}[data-weiv-scope="w916B78B02BD1EF70"].or, [data-weiv-scope="w916B78B02BD1EF70"] .or {display:flex;gap:8px;align-items:center;margin:18px 0;color:#9a9284;font-size:9px;text-transform:uppercase;letter-spacing:.1em}[data-weiv-scope="w916B78B02BD1EF70"].or span, [data-weiv-scope="w916B78B02BD1EF70"] .or span {flex:1;height:1px;background:var(--line)}[data-weiv-scope="w916B78B02BD1EF70"].leave-something select, [data-weiv-scope="w916B78B02BD1EF70"] .leave-something select {margin-bottom:8px}[data-weiv-scope="w916B78B02BD1EF70"].bloom, [data-weiv-scope="w916B78B02BD1EF70"] .bloom {margin-top:18px;padding:20px 24px;background:#733e36;color:white}[data-weiv-scope="w916B78B02BD1EF70"].bloom span, [data-weiv-scope="w916B78B02BD1EF70"] .bloom span {text-transform:uppercase;letter-spacing:.14em;font-size:9px;color:#e6c67f}[data-weiv-scope="w916B78B02BD1EF70"].bloom p, [data-weiv-scope="w916B78B02BD1EF70"] .bloom p {margin:8px 0 0;font:17px/1.45 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].shared-memory, [data-weiv-scope="w916B78B02BD1EF70"] .shared-memory {margin-top:42px}[data-weiv-scope="w916B78B02BD1EF70"].section-head, [data-weiv-scope="w916B78B02BD1EF70"] .section-head {display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:16px}[data-weiv-scope="w916B78B02BD1EF70"].section-head h2, [data-weiv-scope="w916B78B02BD1EF70"] .section-head h2, [data-weiv-scope="w916B78B02BD1EF70"].memory-ledger h2, [data-weiv-scope="w916B78B02BD1EF70"] .memory-ledger h2 {margin:5px 0 0;font:30px Georgia}[data-weiv-scope="w916B78B02BD1EF70"].section-head small, [data-weiv-scope="w916B78B02BD1EF70"] .section-head small {color:#7b7468}[data-weiv-scope="w916B78B02BD1EF70"].quiet, [data-weiv-scope="w916B78B02BD1EF70"] .quiet {padding:35px;border:1px dashed var(--line);color:#817a6d;text-align:center;font:15px Georgia}[data-weiv-scope="w916B78B02BD1EF70"].thought-grid, [data-weiv-scope="w916B78B02BD1EF70"] .thought-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:12px}[data-weiv-scope="w916B78B02BD1EF70"].thought-grid blockquote, [data-weiv-scope="w916B78B02BD1EF70"] .thought-grid blockquote {margin:0;padding:20px;background:var(--cream);border:1px solid var(--line)}[data-weiv-scope="w916B78B02BD1EF70"].thought-grid p, [data-weiv-scope="w916B78B02BD1EF70"] .thought-grid p {margin:0;font:17px/1.4 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].thought-grid footer, [data-weiv-scope="w916B78B02BD1EF70"] .thought-grid footer {margin-top:16px;color:#817a6d;font-size:9px}[data-weiv-scope="w916B78B02BD1EF70"].trail-list, [data-weiv-scope="w916B78B02BD1EF70"] .trail-list {display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}[data-weiv-scope="w916B78B02BD1EF70"].trail-list article, [data-weiv-scope="w916B78B02BD1EF70"] .trail-list article {display:flex;gap:9px;align-items:center;padding:9px 12px;border:1px solid var(--line);background:#f7f1e4}[data-weiv-scope="w916B78B02BD1EF70"].trail-list i, [data-weiv-scope="w916B78B02BD1EF70"] .trail-list i {color:var(--rust);font-style:normal}[data-weiv-scope="w916B78B02BD1EF70"].trail-list b, [data-weiv-scope="w916B78B02BD1EF70"] .trail-list b, [data-weiv-scope="w916B78B02BD1EF70"].trail-list small, [data-weiv-scope="w916B78B02BD1EF70"] .trail-list small {display:block}[data-weiv-scope="w916B78B02BD1EF70"].trail-list b, [data-weiv-scope="w916B78B02BD1EF70"] .trail-list b {font-size:10px}[data-weiv-scope="w916B78B02BD1EF70"].trail-list small, [data-weiv-scope="w916B78B02BD1EF70"] .trail-list small {color:#827a6d;font-size:8px}[data-weiv-scope="w916B78B02BD1EF70"].how-view>.overline, [data-weiv-scope="w916B78B02BD1EF70"] .how-view>.overline {margin-top:5vh}[data-weiv-scope="w916B78B02BD1EF70"].how-view>h1, [data-weiv-scope="w916B78B02BD1EF70"] .how-view>h1 {font-size:clamp(52px,7vw,90px);margin:12px 0 22px}[data-weiv-scope="w916B78B02BD1EF70"].how-view .lede, [data-weiv-scope="w916B78B02BD1EF70"] .how-view .lede {max-width:720px;font:19px/1.6 Georgia;color:#666158}[data-weiv-scope="w916B78B02BD1EF70"].how-grid, [data-weiv-scope="w916B78B02BD1EF70"] .how-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:35px}[data-weiv-scope="w916B78B02BD1EF70"].how-grid article, [data-weiv-scope="w916B78B02BD1EF70"] .how-grid article {padding:24px;background:var(--cream);border:1px solid var(--line)}[data-weiv-scope="w916B78B02BD1EF70"].how-grid span, [data-weiv-scope="w916B78B02BD1EF70"] .how-grid span {color:var(--rust);font:20px Georgia}[data-weiv-scope="w916B78B02BD1EF70"].how-grid h3, [data-weiv-scope="w916B78B02BD1EF70"] .how-grid h3 {font:23px/1.15 Georgia}[data-weiv-scope="w916B78B02BD1EF70"].how-grid p, [data-weiv-scope="w916B78B02BD1EF70"] .how-grid p {color:#746e63;font-size:12px;line-height:1.55}[data-weiv-scope="w916B78B02BD1EF70"].memory-ledger, [data-weiv-scope="w916B78B02BD1EF70"] .memory-ledger {margin-top:30px}[data-weiv-scope="w916B78B02BD1EF70"].ledger-row, [data-weiv-scope="w916B78B02BD1EF70"] .ledger-row {display:grid;grid-template-columns:30px 1fr;gap:11px;padding:14px 0;border-top:1px solid var(--line)}[data-weiv-scope="w916B78B02BD1EF70"].ledger-row i, [data-weiv-scope="w916B78B02BD1EF70"] .ledger-row i {color:var(--rust);font-style:normal}[data-weiv-scope="w916B78B02BD1EF70"].ledger-row p, [data-weiv-scope="w916B78B02BD1EF70"] .ledger-row p {margin:0;font:15px Georgia}[data-weiv-scope="w916B78B02BD1EF70"].ledger-row small, [data-weiv-scope="w916B78B02BD1EF70"] .ledger-row small {color:#817a6e;font-size:9px}\n  @media(max-width:1100px){[data-weiv-scope="w916B78B02BD1EF70"].constellation, [data-weiv-scope="w916B78B02BD1EF70"] .constellation {grid-template-columns:repeat(2,1fr)}[data-weiv-scope="w916B78B02BD1EF70"].thread-line, [data-weiv-scope="w916B78B02BD1EF70"] .thread-line {display:none}[data-weiv-scope="w916B78B02BD1EF70"].encounter, [data-weiv-scope="w916B78B02BD1EF70"] .encounter, [data-weiv-scope="w916B78B02BD1EF70"].world-intro, [data-weiv-scope="w916B78B02BD1EF70"] .world-intro {grid-template-columns:1fr}[data-weiv-scope="w916B78B02BD1EF70"].return-note, [data-weiv-scope="w916B78B02BD1EF70"] .return-note {max-width:700px}[data-weiv-scope="w916B78B02BD1EF70"].thought-grid, [data-weiv-scope="w916B78B02BD1EF70"] .thought-grid {grid-template-columns:repeat(2,1fr)}[data-weiv-scope="w916B78B02BD1EF70"].connection-step, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step {grid-template-columns:1fr 1fr}[data-weiv-scope="w916B78B02BD1EF70"].connection-step>div:first-child, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step>div:first-child {grid-column:1/-1}}\n  @media(max-width:760px){[data-weiv-scope="w916B78B02BD1EF70"].mast, [data-weiv-scope="w916B78B02BD1EF70"] .mast {grid-template-columns:1fr auto}[data-weiv-scope="w916B78B02BD1EF70"].world-name, [data-weiv-scope="w916B78B02BD1EF70"] .world-name {display:none}[data-weiv-scope="w916B78B02BD1EF70"].world, [data-weiv-scope="w916B78B02BD1EF70"] .world {grid-template-columns:1fr}[data-weiv-scope="w916B78B02BD1EF70"].left-rail, [data-weiv-scope="w916B78B02BD1EF70"] .left-rail {position:static;height:auto;display:grid;grid-template-columns:1fr 1fr;padding:18px}[data-weiv-scope="w916B78B02BD1EF70"].left-rail section, [data-weiv-scope="w916B78B02BD1EF70"] .left-rail section {display:none}[data-weiv-scope="w916B78B02BD1EF70"].how-link, [data-weiv-scope="w916B78B02BD1EF70"] .how-link {margin:0;border:0;text-align:right}[data-weiv-scope="w916B78B02BD1EF70"].main-stage, [data-weiv-scope="w916B78B02BD1EF70"] .main-stage {padding:28px 16px 60px}[data-weiv-scope="w916B78B02BD1EF70"].entrance, [data-weiv-scope="w916B78B02BD1EF70"] .entrance {grid-template-columns:1fr;padding:45px 22px}[data-weiv-scope="w916B78B02BD1EF70"].entrance h1, [data-weiv-scope="w916B78B02BD1EF70"] .entrance h1 {font-size:57px}[data-weiv-scope="w916B78B02BD1EF70"].enter-card, [data-weiv-scope="w916B78B02BD1EF70"] .enter-card {max-width:520px}[data-weiv-scope="w916B78B02BD1EF70"].guide-card, [data-weiv-scope="w916B78B02BD1EF70"] .guide-card {padding:17px}[data-weiv-scope="w916B78B02BD1EF70"].guide-head, [data-weiv-scope="w916B78B02BD1EF70"] .guide-head, [data-weiv-scope="w916B78B02BD1EF70"].lens-row, [data-weiv-scope="w916B78B02BD1EF70"] .lens-row {grid-template-columns:1fr}[data-weiv-scope="w916B78B02BD1EF70"].guide-action.compact, [data-weiv-scope="w916B78B02BD1EF70"] .guide-action.compact, [data-weiv-scope="w916B78B02BD1EF70"].echo-step, [data-weiv-scope="w916B78B02BD1EF70"] .echo-step {display:grid}[data-weiv-scope="w916B78B02BD1EF70"].target-row, [data-weiv-scope="w916B78B02BD1EF70"] .target-row {min-width:0}[data-weiv-scope="w916B78B02BD1EF70"].connection-step, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step {grid-template-columns:1fr}[data-weiv-scope="w916B78B02BD1EF70"].connection-step>div:first-child, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step>div:first-child {grid-column:auto}[data-weiv-scope="w916B78B02BD1EF70"].constellation, [data-weiv-scope="w916B78B02BD1EF70"] .constellation {grid-template-columns:1fr 1fr}[data-weiv-scope="w916B78B02BD1EF70"].object-node img, [data-weiv-scope="w916B78B02BD1EF70"] .object-node img {height:125px}[data-weiv-scope="w916B78B02BD1EF70"].object-view, [data-weiv-scope="w916B78B02BD1EF70"] .object-view {grid-template-columns:1fr}[data-weiv-scope="w916B78B02BD1EF70"].object-image img, [data-weiv-scope="w916B78B02BD1EF70"] .object-image img {height:330px;min-height:0}[data-weiv-scope="w916B78B02BD1EF70"].thought-grid, [data-weiv-scope="w916B78B02BD1EF70"] .thought-grid, [data-weiv-scope="w916B78B02BD1EF70"].how-grid, [data-weiv-scope="w916B78B02BD1EF70"] .how-grid {grid-template-columns:1fr}[data-weiv-scope="w916B78B02BD1EF70"].section-head, [data-weiv-scope="w916B78B02BD1EF70"] .section-head {align-items:start;flex-direction:column}}\n  @media(max-width:480px){[data-weiv-scope="w916B78B02BD1EF70"].constellation, [data-weiv-scope="w916B78B02BD1EF70"] .constellation {grid-template-columns:1fr}[data-weiv-scope="w916B78B02BD1EF70"].object-node, [data-weiv-scope="w916B78B02BD1EF70"] .object-node {display:grid;grid-template-columns:110px 1fr}[data-weiv-scope="w916B78B02BD1EF70"].object-node img, [data-weiv-scope="w916B78B02BD1EF70"] .object-node img {width:110px;height:120px;grid-row:1/3}[data-weiv-scope="w916B78B02BD1EF70"].node-copy b, [data-weiv-scope="w916B78B02BD1EF70"] .node-copy b {min-height:0}[data-weiv-scope="w916B78B02BD1EF70"].object-story h2, [data-weiv-scope="w916B78B02BD1EF70"] .object-story h2 {font-size:29px}[data-weiv-scope="w916B78B02BD1EF70"].mast, [data-weiv-scope="w916B78B02BD1EF70"] .mast {padding:0 15px}[data-weiv-scope="w916B78B02BD1EF70"].presence, [data-weiv-scope="w916B78B02BD1EF70"] .presence {font-size:0}[data-weiv-scope="w916B78B02BD1EF70"].presence i, [data-weiv-scope="w916B78B02BD1EF70"] .presence i {display:block}}\n  @media (min-width: 761px) {\n    [data-weiv-scope="w916B78B02BD1EF70"].connection-step, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step { grid-template-columns:minmax(240px,.85fr) minmax(0,1.15fr); align-items:start; }\n    [data-weiv-scope="w916B78B02BD1EF70"].connection-step>div:first-child, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step>div:first-child { grid-column:1; grid-row:1 / span 3; }\n    [data-weiv-scope="w916B78B02BD1EF70"].connection-step .stance-row, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step .stance-row, [data-weiv-scope="w916B78B02BD1EF70"].connection-step input, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step input, [data-weiv-scope="w916B78B02BD1EF70"].connection-step>button, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step>button { grid-column:2; }\n    [data-weiv-scope="w916B78B02BD1EF70"].connection-step input, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step input { width:100%; }\n    [data-weiv-scope="w916B78B02BD1EF70"].connection-step>button, [data-weiv-scope="w916B78B02BD1EF70"] .connection-step>button { justify-self:start; }\n  }\n';
 
 export const trackedStateGraph = { roots: [], paths: [], regions: [] };
 
@@ -3275,11 +3275,11 @@ function createDom(instance) {
   const refs = instance.refs;
   const __ref_317 = document.createElement('div');
   refs[317] = __ref_317;
-  __ref_317.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_317.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_317.setAttribute('class', 'world-shell');
   const __ref_1 = document.createElement('span');
   refs[1] = __ref_1;
-  __ref_1.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_1.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_1.setAttribute('class', 'bootstrap');
   const __ref_0 = document.createTextNode('');
   refs[0] = __ref_0;
@@ -3287,36 +3287,36 @@ function createDom(instance) {
   __ref_317.append(__ref_1);
   const __ref_9 = document.createElement('header');
   refs[9] = __ref_9;
-  __ref_9.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_9.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_9.setAttribute('class', 'mast');
   const __ref_4 = document.createElement('div');
   refs[4] = __ref_4;
-  __ref_4.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_4.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_4.setAttribute('class', 'brand');
   const __ref_2 = document.createElement('i');
   refs[2] = __ref_2;
-  __ref_2.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_2.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_2.append(document.createTextNode('Q'));
   __ref_4.append(__ref_2);
   const __ref_3 = document.createElement('span');
   refs[3] = __ref_3;
-  __ref_3.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_3.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_3.append(document.createTextNode('Quest'));
   __ref_4.append(__ref_3);
   __ref_9.append(__ref_4);
   const __ref_5 = document.createElement('div');
   refs[5] = __ref_5;
-  __ref_5.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_5.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_5.setAttribute('class', 'world-name');
   __ref_5.append(document.createTextNode('The Museum of Nearby Things'));
   __ref_9.append(__ref_5);
   const __ref_8 = document.createElement('div');
   refs[8] = __ref_8;
-  __ref_8.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_8.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_8.setAttribute('class', 'presence');
   const __ref_6 = document.createElement('i');
   refs[6] = __ref_6;
-  __ref_6.setAttribute('data-weiv-scope', 'wA579BFDD41CFAA32');
+  __ref_6.setAttribute('data-weiv-scope', 'w916B78B02BD1EF70');
   __ref_8.append(__ref_6);
   const __ref_7 = document.createTextNode('');
   refs[7] = __ref_7;

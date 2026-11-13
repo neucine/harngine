@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">Harngine</title>
+  <desc id="description">Durable, inspectable work for agent applications</desc>
+  <rect width="1200" height="630" fill="#101b28"/>
+  <circle cx="1070" cy="110" r="310" fill="#18364a"/>
+  <circle cx="1080" cy="120" r="190" fill="#1d5361"/>
+  <path d="M88 439h180l42-99 65 157 63-126 46 68h139" fill="none" stroke="#6ee7b7" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="87" y="179" fill="#f4f7f8" font-family="Arial, Helvetica, sans-serif" font-size="91" font-weight="700">Harngine</text>
+  <text x="89" y="255" fill="#b5d4d7" font-family="Arial, Helvetica, sans-serif" font-size="36">Durable, inspectable work for agent applications</text>
+  <text x="89" y="564" fill="#6ee7b7" font-family="Arial, Helvetica, sans-serif" font-size="29">Run  ·  Recover  ·  Inspect</text>
+</svg>

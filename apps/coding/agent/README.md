@@ -1,20 +1,30 @@
 # Repository coding agent
 
-## OpenAI Responses compatible router
+## Model providers
 
-The coding agent defaults to the locally configured Codex CLI. To send model turns directly to a Responses compatible router such as Magpie, run:
+The coding app defaults to the local Magpie gateway at `http://127.0.0.1:3425/v1`, using
+`codex/gpt-6.1-sol` through the streaming OpenAI Responses adapter. This avoids the ChatGPT model
+backend and does not require a Codex CLI login.
+
+Public users can select OpenAI directly. Keep the key in the environment:
 
 ```bash
-HARNGINE_CODING_PROVIDER=openai-responses \
-HARNGINE_CODING_API_BASE_URL=http://127.0.0.1:3425/v1 \
-HARNGINE_CODING_API_TOKEN=magpie \
-CODEX_MODEL=codex/gpt-6-sol \
-bun run agent:coding --repo . --task "Explain this repository"
+OPENAI_API_KEY=... bun run coding:cli \
+  --repo . \
+  --provider openai \
+  --model <openai-model-id> \
+  --task "Explain this repository"
 ```
 
-Use the bearer value required by your router in `HARNGINE_CODING_API_TOKEN`. Set `CODEX_MODEL` to an ID returned by its `/models` endpoint. Without `HARNGINE_CODING_API_BASE_URL`, this adapter targets OpenAI's Responses endpoint. The adapter speaks the OpenAI Responses protocol regardless of which upstream model Magpie routes to. The desktop app uses its Codex CLI configuration when opened normally from Finder.
+Use `--base-url` for an OpenAI Responses compatible gateway. The standard `OPENAI_API_KEY`,
+`HARNGINE_CODING_API_TOKEN`, and `CODEX_ACCESS_TOKEN` names are accepted in that order.
 
-For a Claude Messages compatible endpoint, use `HARNGINE_CODING_PROVIDER=claude-messages` with the same base URL, token, and model settings. That adapter sends `POST /messages` with Claude Messages headers and structured output. It requires an explicit `CODEX_MODEL`.
+For a Claude Messages compatible endpoint, use `--provider claude` with an explicit model and
+`ANTHROPIC_API_KEY` or `HARNGINE_CODING_API_TOKEN`. The adapter sends `POST /messages` with Claude
+Messages headers and structured output.
+
+Provider settings can also come from `HARNGINE_CODING_PROVIDER`,
+`HARNGINE_CODING_API_BASE_URL`, `HARNGINE_CODING_API_TOKEN`, and `CODEX_MODEL`.
 
 ## Live router integration
 

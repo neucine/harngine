@@ -66,7 +66,7 @@
     },
     "examples/muse": {
       "name": "@harngine/muse",
-      "version": "0.1.0-alpha.0",
+      "version": "0.1.0",
       "dependencies": {
         "harngine": "workspace:*",
         "weivjs": "0.1.0",
@@ -102,35 +102,35 @@
     },
     "packages/claude-messages": {
       "name": "@harngine/claude-messages",
-      "version": "0.1.0-alpha.0",
+      "version": "0.1.0",
       "dependencies": {
         "harngine": "workspace:*",
       },
     },
     "packages/openai-responses": {
       "name": "@harngine/openai-responses",
-      "version": "0.1.0-alpha.0",
+      "version": "0.1.0",
       "dependencies": {
         "harngine": "workspace:*",
       },
     },
     "packages/codex-cli": {
       "name": "@harngine/codex-cli",
-      "version": "0.1.0-alpha.0",
+      "version": "0.1.0",
       "dependencies": {
         "harngine": "workspace:*",
       },
     },
     "packages/evaluation": {
       "name": "@harngine/evaluation",
-      "version": "0.1.0-alpha.0",
+      "version": "0.1.0",
       "dependencies": {
         "harngine": "workspace:*",
       },
     },
     "packages/harngine": {
       "name": "harngine",
-      "version": "0.1.0-alpha.0",
+      "version": "0.1.0",
       "bin": {
         "harngine-manifest": "./dist/build/manifest-cli.js",
       },
@@ -148,7 +148,7 @@
     },
     "packages/mcp": {
       "name": "@harngine/mcp",
-      "version": "0.1.0-alpha.0",
+      "version": "0.1.0",
       "dependencies": {
         "@modelcontextprotocol/client": "2.4.0",
         "harngine": "workspace:*",
@@ -159,19 +159,19 @@
     },
     "packages/retrieval": {
       "name": "@harngine/retrieval",
-      "version": "0.1.0-alpha.0",
+      "version": "0.1.0",
       "dependencies": {
         "harngine": "workspace:*",
       },
     },
     "packages/workbench": {
       "name": "@harngine/workbench",
-      "version": "0.1.0-alpha.0",
+      "version": "0.1.0",
       "bin": {
         "harngine-workbench": "./dist/cli.js",
       },
       "peerDependencies": {
-        "harngine": "0.1.0-alpha.0",
+        "harngine": "0.1.0",
       },
     },
   },

@@ -1,4 +1,5 @@
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test } from 'vitest';
@@ -9,7 +10,152 @@ import {
   waitForApproval,
   type SupportRequest,
 } from '../src/app.js';
+import { supportPage } from '../src/page.js';
+import { serveSupport } from '../src/server.js';
 import type { AuditExportBatch } from 'harngine';
+
+test('CLI demo explains the customer refund story without JSON', () => {
+  const output = execFileSync(process.execPath, ['examples/support/dist/main.js', '--cli'], {
+    encoding: 'utf8',
+  });
+  expect(output).toContain('Harngine demo: customer support refund');
+  expect(output).toContain('Account tool: two settled charges found.');
+  expect(output).toContain('Refund pauses for a person');
+  expect(output).toContain('The duplicate charge was refunded after operator approval.');
+  expect(output).not.toContain('"triage":');
+});
+
+test('browser demo makes the refund decision trail understandable before it runs', () => {
+  const html = supportPage('test-token');
+  expect(html).toContain('data-token="test-token"');
+  expect(html).toContain('--canvas:#f2f4f3');
+  expect(html).toContain('src="/main.mjs"');
+
+  const source = readFileSync(join(process.cwd(), 'examples/support/src/ui/App.weiv'), 'utf8');
+  expect(source).toContain('Run the refund review');
+  expect(source).toContain('Run review');
+  expect(source).toContain('Approval required');
+  expect(source).toContain('payment provider has not received this request');
+  expect(source).toContain('Approve exact refund');
+  expect(source).toContain('Refund ran only after approval');
+  expect(source).toContain('Run another case');
+});
+
+test('public support path investigates, pauses, approves, and exposes audit evidence', async () => {
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'harngine-support-web-')));
+  let refunded = 0;
+  const desk = createSupportDesk({
+    directory,
+    onRefund() {
+      refunded++;
+    },
+  });
+  const server = await serveSupport({ desk });
+
+  try {
+    const unauthorized = await fetch(`${server.url}/api/case`, { method: 'POST' });
+    expect(unauthorized.status).toBe(403);
+
+    const page = await fetch(server.url);
+    expect(page.status).toBe(200);
+    const html = await page.text();
+    const token = html.match(/data-token="([^"]+)"/)?.[1];
+    expect(token).toBeTruthy();
+
+    expect((await fetch(`${server.url}/App.mjs`)).status).toBe(200);
+    expect((await fetch(`${server.url}/styles.css`)).status).toBe(200);
+
+    const headers = { 'x-support-token': token! };
+    const opened = await fetch(`${server.url}/api/case`, { method: 'POST', headers });
+    expect(opened.status).toBe(200);
+    const pending = (await opened.json()) as {
+      triage: { summary: string; citations: { source: string }[] };
+      approval: { tool: string; details: { orderId: string; amountCents: number } };
+      investigation: { tool: string; phase: string }[];
+      previews: string[];
+    };
+    expect(pending.triage).toMatchObject({
+      summary: 'Two settled charges need specialist review.',
+      citations: [{ source: 'policy://support/duplicate-charges' }],
+    });
+    expect(pending.approval).toMatchObject({
+      tool: 'support.billing.refund',
+      details: { orderId: 'order-842', amountCents: 4_900 },
+    });
+    expect(pending.investigation).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ tool: 'support.account.status', phase: 'settled' }),
+        expect.objectContaining({ tool: 'support.knowledge.search', phase: 'settled' }),
+        expect.objectContaining({ tool: 'support.billing.refund' }),
+      ]),
+    );
+    expect(pending.previews).toContain(
+      'Checking account evidence and the duplicate-charge policy…',
+    );
+    expect(pending.previews).toContain('Preparing the approval-gated billing action…');
+    expect(refunded).toBe(0);
+
+    const approved = await fetch(`${server.url}/api/approve`, { method: 'POST', headers });
+    expect(approved.status).toBe(200);
+    const completion = (await approved.json()) as {
+      resolution: {
+        status: string;
+        receipt: { refundId: string; orderId: string; amountCents: number };
+      };
+      handoff: { from: { id: string }; to: { id: string } };
+      evidence: { tool: string; phase: string }[];
+      audit: { entries: number; categories: string[] };
+    };
+    expect(completion.resolution).toMatchObject({
+      status: 'resolved',
+      receipt: {
+        refundId: 'refund_order-842',
+        orderId: 'order-842',
+        amountCents: 4_900,
+      },
+    });
+    expect(completion.handoff).toMatchObject({
+      from: { id: 'support.triage' },
+      to: { id: 'support.billing-specialist' },
+    });
+    expect(completion.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ tool: 'support.account.status', phase: 'settled' }),
+        expect.objectContaining({ tool: 'support.knowledge.search', phase: 'settled' }),
+        expect.objectContaining({ tool: 'support.billing.refund', phase: 'settled' }),
+      ]),
+    );
+    expect(completion.audit.entries).toBeGreaterThan(0);
+    expect(completion.audit.categories).toEqual(
+      expect.arrayContaining([
+        'work',
+        'decision',
+        'authorization',
+        'guardrail',
+        'attempt',
+        'interaction',
+        'session',
+      ]),
+    );
+    expect(refunded).toBe(1);
+
+    const reset = await fetch(`${server.url}/api/reset`, { method: 'POST', headers });
+    expect(reset.status).toBe(200);
+    const reopened = await fetch(`${server.url}/api/case`, { method: 'POST', headers });
+    expect(reopened.status).toBe(200);
+    expect((await reopened.json()) as unknown).toMatchObject({
+      approval: {
+        tool: 'support.billing.refund',
+        details: { orderId: 'order-842', amountCents: 4_900 },
+      },
+    });
+    expect(refunded).toBe(1);
+  } finally {
+    await server.close();
+    await desk.app.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 for (const backend of ['better-sqlite3', 'node-sqlite'] as const)
   test(`support high-assurance flow with ${backend}`, async () => {

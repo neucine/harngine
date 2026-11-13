@@ -12,24 +12,15 @@ try {
     cwd: join(root, 'packages/harngine'),
     stdio: 'pipe',
   });
-  const tarball = join(temp, 'harngine-0.1.0-alpha.0.tgz');
+  const tarball = join(
+    temp,
+    readdirSync(temp).find((name) => /^harngine-.*\.tgz$/.test(name)),
+  );
   const files = execFileSync('tar', ['-tzf', tarball], { encoding: 'utf8' });
   assert(files.includes('package/dist/index.js'));
   assert(files.includes('package/dist/internal/index.js'));
   assert(files.includes('package/LICENSE'));
   assert(!files.includes('/src/') && !files.includes('/test/') && !files.includes('ARCHITECTURE'));
-  execFileSync('bun', ['pm', 'pack', '--destination', temp], {
-    cwd: join(root, 'packages/workbench'),
-    stdio: 'pipe',
-  });
-  const workbenchTarball = join(
-    temp,
-    readdirSync(temp).find((name) => name.includes('workbench') && name.endsWith('.tgz')),
-  );
-  const workbenchFiles = execFileSync('tar', ['-tzf', workbenchTarball], { encoding: 'utf8' });
-  assert(workbenchFiles.includes('package/dist/index.js'));
-  assert(workbenchFiles.includes('package/dist/cli.js'));
-  assert(workbenchFiles.includes('package/LICENSE'));
   execFileSync('bun', ['pm', 'pack', '--destination', temp], {
     cwd: join(root, 'packages/mcp'),
     stdio: 'pipe',
@@ -62,7 +53,6 @@ try {
         harngine: tarball,
         '@harngine/http': httpTarball,
         '@harngine/mcp': mcpTarball,
-        '@harngine/workbench': workbenchTarball,
       },
       overrides: { harngine: tarball },
     }),
@@ -75,7 +65,6 @@ try {
     import { createApp, schema, tool, workflow } from 'harngine';
     import { createHarngineHttpServer } from '@harngine/http';
     import { mcpToolCatalog, mcpToolFromCatalog } from '@harngine/mcp';
-    import { serveWorkbench } from '@harngine/workbench';
 
     const openapi = readFileSync(
       new URL(import.meta.resolve('@harngine/http/openapi.yaml')),
@@ -118,13 +107,6 @@ try {
     }), { content: [{ type: 'text', text: 'Found record' }] });
     const raw = await app.diagnostics.records(work.id, { limit: 2 });
     assert.equal(raw.records[0].table, 'work');
-    const server = await serveWorkbench({ app });
-    const definitions = await fetch(server.url + 'api/v1/definitions', {
-      headers: { authorization: 'Bearer ' + server.capability },
-    });
-    assert.equal(definitions.status, 200);
-    assert.equal((await definitions.json()).definitions.length, 2);
-    await server.close();
     await app.close();
     console.log('Packed public package passed Node ' + process.versions.node + ' smoke test');
   `;
@@ -135,12 +117,6 @@ try {
     env: environment,
   });
   execFileSync(nodeRuntime, ['smoke.mjs'], { cwd: temp, stdio: 'inherit' });
-  execFileSync('bun', [join(root, 'packages/workbench/dist/cli.js'), '--help'], {
-    cwd: temp,
-    stdio: 'pipe',
-    env: environment,
-  });
-
   const consumer = `
     import { agent, createApp, schema, tool, workflow, type ModelAdapter, type Work } from 'harngine';
     const text = schema<string>({ id: 'typed.text', version: '1', jsonSchema: { type: 'string' } });

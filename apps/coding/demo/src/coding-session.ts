@@ -53,7 +53,16 @@ export function codexCodingSessionModel(options: {
   return {
     ...createCodexCliAdapter({
       cliVersion: options.cliVersion,
-      ...(options.model ? { model: options.model } : {}),
+      model: options.model ?? 'codex/gpt-6.1-sol',
+      provider: {
+        name: 'magpie',
+        baseUrl: process.env.HARNGINE_CODING_API_BASE_URL ?? 'http://127.0.0.1:3425/v1',
+        wireApi: 'responses',
+        bearerToken: process.env.HARNGINE_CODING_API_TOKEN ?? 'magpie',
+        headers: {
+          'x-openai-actor-authorization': process.env.HARNGINE_CODING_ACTOR ?? 'magpie',
+        },
+      },
       ...(options.timeoutMs ? { timeoutMs: options.timeoutMs } : {}),
     }),
     label: `Codex CLI ${options.model ?? 'default model'} (${options.cliVersion})`,

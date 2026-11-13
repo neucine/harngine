@@ -8,7 +8,7 @@ const desktop = resolve(root, 'apps/coding/desktop');
 const output = resolve(desktop, 'server');
 const args = process.argv.slice(2);
 const at = args.indexOf('--repo');
-if (at < 0 || !args[at + 1]) throw new Error('Usage: bun run agent:desktop --repo <path>');
+if (at < 0 || !args[at + 1]) throw new Error('Usage: bun run coding:desktop --repo <path>');
 const repo = resolve(args[at + 1]);
 if (!existsSync(repo) || !statSync(repo).isDirectory())
   throw new Error(`Repository directory does not exist: ${repo}`);

@@ -1,4 +1,38 @@
-# Support routing
+# Customer support refund demo
+
+This is the most familiar place to start: a customer says they were charged twice. A triage
+specialist checks the account and refund policy, transfers the conversation to billing, and pauses
+for a person to approve the exact refund before the write runs.
+
+## Watch the walkthrough
+
+[![Customer support refund walkthrough](https://raw.githubusercontent.com/neucine/promotion/main/projects/harngine/support-refund/poster.png)](https://github.com/neucine/promotion/tree/main/projects/harngine/support-refund)
+
+The [69-second walkthrough](https://github.com/neucine/promotion/tree/main/projects/harngine/support-refund)
+shows this specific Harngine example: a support inbox, a durable Triage → Billing handoff, and an
+approval-gated refund.
+
+```bash
+bun install --frozen-lockfile
+bun run demo:support
+```
+
+Open the printed local URL. The browser walkthrough takes about one minute:
+
+1. Open the selected case in the support inbox and select **Run review**.
+2. See the account evidence, policy citation, billing handoff, and pending refund approval in the
+   customer context rail.
+3. Confirm that the payment provider has not received a refund, then select
+   **Approve exact refund**.
+4. See the customer response, refund receipt, Tool history, handoff, and retained audit evidence.
+
+No provider key, payment provider, or network connection is required. The model, account service,
+policy search, and refund are deterministic local adapters wired through the real Harngine runtime.
+
+Use `bun run demo:support:cli` for the same case as a short terminal narrative. Add `-- --json` for
+the complete conversation, Tool calls, handoffs, and audit metadata.
+
+## What this example demonstrates
 
 This focused demo exercises the boundary between conversation continuity and specialist
 execution. A triage Agent reads account state through a Tool selected from a persisted MCP catalog,
@@ -6,20 +40,8 @@ retrieves a versioned policy passage, returns a structured decision, and then th
 transfers Session ownership to a billing Agent only after triage Work is idle. Billing owns the
 continuing conversation and performs a write through an exact approval.
 
-```bash
-bun run build
-node examples/support/dist/main.js
-```
-
-The run prints the triage decision and its policy citation, the durable MCP and retrieval Calls,
-the transient model previews observed through `work.watch()`, the handoff lineage, the pending
-refund approval, the final structured answer, the complete conversation, and a payload-safe
-OpenTelemetry export of retained audit evidence.
-
-The default model, MCP client and retriever are deterministic and require no provider credentials.
-The flow uses the real Harngine runtime: the account catalog, model turns, retrieval and refund are
-recorded Calls, the handoff is a durable Session entry, and the refund does not execute until an
-operator approves it.
+The account catalog, model turns, policy retrieval, and refund are recorded Calls. The handoff is a
+durable Session entry. The refund does not execute until the operator approves its exact input.
 
 ## Boundaries
 
@@ -41,5 +63,5 @@ operator approves it.
   replayable, are excluded from inspection and restart history, and stop when the watcher aborts.
   Model-output guardrails suppress preview delivery so unvalidated output cannot bypass policy.
 
-The example intentionally leaves the customer channel, authentication, ticketing integration,
-payment provider and product UI to the application.
+The example intentionally leaves the customer channel, authentication, ticketing integration, and
+payment provider to the application. The browser screen and CLI both use the same local runtime.

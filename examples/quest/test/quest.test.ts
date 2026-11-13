@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createQuestEngine } from '../src/engine.js';
 import { MetProvider } from '../src/met-provider.js';
 import { page } from '../src/page.js';
+import { serveQuest } from '../src/server.js';
 import { WorldStore } from '../src/world-store.js';
 import { firstObjectId, objectIds, worldObject } from '../src/world.js';
 
@@ -71,6 +72,7 @@ describe('Weiv product shell', () => {
   it('loads a compiled module without putting application code inline', () => {
     const html = page('test-token');
     expect(html).toContain('data-token="test-token"');
+    expect(html).toContain('--ink:#17201d');
     expect(html).toContain('src="/main.mjs"');
     expect(html).toContain('href="/styles.css"');
     expect(html).not.toContain('The Lost Navigator');
@@ -86,6 +88,76 @@ describe('Weiv product shell', () => {
     expect(source).toContain('3 · Pull a thread');
     expect(source).toContain('4 · Make or challenge a connection');
     expect(source).toContain('Reveal the echo');
+  });
+});
+
+describe('public demo path', () => {
+  it('serves the app, records a connection, and welcomes the visitor after restart', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'quest-demo-'));
+    const directory = join(root, 'execution');
+    mkdirSync(directory);
+    const provider = new MetProvider({ mode: 'replay' });
+    let engine = createQuestEngine(realpathSync(directory), provider);
+    let store = new WorldStore(join(root, 'world.sqlite'));
+    let server = await serveQuest({ engine, provider, providerMode: 'replay', store });
+    cleanup.push(async () => {
+      await server.close();
+      store.close();
+      await engine.close();
+    });
+
+    const response = await fetch(server.url);
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    const token = html.match(/data-token="([^"]+)"/)?.[1];
+    expect(token).toBeTruthy();
+    expect((await fetch(`${server.url}/App.mjs`)).status).toBe(200);
+    const headers = { 'content-type': 'application/json', 'x-quest-token': token! };
+    const arrival = await fetch(`${server.url}/api/visitors`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ name: 'Ada' }),
+    });
+    expect(arrival.status).toBe(201);
+    const visitor = (await arrival.json()) as { visitorToken: string };
+    const connected = await fetch(`${server.url}/api/connect`, {
+      method: 'POST',
+      headers: { ...headers, 'x-visitor-token': visitor.visitorToken },
+      body: JSON.stringify({
+        from: objectIds[0],
+        to: objectIds[1],
+        label: 'Both help us locate ourselves',
+      }),
+    });
+    expect(connected.status).toBe(200);
+    const reaction = (await connected.json()) as { workId: string; sources: unknown[] };
+    expect(reaction.sources).toHaveLength(2);
+    const inspection = await fetch(`${server.url}/api/inspection/${reaction.workId}`, {
+      headers: { 'x-quest-token': token!, 'x-visitor-token': visitor.visitorToken },
+    });
+    expect(inspection.status).toBe(200);
+    expect((await inspection.json()).work.status).toBe('completed');
+
+    await server.close();
+    store.close();
+    await engine.close();
+    engine = createQuestEngine(realpathSync(directory), provider);
+    store = new WorldStore(join(root, 'world.sqlite'));
+    server = await serveQuest({ engine, provider, providerMode: 'replay', store });
+    const returnedPage = await (await fetch(server.url)).text();
+    const returnToken = returnedPage.match(/data-token="([^"]+)"/)?.[1];
+    expect(returnToken).toBeTruthy();
+    const returned = await fetch(`${server.url}/api/return`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-quest-token': returnToken!,
+        'x-visitor-token': visitor.visitorToken,
+      },
+      body: '{}',
+    });
+    expect(returned.status).toBe(200);
+    expect((await returned.json()).perspective).toBeTruthy();
   });
 });
 

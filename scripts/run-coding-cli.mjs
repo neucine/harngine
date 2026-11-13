@@ -24,16 +24,16 @@ if (repositoryArgument >= 0) {
     process.exit(2);
   }
 }
-const run = (command, args) => {
+const run = (command, args, options = {}) => {
   const result = spawnSync(command, args, {
     cwd: root,
-    stdio: 'inherit',
+    stdio: ['inherit', options.suppressStdout ? 'ignore' : 'inherit', 'inherit'],
     env: { ...process.env, PATH: safePath },
   });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
-run('bun', ['packages/harngine/src/build/manifest-cli.ts']);
+run('bun', ['packages/harngine/src/build/manifest-cli.ts'], { suppressStdout: true });
 run(node, ['node_modules/typescript/bin/tsc', '-b', 'apps/coding/cli', '--force']);
 const target = 'apps/coding/cli/dist/cli.js';
 run(node, [resolve(root, target), ...argumentsForTarget]);

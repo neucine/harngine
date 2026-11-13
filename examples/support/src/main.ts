@@ -1,6 +1,7 @@
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { parseArgs } from 'node:util';
 import {
   createSupportDesk,
   routeSupportConversation,
@@ -30,6 +31,12 @@ const request: SupportRequest = {
   orderId: 'order-842',
   amountCents: 4_900,
 };
+const { values } = parseArgs({
+  options: {
+    cli: { type: 'boolean', default: false },
+    json: { type: 'boolean', default: false },
+  },
+});
 
 try {
   const livePreview: string[] = [];
@@ -52,34 +59,76 @@ try {
     sink: { write: (batch) => void auditBatches.push(batch) },
   });
 
-  console.log(
-    JSON.stringify(
-      {
-        triage: routed.decision,
-        ownership: handoffs,
-        approval,
-        resolution,
-        conversation: messages,
-        mcpEvidence: triageStory.entries.filter(
-          (entry) => entry.type === 'call' && entry.tool?.id === 'support.account.status',
-        ),
-        retrievalEvidence: triageStory.entries.filter(
-          (entry) => entry.type === 'call' && entry.tool?.id === 'support.knowledge.search',
-        ),
-        livePreview,
-        audit: {
-          entries: audit.entries.length,
-          categories: [...new Set(audit.entries.map((entry) => entry.category))].sort(),
-          exported: auditExport.exported,
-          format: auditExport.format,
-          batches: auditBatches.length,
-        },
-      },
-      null,
-      2,
+  const evidence = {
+    triage: routed.decision,
+    ownership: handoffs,
+    approval,
+    resolution,
+    conversation: messages,
+    mcpEvidence: triageStory.entries.filter(
+      (entry) => entry.type === 'call' && entry.tool?.id === 'support.account.status',
     ),
-  );
+    retrievalEvidence: triageStory.entries.filter(
+      (entry) => entry.type === 'call' && entry.tool?.id === 'support.knowledge.search',
+    ),
+    livePreview,
+    audit: {
+      entries: audit.entries.length,
+      categories: [...new Set(audit.entries.map((entry) => entry.category))].sort(),
+      exported: auditExport.exported,
+      format: auditExport.format,
+      batches: auditBatches.length,
+    },
+  };
+  if (values.json) {
+    console.log(JSON.stringify(evidence, null, 2));
+  } else {
+    const refund = approval.details as { orderId: string; amountCents: number };
+    const staff = handoffs[0];
+    console.log(`
+Harngine demo: customer support refund
+
+Customer
+  "${request.request}"
+  Order ${request.orderId} · ${formatMoney(request.amountCents)}
+
+1. Triage specialist investigates
+  Account tool: two settled charges found.
+  Policy tool: ${routed.decision.citations[0]?.source}
+  Decision: ${routed.decision.summary}
+  Next: transfer this conversation to billing.
+
+2. Conversation moves to billing
+  ${staff?.from.id ?? 'triage'} → ${staff?.to.id ?? 'billing specialist'}
+  The original specialist can no longer send on this Session.
+  Conversation history and the handoff reason remain inspectable.
+
+3. Refund pauses for a person
+  Proposed: refund ${formatMoney(refund.amountCents)} for ${refund.orderId}.
+  The Tool has not run yet.
+  Supervisor approval: granted by the local demo operator.
+
+4. Customer response
+  ${resolution.message}
+  Refund receipt: ${resolution.receipt.refundId}
+
+What Harngine proved
+  ✓ Two real Tool calls supplied account and policy evidence.
+  ✓ The billing handoff is an explicit Session entry.
+  ✓ A person approved the exact order and amount before the write ran.
+  ✓ ${audit.entries.length} payload-safe audit entries export as ${auditExport.format}.
+
+Run with --json to inspect the complete conversation, calls, and audit metadata.
+`);
+  }
 } finally {
   await desk.app.close();
   rmSync(directory, { recursive: true, force: true });
+}
+
+function formatMoney(cents: number): string {
+  return new Intl.NumberFormat('en-NZ', {
+    style: 'currency',
+    currency: 'NZD',
+  }).format(cents / 100);
 }

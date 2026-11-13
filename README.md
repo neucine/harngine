@@ -1,61 +1,118 @@
 # Harngine
 
-Harngine runs agents and workflows as durable, inspectable work. It records model decisions, tool calls, approvals, and results, so an application can recover after a restart and show what happened.
+[简体中文](README.zh-CN.md)
 
-Harngine is pre-release software; its public API may change.
+<img src="docs/social-preview.svg" alt="Harngine: durable, inspectable work for agent applications" width="560">
 
-## Try the coding app
+Harngine is a TypeScript runtime for agents and workflows. It keeps model decisions, Tool calls,
+approvals, and results durable enough to inspect or resume after a restart.
 
-The macOS coding app can inspect a repository, answer questions, and propose edits for your approval. It shows replies and tool activity as the agent works.
+Harngine is pre-release software. Its public API may change.
+
+# Get Started
+
+Harngine requires Node.js 24.21. Install the framework package from npm:
 
 ```bash
-bun install
-bun run agent:desktop --repo "$PWD"
+npm install harngine
+```
+
+Optional integrations are published under the `@harngine` scope. Install only the ones your
+application uses:
+
+```bash
+npm install \
+  @harngine/openai-responses \
+  @harngine/claude-messages \
+  @harngine/mcp \
+  @harngine/retrieval \
+  @harngine/http
+```
+
+To run the Coding CLI and repository examples, clone the source and install its workspace:
+
+```bash
+git clone https://github.com/neucine/harngine.git
+cd harngine
+bun install --frozen-lockfile
+```
+
+# Examples
+
+## Coding CLI
+
+Harngine Coding is a terminal agent for repository work. It starts in read-only mode, streams live
+progress, keeps Tool calls compact, and asks before applying each exact file change.
+
+```bash
+bun run coding:cli --repo .
+```
+
+Use `/write` to switch to an edit Session. `/sessions` and `--continue` resume saved work. For
+automation, pass `--task`; add `--json` for one machine-readable result.
+
+Local development defaults to Magpie and `codex/gpt-6.1-sol`. If Magpie is unavailable, the
+interactive setup offers OpenAI, Claude, or Magpie. To use OpenAI directly:
+
+```bash
+OPENAI_API_KEY=... bun run coding:cli \
+  --repo . \
+  --provider openai \
+  --model <model-id>
+```
+
+See the [Coding CLI guide](apps/coding/cli/README.md) for providers, thinking output, approvals,
+one-shot runs, and Session commands.
+
+The macOS app uses the same Agent and durable history:
+
+```bash
+bun run coding:desktop --repo "$PWD"
 open -n apps/coding/desktop/build/NeivApp.app
 ```
 
-The desktop build currently needs local [Neiv](https://github.com/neucine/neiv) and
-[Weiv](https://github.com/neucine/weiv) checkouts at `../neiv` and `../weiv`, with the matching
-Weiv compiler and package runtime built. You also need a working Codex CLI login or a compatible
-model endpoint. See the [Coding Desktop guide](apps/coding/desktop/README.md) for setup and use.
+Desktop builds currently need local [Neiv](https://github.com/neucine/neiv) and
+[Weiv](https://github.com/neucine/weiv) checkouts. See the
+[Coding Desktop guide](apps/coding/desktop/README.md).
 
-## Build with Harngine
+## Support Desk
 
-Define an **Agent** for model-directed work, a **Workflow** for explicit orchestration, and typed **Tools** for external operations. Harngine runs each objective as **Work**. A **Session** keeps several objectives together for a user.
-
-The npm package is not published yet. To explore the framework from this repository:
+The offline Support Desk example follows a duplicate charge from customer request to an
+approval-gated refund. It shows account evidence, a policy lookup, a durable Triage → Billing
+handoff, the exact approval, and the completed audit trail.
 
 ```bash
-bun install
-bun run build
+bun run demo:support
 ```
 
-The [framework guide](docs/guide.md) covers creating Agents and Workflows, watching Work, using Sessions, handling uncertain tool effects, and inspecting execution. The [package reference](packages/harngine/README.md) and [Workbench guide](packages/workbench/README.md) cover the public APIs and development UI.
+Open the printed URL, select **Run review**, then approve the exact NZ$49 refund. No provider key,
+payment service, or network connection is required.
 
-The [core architecture guide](docs/architecture.md) explains the runtime boundaries and durability
-model. The [HTTP API guide](docs/api.md) covers the optional authenticated server and links to its
-[OpenAPI 3.1 contract](packages/http/openapi.yaml).
+Use `bun run demo:support:cli` for the same case in the terminal. See the
+[Support Desk guide](examples/support/README.md) or watch the
+[69-second walkthrough](https://github.com/neucine/promotion/tree/main/projects/harngine/support-refund).
 
-Model adapters integrate [OpenAI Responses](packages/openai-responses/README.md) and [Claude Messages](packages/claude-messages/README.md) compatible endpoints, including streaming previews and unauthenticated local routers with an explicit base URL. Optional integration packages discover and bridge selected [MCP tools](packages/mcp/README.md) and expose [retrieval services](packages/retrieval/README.md) as Harngine Tools. [Evaluation](packages/evaluation/README.md) runs bounded Work-tree evidence and scorer benchmarks without entering the execution core. Large attachments and generated files cross Work and Model Context as content-addressed references; application storage retains the bytes. Work watchers and the HTTP adapter can forward transient model previews, while Workbench and HTTP expose the payload-safe `app.audit` projection. Audit evidence exports as JSON or OTLP/HTTP JSON.
+## Additional examples
 
-## Applications
+- [Quest](examples/quest/README.md): a shared, persistent museum world with offline replay.
+- [Quickstart](examples/quickstart/README.md): kill a task mid-run, restart, and verify recovery.
+- [All examples](examples): support, museum, home, creative research, travel, and due diligence.
 
-- [Coding app](apps/coding/README.md) — a repository agent with CLI and desktop interfaces.
+# Development
 
-## Examples
+## Build and verify
 
-- [Quest](examples/quest/README.md) — a persistent cultural world with shared and private perspectives.
-- [Hearth](examples/hearth/README.md) — a shared home world with durable memory.
-- [Muse](examples/muse/README.md) — a creator studio with research and approval steps.
-- [Roam](examples/roam/README.md) — a collaborative journey atlas.
-- [Support](examples/support/README.md) — MCP catalog selection, policy retrieval, conversation handoff and approval-gated billing.
-- [Due diligence](examples/due-diligence/README.md) — attachment references, cited review and approved publication.
+```bash
+bun run build
+bun run check
+```
 
-Harngine currently runs as an embedded Node.js runtime backed by SQLite. Bun is used for the workspace, builds, and tests.
+Read the [framework guide](docs/guide.md), [package reference](packages/harngine/README.md), or
+[architecture notes](docs/architecture.md). Harngine runs on an embedded Node.js runtime backed by
+SQLite; Bun manages the workspace and builds.
 
-## License
+# License
 
-Harngine is licensed under the [Mozilla Public License 2.0](LICENSE).
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the verification workflow. Report suspected
-vulnerabilities privately according to [SECURITY.md](SECURITY.md).
+Harngine is licensed under the [Mozilla Public License 2.0](LICENSE). See
+[CONTRIBUTING.md](CONTRIBUTING.md) for verification and [SECURITY.md](SECURITY.md) for private
+vulnerability reporting.

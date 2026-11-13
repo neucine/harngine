@@ -1,7 +1,6 @@
 {
   "name": "@harngine/openai-responses",
-  "version": "0.1.0-alpha.0",
-  "private": true,
+  "version": "0.1.0",
   "license": "MPL-2.0",
   "type": "module",
   "exports": {
@@ -12,5 +11,16 @@
   },
   "dependencies": {
     "harngine": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=24.21.0 <25"
   }
 }

@@ -7,12 +7,21 @@ wander, form interpretations, draw trails between objects, and return to a world
 people.
 
 ```bash
-bun run demo:quest
+bun run demo:quest -- --port 4317
 ```
 
 The default `replay` mode is deterministic and offline. `--mode live` reads the same bounded object
 set from The Met without changing the recording. `--mode safe-write` is the only mode that refreshes
 the local replay cache; it validates object identity and public-domain status and writes atomically.
+
+## Guided walkthrough
+
+1. Open `http://127.0.0.1:4317`, enter a name, and choose **Measure**. The astrolabe is your first object; read its collection record and choose **I noticed something**.
+2. Select **Astronomicum Caesareum** as the second object. Choose **Make** and write a short connection, such as “Both turn the sky into a tool people can hold.” Select **Reveal the echo**. The new path appears in the constellation and in shared memory.
+3. Select **Keep exploring freely**. The Keeper of Nearness shows your private perspective; the path remains visible to other visitors. **How this world lives** explains the durable reaction in product terms.
+4. Stop the server with Ctrl+C and run the same command again. Reload the **same URL in the same browser**. Your visitor Session returns and the shared path remains. Keep the port and `--directory` value stable across restarts because browser visitor tokens are stored per origin.
+
+The first expedition requires no credentials or network requests. To show a second visitor, open the URL in a separate browser profile and leave another interpretation. The first visitor can reload to discover the later echo.
 
 ## Experience model
 

@@ -156,6 +156,39 @@ test('coding Agent completes a read Tool loop through the Responses adapter', as
   });
 });
 
+test('coding App can select a public API provider with an explicit model and token', async () => {
+  const root = repository({ 'README.md': 'Provider selection fixture\n' });
+  const coding = createCodingApp({
+    repo: root,
+    writable: false,
+    provider: 'openai',
+    modelId: 'gpt-test',
+    apiToken: ['test', 'api', 'token'].join('-'),
+  });
+  apps.push(coding);
+
+  expect(coding.provider).toBe('openai');
+  expect(coding.model).toBe('gpt-test');
+  expect(coding.readAssistant.model.id).toBe('openai-responses');
+});
+
+test('local Magpie uses the streaming Responses adapter by default', async () => {
+  const root = repository({ 'README.md': 'Magpie streaming fixture\n' });
+  const coding = createCodingApp({
+    repo: root,
+    writable: false,
+    provider: 'magpie',
+    modelId: 'codex/gpt-6.1-sol',
+    apiToken: 'magpie',
+  });
+  apps.push(coding);
+
+  expect(coding.provider).toBe('magpie');
+  expect(coding.model).toBe('codex/gpt-6.1-sol');
+  expect(coding.readAssistant.model.id).toBe('openai-responses');
+  expect(coding.readAssistant.model.capabilities.streaming).toBe(true);
+});
+
 test('coding orchestrator exposes specialists and durable research/review composition', async () => {
   const root = repository({ 'README.md': 'Collaborative coding fixture\n' });
   const requests: ModelRequest[] = [];

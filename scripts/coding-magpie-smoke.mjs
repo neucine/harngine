@@ -7,7 +7,7 @@ import { createCodingApp } from '../apps/coding/agent/dist/app.js';
 process.env.HARNGINE_CODING_PROVIDER ??= 'openai-responses';
 process.env.HARNGINE_CODING_API_BASE_URL ??= 'http://127.0.0.1:3425/v1';
 process.env.HARNGINE_CODING_API_TOKEN ??= 'magpie';
-process.env.CODEX_MODEL ??= 'codex/gpt-6-sol';
+process.env.CODEX_MODEL ??= 'codex/gpt-6.1-sol';
 
 if (process.env.HARNGINE_SMOKE_DEBUG) {
   const request = globalThis.fetch;

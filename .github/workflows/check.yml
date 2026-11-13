@@ -16,3 +16,6 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run check
       - run: bun run test:package
+      - run: bun run test:quickstart
+      - run: bun run test:demo:quest
+      - run: bun run test:demo:support

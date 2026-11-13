@@ -16,6 +16,17 @@ export interface CodexCliOptions {
   command?: string;
   model?: string;
   timeoutMs?: number;
+  /**
+   * Explicit provider settings. The CLI runs with user configuration ignored, so embeddings that
+   * target a local gateway must pass its connection details here.
+   */
+  provider?: {
+    readonly name: string;
+    readonly baseUrl: string;
+    readonly wireApi?: 'responses';
+    readonly bearerToken?: string;
+    readonly headers?: Readonly<Record<string, string>>;
+  };
   /** Version observed with `codex --version`; checked before invoking the model. */
   cliVersion: string;
   onCall?: (ordinal: number) => void;
@@ -40,8 +51,13 @@ const disabled = [
 // A failed turn, error event or nonzero exit still rejects the invocation.
 const allowedItems = new Set(['agent_message', 'reasoning', 'error']);
 const maxBytes = 1024 * 1024;
-function environment(): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = {};
+function tomlInlineTable(value: Readonly<Record<string, string>>) {
+  return `{ ${Object.entries(value)
+    .map(([key, item]) => `${JSON.stringify(key)} = ${JSON.stringify(item)}`)
+    .join(', ')} }`;
+}
+function environment(extra: Readonly<Record<string, string>> = {}): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...extra };
   for (const name of [
     'HOME',
     'USER',
@@ -81,6 +97,7 @@ function execute(
   timeoutMs: number,
   audit: boolean,
   progress?: (event: ModelProgress) => void,
+  extraEnvironment: Readonly<Record<string, string>> = {},
 ): Promise<ProcessResult> {
   if (signal.aborted)
     return Promise.resolve({ ok: false, reason: 'aborted_before_start', stdout: '' });
@@ -89,7 +106,7 @@ function execute(
     try {
       child = spawn(command, args, {
         cwd,
-        env: environment(),
+        env: environment(extraEnvironment),
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
       });
@@ -179,7 +196,20 @@ function execute(
               stop(
                 `unexpected_cli_item:${event.item.type.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80)}`,
               );
-            if (event.type === 'turn.failed' || event.type === 'error') stop('cli_failure');
+            if (event.type === 'turn.failed' || event.type === 'error') {
+              const failure = event as {
+                message?: unknown;
+                error?: { message?: unknown };
+              };
+              const detail =
+                typeof failure.error?.message === 'string'
+                  ? failure.error.message
+                  : typeof failure.message === 'string'
+                    ? failure.message
+                    : '';
+              const summary = describeCliFailure(detail);
+              stop(summary ? `cli_failure:${summary}` : 'cli_failure');
+            }
           } catch {
             stop('invalid_cli_events');
           }
@@ -205,6 +235,13 @@ function execute(
     if (signal.aborted) abort();
   });
 }
+function describeCliFailure(message: string) {
+  if (/out of credits|credit balance/i.test(message)) return 'workspace out of credits';
+  if (/rate limit|too many requests/i.test(message)) return 'rate limit reached';
+  if (/usage limit|quota/i.test(message)) return 'usage limit reached';
+  if (/auth|log in|login|unauthorized|\b401\b/i.test(message)) return 'authentication required';
+  return '';
+}
 /** Backward compatible names for the shared Harngine model envelope. */
 export {
   modelEnvelopeInstructions as codexCliSystemInstructions,
@@ -216,6 +253,14 @@ export {
 export function createCodexCliModel(options: CodexCliOptions) {
   const command = options.command ?? 'codex';
   const timeoutMs = options.timeoutMs ?? 180000;
+  const provider = options.provider;
+  if (
+    provider &&
+    (!/^[A-Za-z0-9_-]+$/.test(provider.name) ||
+      !URL.canParse(provider.baseUrl) ||
+      !['http:', 'https:'].includes(new URL(provider.baseUrl).protocol))
+  )
+    throw Error('Invalid model provider');
   if (
     !options.cliVersion.trim() ||
     !Number.isSafeInteger(timeoutMs) ||
@@ -226,9 +271,16 @@ export function createCodexCliModel(options: CodexCliOptions) {
   const artifactDigest = createHash('sha256')
     .update(
       JSON.stringify({
-        profile: 'structured-v2-reasoning-summary',
+        profile: provider ? 'structured-v3-explicit-provider' : 'structured-v2-reasoning-summary',
         version: options.cliVersion,
         model: options.model ?? 'cli-default',
+        provider: provider
+          ? {
+              name: provider.name,
+              baseUrl: provider.baseUrl,
+              wireApi: provider.wireApi ?? 'responses',
+            }
+          : null,
         timeoutMs,
       }),
     )
@@ -274,6 +326,31 @@ export function createCodexCliModel(options: CodexCliOptions) {
           mode: 0o600,
         });
         await writeFile(system, modelEnvelopeInstructions, { mode: 0o600 });
+        const providerTokenName = 'HARNGINE_MODEL_PROVIDER_TOKEN';
+        const providerArgs = provider
+          ? [
+              '-c',
+              `model_provider=${JSON.stringify(provider.name)}`,
+              '-c',
+              `model_providers.${provider.name}.name=${JSON.stringify(provider.name)}`,
+              '-c',
+              `model_providers.${provider.name}.base_url=${JSON.stringify(provider.baseUrl)}`,
+              '-c',
+              `model_providers.${provider.name}.wire_api=${JSON.stringify(provider.wireApi ?? 'responses')}`,
+              ...(provider.bearerToken
+                ? [
+                    '-c',
+                    `model_providers.${provider.name}.env_key=${JSON.stringify(providerTokenName)}`,
+                  ]
+                : []),
+              ...(provider.headers
+                ? [
+                    '-c',
+                    `model_providers.${provider.name}.http_headers=${tomlInlineTable(provider.headers)}`,
+                  ]
+                : []),
+            ]
+          : ['-c', 'forced_login_method="chatgpt"'];
         const args = [
           'exec',
           '--ignore-user-config',
@@ -287,8 +364,7 @@ export function createCodexCliModel(options: CodexCliOptions) {
           'never',
           '-c',
           'approval_policy="never"',
-          '-c',
-          'forced_login_method="chatgpt"',
+          ...providerArgs,
           '-c',
           'web_search="disabled"',
           '-c',
@@ -315,6 +391,7 @@ export function createCodexCliModel(options: CodexCliOptions) {
           timeoutMs,
           true,
           input.progress,
+          provider?.bearerToken ? { [providerTokenName]: provider.bearerToken } : {},
         );
         if (!result.ok)
           return { status: 'unknown', reason: { code: 'MODEL_UNCERTAIN', message: result.reason } };

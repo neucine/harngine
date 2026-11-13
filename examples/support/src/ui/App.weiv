@@ -1,0 +1,1871 @@
+<template>
+  <div class="support-app">
+    <header class="global-header">
+      <div class="brand">
+        <span class="brand-mark">H</span>
+        <b>Harngine</b>
+        <span class="product-name">Relay Support</span>
+      </div>
+      <div class="global-actions">
+        <span class="environment"><i></i>Local demo</span>
+        <button class="icon-button" aria-label="Search">Search</button>
+        <span class="header-avatar">JC</span>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="navigation" aria-label="Support navigation">
+        <div class="nav-section">
+          <div class="nav-heading">Workspace</div>
+          <button class="nav-item active">
+            <span>Inbox</span><span class="count">18</span>
+          </button>
+          <button class="nav-item"><span>Assigned to me</span><span class="count">6</span></button>
+          <button class="nav-item"><span>Mentions</span><span class="count quiet">2</span></button>
+          <button class="nav-item"><span>Saved views</span></button>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-heading">Queues</div>
+          <button class="nav-item">
+            <span><i class="queue-dot triage"></i>Triage</span><span class="count">12</span>
+          </button>
+          <button class="nav-item">
+            <span><i class="queue-dot billing"></i>Billing</span><span class="count">3</span>
+          </button>
+          <button class="nav-item">
+            <span><i class="queue-dot success"></i>Success</span>
+          </button>
+        </div>
+
+        <div class="nav-section nav-bottom">
+          <div class="nav-heading">Demo notes</div>
+          <p>All account data and actions are local. No network or provider key is used.</p>
+          <button class="text-button">View runtime details</button>
+        </div>
+
+        <div class="operator">
+          <span class="operator-avatar">JD</span>
+          <div><b>Jamie Dale</b><small>Support operator</small></div>
+        </div>
+      </aside>
+
+      <section class="inbox" aria-label="Conversation list">
+        <div class="inbox-header">
+          <div>
+            <h1>Inbox</h1>
+            <span>18 open</span>
+          </div>
+          <button class="filter-button">Filter</button>
+        </div>
+        <label class="search">
+          <span>Search</span>
+          <input type="search" placeholder="Name, order, or message" />
+        </label>
+        <div class="list-tabs">
+          <button class="active">Mine</button>
+          <button>Unassigned</button>
+          <button>All</button>
+        </div>
+
+        <div class="conversation-list">
+          <button class="conversation-row selected">
+            <span class="unread-dot"></span>
+            <span class="row-main">
+              <span class="row-top"><b>Alex Morgan</b><time>12m</time></span>
+              <span class="row-subject">Duplicate annual charge</span>
+              <span class="row-preview">My card was charged twice for the same plan…</span>
+              <span class="row-meta"><span class="tag billing">Billing</span><span>order-842</span></span>
+            </span>
+          </button>
+          <button class="conversation-row">
+            <span class="unread-dot muted"></span>
+            <span class="row-main">
+              <span class="row-top"><b>Priya Shah</b><time>38m</time></span>
+              <span class="row-subject">Invoice address</span>
+              <span class="row-preview">We moved offices in September and…</span>
+              <span class="row-meta"><span class="tag account">Account</span><span>Invoice 1049</span></span>
+            </span>
+          </button>
+          <button class="conversation-row">
+            <span class="unread-dot muted"></span>
+            <span class="row-main">
+              <span class="row-top"><b>Mateo Ruiz</b><time>1h</time></span>
+              <span class="row-subject">Add another seat</span>
+              <span class="row-preview">Can I add one more person before…</span>
+              <span class="row-meta"><span class="tag billing">Billing</span><span>Annual plan</span></span>
+            </span>
+          </button>
+          <button class="conversation-row">
+            <span class="unread-dot muted"></span>
+            <span class="row-main">
+              <span class="row-top"><b>Nina Patel</b><time>2h</time></span>
+              <span class="row-subject">Export history</span>
+              <span class="row-preview">Is it possible to download the full…</span>
+              <span class="row-meta"><span class="tag account">Account</span><span>Data</span></span>
+            </span>
+          </button>
+          <button class="conversation-row">
+            <span class="unread-dot muted"></span>
+            <span class="row-main">
+              <span class="row-top"><b>Owen Bell</b><time>Yesterday</time></span>
+              <span class="row-subject">Payment failed</span>
+              <span class="row-preview">The card ending 4418 keeps being declined…</span>
+              <span class="row-meta"><span class="tag billing">Billing</span><span>Failed</span></span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <main class="conversation">
+        <header class="conversation-header">
+          <div class="case-title">
+            <div class="microline">
+              <span>#SV-2048</span>
+              <span>Email</span>
+              <span>Opened today at 9:41 AM</span>
+            </div>
+            <h2>Duplicate annual plan charge</h2>
+          </div>
+          <div class="case-actions">
+            <span class="case-status" class:resolved="completed">{{ completed ? "Resolved" : "Billing review" }}</span>
+            <button class="icon-button" aria-label="More actions">•••</button>
+          </div>
+        </header>
+
+        <div class="thread">
+          <div class="thread-day"><span>Today</span></div>
+
+          <article class="message customer-message">
+            <span class="avatar customer">AM</span>
+            <div class="message-body">
+              <div class="message-head">
+                <b>Alex Morgan</b>
+                <span>alex.morgan@example.com</span>
+                <time>9:41 AM</time>
+              </div>
+              <p>My card was charged twice for the same annual plan. Can you refund the duplicate?</p>
+              <div class="message-facts">
+                <span><b>Order</b> order-842</span>
+                <span><b>Duplicate</b> NZ$49.00</span>
+              </div>
+            </div>
+          </article>
+
+          <section if="!data && !completed" class="review-start">
+            <div class="review-start-icon">H</div>
+            <div class="review-start-copy">
+              <h3>Run the refund review</h3>
+              <p>
+                Checks the two payments and duplicate-charge policy. If the refund qualifies,
+                the action stops here for your approval.
+              </p>
+              <div class="review-checks">
+                <span>Account state</span>
+                <span>Refund policy</span>
+                <span>Exact order and amount</span>
+              </div>
+            </div>
+            <button class="primary-button" on:click="reviewCase" bind:disabled="busy">
+              {{ busy ? "Checking…" : "Run review" }}
+            </button>
+          </section>
+
+          <div class="thread-state" if="data && !completed">
+            <article class="activity-block">
+              <div class="activity-head">
+                <div><span class="agent-avatar">H</span><b>Harngine review</b></div>
+                <span class="activity-time">Completed in 0.8s</span>
+              </div>
+              <p class="activity-summary">Found two settled charges for order-842. The duplicate qualifies for a billing review.</p>
+              <div class="activity-grid">
+                <div>
+                  <span>Account check</span>
+                  <b>Two settled charges</b>
+                  <code>support.account.status</code>
+                </div>
+                <div>
+                  <span>Policy check</span>
+                  <b>Billing specialist review</b>
+                  <code>{{ citationSource() }}</code>
+                </div>
+              </div>
+            </article>
+
+            <div class="system-event">
+              <span class="event-icon">↪</span>
+              <span><b>Triage handed off to Billing</b> · Conversation context and evidence carried over</span>
+              <time>9:43 AM</time>
+            </div>
+
+            <article class="message agent-message">
+              <span class="avatar agent">BS</span>
+              <div class="message-body">
+                <div class="message-head">
+                  <b>Billing Specialist</b><span>Harngine Agent</span><time>9:43 AM</time>
+                </div>
+                <p>
+                  I confirmed the duplicate charge and the policy requirement. The proposed refund is
+                  ready for operator approval. Nothing has been sent to the payment provider yet.
+                </p>
+              </div>
+            </article>
+          </div>
+
+          <div class="thread-state" if="completed">
+            <article class="activity-block">
+              <div class="activity-head">
+                <div><span class="agent-avatar">H</span><b>Harngine review</b></div>
+                <span class="activity-time">Completed in 1.2s</span>
+              </div>
+              <p class="activity-summary">Approved refund completed against order-842.</p>
+              <div class="activity-grid">
+                <div>
+                  <span>Account check</span>
+                  <b>Two settled charges</b>
+                  <code>support.account.status</code>
+                </div>
+                <div>
+                  <span>Refund write</span>
+                  <b>Executed after approval</b>
+                  <code>support.billing.refund</code>
+                </div>
+              </div>
+            </article>
+
+            <div class="system-event">
+              <span class="event-icon">↪</span>
+              <span><b>Triage handed off to Billing</b> · {{ handoffLabel() }}</span>
+              <time>9:43 AM</time>
+            </div>
+
+            <article class="message agent-message resolved-message">
+              <span class="avatar agent">BS</span>
+              <div class="message-body">
+                <div class="message-head">
+                  <b>Billing Specialist</b><span>Harngine Agent</span><time>9:45 AM</time>
+                </div>
+                <p>{{ completed.resolution.message }}</p>
+                <div class="inline-receipt">
+                  <div><span>Refund</span><b>{{ money(completed.resolution.receipt.amountCents) }}</b></div>
+                  <div><span>Order</span><b>{{ completed.resolution.receipt.orderId }}</b></div>
+                  <div><span>Refund ID</span><b>{{ completed.resolution.receipt.refundId }}</b></div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <small if="errorMessage" class="error" role="alert">{{ errorMessage }}</small>
+        </div>
+
+        <footer class="composer">
+          <div class="composer-box">
+            <span>{{ completed ? "This conversation is resolved." : "Reply to Alex Morgan…" }}</span>
+            <button aria-label="Send">↑</button>
+          </div>
+          <div class="composer-meta">
+            <span>Internal note</span><span>Attach</span>
+            <span class="composer-hint">Demo mode · replies are disabled</span>
+          </div>
+        </footer>
+      </main>
+
+      <aside class="context" aria-label="Customer and runtime context">
+        <div class="context-header">
+          <div class="context-tabs"><button class="active">Context</button><button>History</button></div>
+          <button class="icon-button" aria-label="Close context">×</button>
+        </div>
+
+        <div class="context-state" if="!data && !completed">
+          <section class="context-section customer-card">
+            <div class="customer-summary">
+              <span class="avatar customer large">AM</span>
+              <div><h3>Alex Morgan</h3><span>Annual plan · Customer since 2024</span></div>
+            </div>
+            <dl>
+              <div><dt>Order</dt><dd>order-842</dd></div>
+              <div><dt>Plan</dt><dd>Annual workspace</dd></div>
+              <div><dt>Payment</dt><dd>Visa ···· 4418</dd></div>
+              <div><dt>Charge</dt><dd>NZ$49.00</dd></div>
+            </dl>
+          </section>
+          <section class="context-section">
+            <div class="section-title"><h3>Before review</h3><span>Read only</span></div>
+            <p class="context-copy">
+              Harngine redacts customer identifiers before model access and records every tool call.
+              Refund actions require operator approval.
+            </p>
+          </section>
+          <section class="context-section">
+            <div class="section-title"><h3>Policy</h3><span>Current</span></div>
+            <div class="policy-row">
+              <span>Duplicate charges</span>
+              <small>Billing specialist approval required</small>
+            </div>
+          </section>
+        </div>
+
+        <div class="context-state" if="data && !completed">
+          <section class="context-section request-summary">
+            <div class="section-title"><h3>Request</h3><span class="status-label pending">Needs approval</span></div>
+            <p>{{ data.customer.request }}</p>
+            <dl>
+              <div><dt>Order</dt><dd>{{ data.customer.orderId }}</dd></div>
+              <div><dt>Amount</dt><dd>{{ money(data.customer.amountCents) }}</dd></div>
+              <div><dt>Owner</dt><dd>Billing Specialist</dd></div>
+            </dl>
+          </section>
+
+          <section class="approval-box">
+            <div class="approval-title">
+              <span>Approval required</span>
+              <span class="warning-icon">!</span>
+            </div>
+            <h3>{{ approvalTitle() }}</h3>
+            <div class="approval-value">
+              <span>{{ money(data.approval.details.amountCents) }}</span>
+              <code>{{ data.approval.details.orderId }}</code>
+            </div>
+            <p>The refund Tool is paused. The payment provider has not received this request.</p>
+            <button class="approve-button" on:click="approveRefund" bind:disabled="busy">
+              {{ busy ? "Running refund…" : "Approve exact refund" }}
+            </button>
+            <small>Approving runs <code>{{ data.approval.tool }}</code> with the values above.</small>
+          </section>
+
+          <section class="context-section evidence-section">
+            <div class="section-title">
+              <h3>Runtime evidence</h3><span>{{ evidenceCount() }} records</span>
+            </div>
+            <div class="evidence-list">
+              <div for="item in data.investigation">
+                <span class="evidence-state complete">✓</span>
+                <div><b>{{ evidenceLabel(item.tool) }}</b><code>{{ item.tool }}</code></div>
+                <span>{{ phaseLabel(item.phase) }}</span>
+              </div>
+            </div>
+            <div class="preview-note">
+              <span>Live model preview</span>
+              <p>{{ previewText() }}</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="context-state" if="completed">
+          <section class="context-section resolved-summary">
+            <div class="section-title"><h3>Resolution</h3><span class="status-label complete">Complete</span></div>
+            <div class="resolution-amount">{{ money(completed.resolution.receipt.amountCents) }}</div>
+            <dl>
+              <div><dt>Order</dt><dd>{{ completed.resolution.receipt.orderId }}</dd></div>
+              <div><dt>Refund ID</dt><dd>{{ completed.resolution.receipt.refundId }}</dd></div>
+              <div><dt>Approved by</dt><dd>Jamie Dale</dd></div>
+            </dl>
+            <div class="approval-proof"><span>✓</span> Refund ran only after approval</div>
+            <button class="secondary-button" on:click="restartCase">Run another case</button>
+          </section>
+
+          <section class="context-section evidence-section">
+            <div class="section-title">
+              <h3>Tool calls</h3><span>{{ evidenceCount() }} records</span>
+            </div>
+            <div class="evidence-list">
+              <div for="item in completed.evidence">
+                <span class="evidence-state complete">✓</span>
+                <div><b>{{ evidenceLabel(item.tool) }}</b><code>{{ item.tool }}</code></div>
+                <span>{{ phaseLabel(item.phase) }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="context-section audit-summary">
+            <div class="section-title"><h3>Audit trail</h3><span>{{ categoryCount() }} categories</span></div>
+            <p>{{ completed.audit.entries }} events retained for inspection and OpenTelemetry export.</p>
+            <div class="audit-tags">
+              <span for="category in completed.audit.categories">{{ category }}</span>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </div>
+  </div>
+</template>
+
+<script lang="ts">
+  export interface Props {
+    token: string;
+  }
+  export let props: Props;
+
+  let data: any = null;
+  let completed: any = null;
+  let busy = false;
+  let errorMessage = "";
+
+  async function reviewCase() {
+    if (busy) return;
+    busy = true;
+    errorMessage = "";
+    try {
+      const result = await api("/api/case");
+      if (result.resolution) completed = result;
+      else data = result;
+      window.scrollTo(0, 0);
+    } catch (error) {
+      errorMessage = message(error);
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function approveRefund() {
+    if (busy) return;
+    busy = true;
+    errorMessage = "";
+    try {
+      completed = await api("/api/approve");
+      window.scrollTo(0, 0);
+    } catch (error) {
+      errorMessage = message(error);
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function restartCase() {
+    if (busy) return;
+    busy = true;
+    errorMessage = "";
+    try {
+      await api("/api/reset");
+      data = null;
+      completed = null;
+      window.scrollTo(0, 0);
+    } catch (error) {
+      errorMessage = message(error);
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function api(path: string) {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "x-support-token": props.token },
+    });
+    const value = await response.json();
+    if (!response.ok) throw new Error(value.error || "The support case could not continue");
+    return value;
+  }
+
+  function message(error: unknown) {
+    return error instanceof Error ? error.message : "The support case could not continue";
+  }
+
+  function money(cents: number) {
+    const amount = new Intl.NumberFormat("en-NZ", { minimumFractionDigits: 2 }).format(cents / 100);
+    return `NZ$${amount}`;
+  }
+
+  function evidenceCount() {
+    return data?.investigation?.length ?? completed?.evidence?.length ?? 0;
+  }
+
+  function previewText() {
+    const previews = data?.previews ?? [];
+    return previews[previews.length - 1] || "Preparing the approval-gated billing action…";
+  }
+
+  function approvalTitle() {
+    if (data?.approval?.tool === "support.billing.refund") return "Refund duplicate charge";
+    return data?.approval?.title || "Approve proposed action";
+  }
+
+  function citationSource() {
+    return data?.triage?.citations?.[0]?.source || "policy://support/duplicate-charges";
+  }
+
+  function categoryCount() {
+    return completed?.audit?.categories?.length ?? 0;
+  }
+
+  function phaseLabel(phase: string) {
+    if (phase === "settled" || phase === "resolved") return "Complete";
+    if (phase === "authorized" || phase === "committed") return "Approval";
+    if (phase === "admitted") return "Running";
+    if (phase === "rejected") return "Blocked";
+    if (phase === "uncertain") return "Reconcile";
+    return phase.charAt(0).toUpperCase() + phase.slice(1);
+  }
+
+  function evidenceLabel(tool: string) {
+    if (tool === "support.account.status") return "Account charge state";
+    if (tool === "support.knowledge.search") return "Duplicate-charge policy";
+    if (tool === "support.billing.refund") return "Refund write";
+    return "Runtime Tool";
+  }
+
+  function handoffLabel() {
+    const handoff = completed?.handoff;
+    if (!handoff) return "Session ownership changed";
+    return `${handoff.from.id} → ${handoff.to.id}`;
+  }
+</script>
+
+<style>
+  .support-app {
+    --ink: #23312d;
+    --muted: #66736e;
+    --faint: #8a9590;
+    --line: #d8dedb;
+    --line-strong: #c8d0cc;
+    --canvas: #f2f4f3;
+    --paper: #ffffff;
+    --sidebar: #26322f;
+    --accent: #2e6251;
+    --accent-soft: #e8f1ed;
+    --warning: #9a5c1e;
+    --warning-soft: #fff7e9;
+    min-height: 100vh;
+    background: var(--canvas);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .support-app * {
+    box-sizing: border-box;
+  }
+
+  .support-app button,
+  .support-app input {
+    font: inherit;
+  }
+
+  .support-app button {
+    color: inherit;
+  }
+
+  .thread-state,
+  .context-state {
+    display: contents;
+  }
+
+  .global-header {
+    display: flex;
+    height: 54px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .brand,
+  .global-actions,
+  .brand-mark,
+  .environment,
+  .nav-item,
+  .operator,
+  .inbox-header,
+  .row-top,
+  .row-meta,
+  .microline,
+  .case-actions,
+  .thread-day,
+  .message-head,
+  .activity-head,
+  .activity-head > div,
+  .system-event,
+  .composer-meta,
+  .context-tabs,
+  .section-title,
+  .customer-summary,
+  .approval-title,
+  .approval-value,
+  .approval-proof,
+  .evidence-list > div,
+  .policy-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .brand {
+    gap: 9px;
+  }
+
+  .brand b {
+    font-size: 14px;
+    letter-spacing: -0.015em;
+  }
+
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--sidebar);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .product-name {
+    margin-left: 3px;
+    padding-left: 12px;
+    border-left: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .global-actions {
+    gap: 12px;
+  }
+
+  .environment {
+    gap: 7px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .environment i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #5d9a6e;
+  }
+
+  .icon-button,
+  .filter-button,
+  .text-button {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .icon-button {
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0 8px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .header-avatar,
+  .operator-avatar {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    font-weight: 700;
+  }
+
+  .header-avatar {
+    width: 29px;
+    height: 29px;
+    background: #e7dfd2;
+    color: #634e35;
+    font-size: 10px;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: 206px 292px minmax(430px, 1fr) 338px;
+    height: calc(100vh - 54px);
+    min-height: 620px;
+    overflow: hidden;
+  }
+
+  .navigation {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 17px 11px 12px;
+    overflow-y: auto;
+    background: var(--sidebar);
+    color: #dce4e0;
+  }
+
+  .nav-section {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 24px;
+  }
+
+  .nav-heading {
+    margin: 0 9px 7px;
+    color: #8fa099;
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    width: 100%;
+    min-height: 34px;
+    justify-content: space-between;
+    padding: 0 9px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #c8d2ce;
+    cursor: pointer;
+    font-size: 12px;
+    text-align: left;
+  }
+
+  .nav-item > span:first-child {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-item.active,
+  .nav-item:hover {
+    background: #34423e;
+    color: #fff;
+  }
+
+  .count {
+    min-width: 18px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #3a4944;
+    color: #d4ddd9;
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .count.quiet {
+    background: transparent;
+  }
+
+  .queue-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+  }
+
+  .queue-dot.triage {
+    background: #8ba7bd;
+  }
+
+  .queue-dot.billing {
+    background: #d5a55b;
+  }
+
+  .queue-dot.success {
+    background: #6fa483;
+  }
+
+  .nav-bottom {
+    margin-top: auto;
+    margin-bottom: 13px;
+    padding: 13px 9px 4px;
+    border-top: 1px solid #3b4944;
+  }
+
+  .nav-bottom .nav-heading {
+    margin-inline: 0;
+  }
+
+  .nav-bottom p {
+    margin: 0;
+    color: #9fada8;
+    font-size: 10px;
+    line-height: 1.55;
+  }
+
+  .text-button {
+    width: fit-content;
+    margin-top: 9px;
+    padding: 0;
+    color: #c6d6cf;
+    font-size: 10px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .operator {
+    gap: 9px;
+    padding: 11px 8px 2px;
+    border-top: 1px solid #3b4944;
+  }
+
+  .operator-avatar {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    background: #d8c8b1;
+    color: #564434;
+    font-size: 10px;
+  }
+
+  .operator div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .operator b {
+    font-size: 11px;
+  }
+
+  .operator small {
+    color: #94a39d;
+    font-size: 9px;
+  }
+
+  .inbox {
+    min-width: 0;
+    overflow: hidden;
+    border-right: 1px solid var(--line);
+    background: #fafbfa;
+  }
+
+  .inbox-header {
+    height: 67px;
+    justify-content: space-between;
+    padding: 0 15px;
+  }
+
+  .inbox-header > div {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .inbox-header h1 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 680;
+    letter-spacing: -0.025em;
+  }
+
+  .inbox-header span {
+    color: var(--faint);
+    font-size: 10px;
+  }
+
+  .filter-button {
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: #fff;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .search {
+    display: block;
+    margin: 0 13px 11px;
+  }
+
+  .search span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .search input {
+    width: 100%;
+    height: 31px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    outline: none;
+    background: #fff;
+    color: var(--ink);
+    font-size: 11px;
+  }
+
+  .search input:focus {
+    border-color: #8aa79b;
+    box-shadow: 0 0 0 2px rgba(46, 98, 81, 0.1);
+  }
+
+  .list-tabs {
+    display: flex;
+    gap: 17px;
+    padding: 0 15px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .list-tabs button {
+    padding: 0 0 9px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--faint);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .list-tabs button.active {
+    border-bottom-color: var(--accent);
+    color: var(--ink);
+  }
+
+  .conversation-list {
+    overflow-y: auto;
+  }
+
+  .conversation-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 7px 1fr;
+    width: 100%;
+    gap: 8px;
+    padding: 13px 14px;
+    border: 0;
+    border-bottom: 1px solid #e5e9e7;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .conversation-row:hover,
+  .conversation-row.selected {
+    background: #eef3f1;
+  }
+
+  .conversation-row.selected::before {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--accent);
+    content: "";
+  }
+
+  .unread-dot {
+    width: 6px;
+    height: 6px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: #39765e;
+  }
+
+  .unread-dot.muted {
+    background: transparent;
+  }
+
+  .row-main {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .row-top {
+    justify-content: space-between;
+  }
+
+  .row-top b {
+    font-size: 11px;
+  }
+
+  .row-top time {
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  .row-subject {
+    margin-top: 3px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .row-preview {
+    margin-top: 3px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-meta {
+    gap: 7px;
+    margin-top: 8px;
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  .tag,
+  .status-label,
+  .case-status {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 650;
+  }
+
+  .tag {
+    padding: 2px 5px;
+  }
+
+  .tag.billing {
+    background: #f4ead8;
+    color: #7c561e;
+  }
+
+  .tag.account {
+    background: #e8edf1;
+    color: #506877;
+  }
+
+  .conversation {
+    display: grid;
+    min-width: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    background: #fff;
+  }
+
+  .conversation-header {
+    display: flex;
+    min-height: 67px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .case-title {
+    min-width: 0;
+  }
+
+  .microline {
+    gap: 12px;
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  .microline span + span {
+    position: relative;
+  }
+
+  .microline span + span::before {
+    position: absolute;
+    left: -7px;
+    content: "·";
+  }
+
+  .case-title h2 {
+    margin: 5px 0 0;
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 660;
+    letter-spacing: -0.015em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .case-actions {
+    gap: 9px;
+  }
+
+  .case-status {
+    padding: 4px 7px;
+    border: 1px solid #e2d1b9;
+    background: #fffaf2;
+    color: #825b2a;
+  }
+
+  .case-status.resolved {
+    border-color: #c4d9ca;
+    background: #f0f7f2;
+    color: #35654c;
+  }
+
+  .thread {
+    min-height: 0;
+    padding: 15px 22px 30px;
+    overflow-y: auto;
+  }
+
+  .thread-day {
+    gap: 9px;
+    margin-bottom: 15px;
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  .thread-day::before,
+  .thread-day::after {
+    height: 1px;
+    flex: 1;
+    background: #e7eae8;
+    content: "";
+  }
+
+  .message {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 10px;
+    margin: 15px 0 22px;
+  }
+
+  .avatar {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .avatar.customer {
+    background: #ece4d8;
+    color: #6c5439;
+  }
+
+  .avatar.agent {
+    background: #e1ece7;
+    color: #2f5e4c;
+  }
+
+  .avatar.large {
+    width: 38px;
+    height: 38px;
+    font-size: 11px;
+  }
+
+  .message-body {
+    min-width: 0;
+    padding-top: 2px;
+  }
+
+  .message-head {
+    gap: 7px;
+    margin-bottom: 6px;
+  }
+
+  .message-head b {
+    font-size: 11px;
+  }
+
+  .message-head span,
+  .message-head time {
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  .message-head time {
+    margin-left: auto;
+  }
+
+  .message-body p {
+    margin: 0;
+    color: #35433f;
+    font-size: 12px;
+    line-height: 1.58;
+  }
+
+  .message-facts {
+    display: flex;
+    gap: 18px;
+    margin-top: 12px;
+    padding: 9px 10px;
+    border: 1px solid #e1e6e3;
+    border-radius: 5px;
+    background: #fafbfa;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .message-facts b {
+    margin-right: 4px;
+    color: var(--faint);
+    font-size: 9px;
+    font-weight: 600;
+  }
+
+  .review-start {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    margin: 27px 0;
+    padding: 14px;
+    border: 1px solid #d9e2de;
+    border-radius: 6px;
+    background: #f7faf8;
+  }
+
+  .review-start-icon,
+  .agent-avatar {
+    display: grid;
+    place-items: center;
+    border-radius: 5px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .review-start-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+
+  .review-start-copy h3,
+  .activity-head b {
+    font-size: 11px;
+  }
+
+  .review-start-copy p {
+    max-width: 420px;
+    margin: 3px 0 8px;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .review-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    color: #5a7167;
+    font-size: 9px;
+  }
+
+  .review-checks span::before {
+    margin-right: 4px;
+    color: #5a9474;
+    content: "✓";
+  }
+
+  .primary-button,
+  .approve-button,
+  .secondary-button {
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 650;
+  }
+
+  .primary-button {
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid #214f40;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+  }
+
+  .primary-button:hover {
+    background: #244f40;
+  }
+
+  .primary-button:disabled,
+  .approve-button:disabled,
+  .secondary-button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+
+  .activity-block {
+    margin: 25px 0 16px 40px;
+    overflow: hidden;
+    border: 1px solid #dce3df;
+    border-radius: 6px;
+    background: #fbfcfb;
+  }
+
+  .activity-head {
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e5e9e7;
+    background: #f6f8f7;
+  }
+
+  .activity-head > div {
+    gap: 8px;
+  }
+
+  .agent-avatar {
+    width: 21px;
+    height: 21px;
+    font-size: 8px;
+  }
+
+  .activity-time {
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  .activity-summary {
+    margin: 0;
+    padding: 12px 13px;
+    color: #45534e;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .activity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid #e5e9e7;
+  }
+
+  .activity-grid > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+  }
+
+  .activity-grid > div + div {
+    border-left: 1px solid #e5e9e7;
+  }
+
+  .activity-grid span {
+    color: var(--faint);
+    font-size: 8px;
+    text-transform: uppercase;
+  }
+
+  .activity-grid b {
+    font-size: 10px;
+  }
+
+  .activity-grid code,
+  .evidence-list code,
+  .policy-row code,
+  .approval-box code {
+    color: #5b6c65;
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 9px;
+  }
+
+  .system-event {
+    gap: 8px;
+    margin: 13px 0 15px;
+    padding: 9px 11px;
+    border-top: 1px solid #e7eae8;
+    border-bottom: 1px solid #e7eae8;
+    color: var(--muted);
+    font-size: 9px;
+  }
+
+  .system-event b {
+    color: #42514c;
+  }
+
+  .system-event time {
+    margin-left: auto;
+    color: var(--faint);
+  }
+
+  .event-icon {
+    color: #648174;
+  }
+
+  .inline-receipt {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 12px;
+    overflow: hidden;
+    border: 1px solid #d6e2dc;
+    border-radius: 5px;
+    background: #f7faf8;
+  }
+
+  .inline-receipt div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 9px 10px;
+  }
+
+  .inline-receipt div + div {
+    border-left: 1px solid #dce5e1;
+  }
+
+  .inline-receipt span {
+    color: var(--faint);
+    font-size: 8px;
+    text-transform: uppercase;
+  }
+
+  .inline-receipt b {
+    color: #355a4b;
+    font-size: 10px;
+  }
+
+  .error {
+    display: block;
+    margin: 14px 0;
+    padding: 8px 10px;
+    border: 1px solid #e6c6bd;
+    border-radius: 4px;
+    background: #fff7f4;
+    color: #9c4839;
+    font-size: 10px;
+  }
+
+  .composer {
+    padding: 10px 18px 9px;
+    border-top: 1px solid var(--line);
+    background: #fafbfa;
+  }
+
+  .composer-box {
+    display: flex;
+    min-height: 34px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    background: #fff;
+    color: var(--faint);
+    font-size: 10px;
+  }
+
+  .composer-box button {
+    width: 23px;
+    height: 23px;
+    border: 0;
+    border-radius: 4px;
+    background: #e9eeeb;
+    color: #7c8984;
+    font-size: 13px;
+  }
+
+  .composer-meta {
+    gap: 13px;
+    padding-top: 7px;
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  .composer-hint {
+    margin-left: auto;
+  }
+
+  .context {
+    min-width: 0;
+    overflow-y: auto;
+    border-left: 1px solid var(--line);
+    background: #f8f9f8;
+  }
+
+  .context-header {
+    display: flex;
+    height: 67px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--line);
+    background: #fff;
+  }
+
+  .context-tabs {
+    align-self: stretch;
+    gap: 15px;
+  }
+
+  .context-tabs button {
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--faint);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .context-tabs button.active {
+    border-bottom-color: var(--accent);
+    color: var(--ink);
+  }
+
+  .context-section,
+  .approval-box {
+    margin: 12px;
+    padding: 13px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: #fff;
+  }
+
+  .customer-summary {
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e7eae8;
+  }
+
+  .customer-summary h3,
+  .context-section h3,
+  .approval-box h3 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 660;
+  }
+
+  .customer-summary div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .customer-summary span {
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  dl {
+    margin: 0;
+  }
+
+  dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #edf0ee;
+    font-size: 10px;
+  }
+
+  dl div:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  dt {
+    color: var(--faint);
+  }
+
+  dd {
+    margin: 0;
+    color: #35433e;
+    text-align: right;
+  }
+
+  .customer-card dl {
+    margin-top: 7px;
+  }
+
+  .section-title {
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .section-title > span {
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  .context-copy,
+  .audit-summary p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.55;
+  }
+
+  .policy-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+    padding: 9px;
+    border-radius: 4px;
+    background: #f6f8f7;
+    font-size: 10px;
+  }
+
+  .policy-row small {
+    color: var(--faint);
+    font-size: 9px;
+  }
+
+  .request-summary p {
+    margin: 0 0 4px;
+    color: #42504b;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .status-label {
+    padding: 2px 5px;
+  }
+
+  .status-label.pending {
+    background: var(--warning-soft);
+    color: var(--warning);
+  }
+
+  .status-label.complete {
+    background: #eaf4ee;
+    color: #37664f;
+  }
+
+  .approval-box {
+    border-color: #dec69f;
+    border-top: 3px solid #b3772b;
+    background: #fffdf9;
+  }
+
+  .approval-title {
+    justify-content: space-between;
+    color: var(--warning);
+    font-size: 9px;
+    font-weight: 680;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .warning-icon {
+    display: grid;
+    width: 17px;
+    height: 17px;
+    place-items: center;
+    border: 1px solid #d6b17c;
+    border-radius: 50%;
+    font-size: 10px;
+  }
+
+  .approval-box h3 {
+    margin-top: 11px;
+    font-size: 15px;
+  }
+
+  .approval-value {
+    justify-content: space-between;
+    margin: 14px 0 10px;
+    padding: 11px 0;
+    border-top: 1px solid #eee3d2;
+    border-bottom: 1px solid #eee3d2;
+  }
+
+  .approval-value span {
+    font-size: 23px;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+  }
+
+  .approval-box > p {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.5;
+  }
+
+  .approve-button {
+    width: 100%;
+    min-height: 33px;
+    border: 1px solid #8d5a1e;
+    background: #9a5c1e;
+    color: #fff;
+    font-size: 10px;
+  }
+
+  .approve-button:hover {
+    background: #844b13;
+  }
+
+  .approval-box > small {
+    display: block;
+    margin-top: 8px;
+    color: var(--faint);
+    font-size: 8px;
+    line-height: 1.45;
+  }
+
+  .evidence-list {
+    border: 1px solid #e5e9e7;
+    border-radius: 4px;
+  }
+
+  .evidence-list > div {
+    gap: 8px;
+    padding: 8px 9px;
+    border-bottom: 1px solid #e9edeb;
+  }
+
+  .evidence-list > div:last-child {
+    border-bottom: 0;
+  }
+
+  .evidence-state {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 9px;
+  }
+
+  .evidence-state.complete {
+    background: #e6f1ea;
+    color: #3f7459;
+  }
+
+  .evidence-list > div > div {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .evidence-list b {
+    overflow: hidden;
+    font-size: 9px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .evidence-list > div > span:last-child {
+    color: #4f735f;
+    font-size: 8px;
+  }
+
+  .preview-note {
+    margin-top: 10px;
+    padding: 9px;
+    border-radius: 4px;
+    background: #f4f6f5;
+  }
+
+  .preview-note span {
+    color: var(--faint);
+    font-size: 8px;
+    text-transform: uppercase;
+  }
+
+  .preview-note p {
+    margin: 4px 0 0;
+    color: #5d6b66;
+    font-size: 9px;
+    line-height: 1.45;
+  }
+
+  .resolution-amount {
+    margin: 14px 0 6px;
+    color: #315f4d;
+    font-size: 28px;
+    font-weight: 680;
+    letter-spacing: -0.045em;
+  }
+
+  .approval-proof {
+    gap: 6px;
+    margin: 10px 0;
+    padding: 8px;
+    border-radius: 4px;
+    background: #eef6f1;
+    color: #466957;
+    font-size: 9px;
+  }
+
+  .secondary-button {
+    width: 100%;
+    min-height: 31px;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    color: #53615c;
+    font-size: 9px;
+  }
+
+  .audit-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 10px;
+  }
+
+  .audit-tags span {
+    padding: 2px 5px;
+    border: 1px solid #e1e5e3;
+    border-radius: 3px;
+    background: #fafbfa;
+    color: var(--muted);
+    font-size: 8px;
+  }
+
+  @media (max-width: 1240px) {
+    .workspace {
+      grid-template-columns: 184px 268px minmax(390px, 1fr) 310px;
+    }
+  }
+
+  @media (max-width: 1080px) {
+    .workspace {
+      grid-template-columns: 260px minmax(390px, 1fr) 310px;
+    }
+
+    .navigation {
+      display: none;
+    }
+  }
+
+  @media (max-width: 840px) {
+    .workspace {
+      grid-template-columns: 238px minmax(0, 1fr);
+    }
+
+    .context {
+      display: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .workspace {
+      display: block;
+      height: auto;
+      overflow: visible;
+    }
+
+    .inbox {
+      display: none;
+    }
+
+    .conversation {
+      min-height: calc(100vh - 54px);
+    }
+
+    .conversation-header {
+      padding: 12px 15px;
+    }
+
+    .thread {
+      padding-inline: 15px;
+    }
+
+    .review-start {
+      grid-template-columns: 28px 1fr;
+    }
+
+    .review-start .primary-button {
+      grid-column: 2;
+      justify-self: start;
+    }
+
+    .activity-block {
+      margin-left: 0;
+    }
+
+    .activity-grid,
+    .inline-receipt {
+      grid-template-columns: 1fr;
+    }
+
+    .activity-grid > div + div,
+    .inline-receipt div + div {
+      border-top: 1px solid #e5e9e7;
+      border-left: 0;
+    }
+  }
+</style>

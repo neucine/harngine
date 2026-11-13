@@ -5,6 +5,8 @@ and Tools; Harngine runs them as durable, inspectable Work. Model providers answ
 Harngine runs the application around those turns.
 
 The npm package is not published yet. The installation commands below apply after publication.
+For an install from a locally packed tarball and a process restart demonstration, use the
+[quickstart](../../examples/quickstart/README.md).
 
 ```bash
 bun add harngine
