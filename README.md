@@ -9,6 +9,26 @@ approvals, and results durable enough to inspect or resume after a restart.
 
 Harngine is pre-release software. Its public API may change.
 
+**See it run:** [two-minute recovery demo](examples/quickstart/README.md) ·
+[69-second Support Desk walkthrough](https://github.com/neucine/harngine/releases/download/v0.1.0/walkthrough.mp4) ·
+[framework introduction video](https://youtu.be/upyXdDo2EPY)
+
+The recovery demo uses the published package without a model account. It kills a process while a
+Workflow waits on a durable timer, opens the same SQLite directory in a new process, and verifies
+the result and recorded Tool call. With Node.js 24.21 and Bun installed:
+
+```bash
+mkdir harngine-recovery && cd harngine-recovery
+curl -fsSLO https://raw.githubusercontent.com/neucine/harngine/main/examples/quickstart/demo.mjs
+printf '{"private":true,"type":"module"}\n' > package.json
+npm install harngine@0.1.0
+bunx harngine-manifest
+node demo.mjs
+```
+
+Expected result: `Recovered ...: result=42, settled tool calls=1`. See the
+[demo guide](examples/quickstart/README.md) for its scope and the SQLite evidence it leaves behind.
+
 # Get Started
 
 Harngine requires Node.js 24.21. Install the framework package from npm:

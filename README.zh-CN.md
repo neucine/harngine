@@ -6,6 +6,23 @@ Harngine 是一个用 TypeScript 编写智能体和工作流的运行时。它�
 
 Harngine 目前仍是预发布版本，公开 API 可能调整。
 
+**先看演示：**[两分钟恢复示例](examples/quickstart/README.md) ·
+[69 秒客服流程视频](https://github.com/neucine/harngine/releases/download/v0.1.0/walkthrough.mp4) ·
+[框架介绍视频](https://youtu.be/upyXdDo2EPY)
+
+恢复示例只使用已发布的框架包，不需要模型账号。它在 Workflow 等待持久化计时器时终止进程，再由新进程打开同一个 SQLite 目录，核对结果与工具调用记录。安装 Node.js 24.21 和 Bun 后运行：
+
+```bash
+mkdir harngine-recovery && cd harngine-recovery
+curl -fsSLO https://raw.githubusercontent.com/neucine/harngine/main/examples/quickstart/demo.mjs
+printf '{"private":true,"type":"module"}\n' > package.json
+npm install harngine@0.1.0
+bunx harngine-manifest
+node demo.mjs
+```
+
+预期输出包含 `Recovered ...: result=42, settled tool calls=1`。示例的验证范围和保留的 SQLite 数据见[示例说明](examples/quickstart/README.md)。
+
 # 开始使用
 
 Harngine 需要 Node.js 24.21。从 npm 安装框架包：
