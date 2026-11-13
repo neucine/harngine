@@ -19,7 +19,7 @@
     "test": "bun run build && node_modules/node/bin/node node_modules/vitest/vitest.mjs run",
     "check": "bun run format:check && bun run typecheck && bun run test",
     "test:package": "bun run build && bun scripts/package-smoke.mjs",
-    "publish": "bun scripts/publish-packages.mjs",
+    "publish": "node scripts/publish-packages.mjs",
     "test:quickstart": "bun run build && node scripts/quickstart-smoke.mjs",
     "test:demo:quest": "sh examples/quest/scripts/build-ui.sh && node_modules/node/bin/node node_modules/vitest/vitest.mjs run examples/quest/test/quest.test.ts",
     "test:demo:support": "bun run manifest && sh examples/support/scripts/build-ui.sh && bun node_modules/typescript/bin/tsc -b examples/support --force && node_modules/node/bin/node node_modules/vitest/vitest.mjs run examples/support/test/support.test.ts",
