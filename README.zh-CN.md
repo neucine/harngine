@@ -30,7 +30,7 @@ npm install \
 ```bash
 git clone https://github.com/neucine/harngine.git
 cd harngine
-bun install --frozen-lockfile
+bun install
 ```
 
 # 示例
@@ -78,8 +78,7 @@ bun run demo:support
 打开终端打印的地址，选择 **Run review**，然后批准这笔精确到 NZ$49 的退款。演示无需模型密钥、支付服务或网络连接。
 
 运行 `bun run demo:support:cli` 可以在终端查看同一个案例。详细步骤见
-[Support Desk 指南](examples/support/README.md)，也可以观看
-[69 秒演示视频](https://github.com/neucine/promotion/tree/main/projects/harngine/support-refund)。
+[Support Desk 指南](examples/support/README.md)。
 
 ## 更多示例
 

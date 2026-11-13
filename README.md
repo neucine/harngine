@@ -34,7 +34,7 @@ To run the Coding CLI and repository examples, clone the source and install its 
 ```bash
 git clone https://github.com/neucine/harngine.git
 cd harngine
-bun install --frozen-lockfile
+bun install
 ```
 
 # Examples
@@ -89,8 +89,7 @@ Open the printed URL, select **Run review**, then approve the exact NZ$49 refund
 payment service, or network connection is required.
 
 Use `bun run demo:support:cli` for the same case in the terminal. See the
-[Support Desk guide](examples/support/README.md) or watch the
-[69-second walkthrough](https://github.com/neucine/promotion/tree/main/projects/harngine/support-refund).
+[Support Desk guide](examples/support/README.md).
 
 ## Additional examples
 

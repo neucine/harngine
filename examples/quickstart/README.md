@@ -15,7 +15,7 @@ node demo.mjs
 From a Harngine checkout, you can also test a locally packed package:
 
 ```bash
-bun install --frozen-lockfile
+bun install
 bun run test:quickstart
 ```
 

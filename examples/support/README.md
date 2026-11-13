@@ -4,16 +4,10 @@ This is the most familiar place to start: a customer says they were charged twic
 specialist checks the account and refund policy, transfers the conversation to billing, and pauses
 for a person to approve the exact refund before the write runs.
 
-## Watch the walkthrough
-
-[![Customer support refund walkthrough](https://raw.githubusercontent.com/neucine/promotion/main/projects/harngine/support-refund/poster.png)](https://github.com/neucine/promotion/tree/main/projects/harngine/support-refund)
-
-The [69-second walkthrough](https://github.com/neucine/promotion/tree/main/projects/harngine/support-refund)
-shows this specific Harngine example: a support inbox, a durable Triage → Billing handoff, and an
-approval-gated refund.
+## Run the demo
 
 ```bash
-bun install --frozen-lockfile
+bun install
 bun run demo:support
 ```
 
