@@ -25,6 +25,30 @@ npm install \
   @harngine/http
 ```
 
+## 框架和示例应用
+
+`harngine` npm 包提供的是框架。你可以用它定义 Agent、Workflow 和 Tool，启动任务，并在任务中断后恢复或检查执行记录。[恢复示例](examples/quickstart/README.md)里的 Workflow 就包含一次具名工具调用和一个持久化计时器：
+
+```ts
+const calculation = workflow({
+  id: 'demo.calculation',
+  objective: number,
+  result: number,
+  tools: [record],
+  async run(value, flow) {
+    const answer = await flow.call('record', record, value);
+    await flow.sleep('restart-window', 2_000);
+    return answer;
+  },
+});
+```
+
+这里的 `number` 和 `record` 分别是示例中定义的 Schema 和 Tool。完整用法见[框架指南](docs/guide.md)。
+
+下方的 Coding CLI 和 Support Desk 是**使用 Harngine 构建的应用**，用来展示框架能做什么。安装和使用 `harngine` 包并不需要运行这些应用。
+
+# 应用示例
+
 要运行 Coding CLI 和仓库中的示例，请克隆源码并安装工作区依赖：
 
 ```bash
@@ -32,8 +56,6 @@ git clone https://github.com/neucine/harngine.git
 cd harngine
 bun install
 ```
-
-# 示例
 
 ## Coding CLI
 
@@ -80,10 +102,9 @@ bun run demo:support
 运行 `bun run demo:support:cli` 可以在终端查看同一个案例。详细步骤见
 [Support Desk 指南](examples/support/README.md)。
 
-## 更多示例
+## 更多应用示例
 
 - [Quest](examples/quest/README.md)：可离线回放、多人共享且能持续保留的博物馆世界。
-- [Quickstart](examples/quickstart/README.md)：在任务运行中终止进程，重启后验证恢复。
 - [全部示例](examples)：客服、博物馆、家居、创作研究、旅行和尽职调查。
 
 # 开发

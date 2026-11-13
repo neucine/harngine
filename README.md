@@ -29,6 +29,35 @@ npm install \
   @harngine/http
 ```
 
+## Framework and example applications
+
+The npm package `harngine` is the framework. Your application defines Agents or Workflows and
+Tools, starts Work, and uses the runtime to recover and inspect it. For example, the
+[recovery quickstart](examples/quickstart/README.md) defines a Workflow with a named Tool call and
+a durable timer:
+
+```ts
+const calculation = workflow({
+  id: 'demo.calculation',
+  objective: number,
+  result: number,
+  tools: [record],
+  async run(value, flow) {
+    const answer = await flow.call('record', record, value);
+    await flow.sleep('restart-window', 2_000);
+    return answer;
+  },
+});
+```
+
+Here `number` and `record` are the example's declared schema and Tool. The [framework guide](docs/guide.md)
+covers the complete API, persistence, approvals, and inspection.
+
+The Coding CLI and Support Desk below are **applications built with Harngine**. They demonstrate
+what the framework can support; neither application is required to use the npm package.
+
+# Application examples
+
 To run the Coding CLI and repository examples, clone the source and install its workspace:
 
 ```bash
@@ -36,8 +65,6 @@ git clone https://github.com/neucine/harngine.git
 cd harngine
 bun install
 ```
-
-# Examples
 
 ## Coding CLI
 
@@ -91,10 +118,9 @@ payment service, or network connection is required.
 Use `bun run demo:support:cli` for the same case in the terminal. See the
 [Support Desk guide](examples/support/README.md).
 
-## Additional examples
+## More application examples
 
 - [Quest](examples/quest/README.md): a shared, persistent museum world with offline replay.
-- [Quickstart](examples/quickstart/README.md): kill a task mid-run, restart, and verify recovery.
 - [All examples](examples): support, museum, home, creative research, travel, and due diligence.
 
 # Development
