@@ -1,0 +1,39 @@
+<template><section class="panel" if="props.work?.interactions?.length">
+    <h2>Interactions</h2>
+    <div class="stack">
+      <div class="entry interaction" for="item in items()">
+        <b>{{ item.type === 'approval' ? item.title : item.prompt }}</b>
+        <pre>{{ pretty(item.type === 'approval' ? item.details : item.response) }}</pre>
+        <div class="actions">
+          <button bind:class="item.type === 'approval' ? 'primary' : 'hidden'" on:click="approve(item.id)">
+            Approve
+          </button>
+          <button bind:class="item.type === 'approval' ? '' : 'hidden'" on:click="deny(item.id)">
+            Deny
+          </button>
+          <button bind:class="item.type !== 'approval' ? 'primary' : 'hidden'" on:click="reply(item)">
+            Reply
+          </button>
+        </div>
+      </div>
+    </div>
+  </section></template>
+<script lang="ts">
+import { pretty } from '../api.ts';
+export interface Props {
+  work: any;
+}
+export let props: Props;
+function items() {
+  return props.work?.interactions || [];
+}
+function approve(id: string) {
+  emit('respond', { work: props.work.id, id, response: true });
+}
+function deny(id: string) {
+  emit('respond', { work: props.work.id, id, response: false });
+}
+function reply(item: any) {
+  emit('question', { work: props.work.id, item });
+}
+</script>

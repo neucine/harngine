@@ -1,0 +1,122 @@
+<template><div>
+    <PageHeader bind:title="props.item.title" bind:subtitle="props.item.agent.id"><Status bind:value="props.item.status" />
+      <button if="props.item.status === 'open' && !active()" on:click="close">
+        Close Session
+      </button></PageHeader>
+    <div class="split">
+      <div class="stack">
+        <section class="panel">
+          <div class="section-head">
+            <h2>Conversation</h2>
+            <span class="muted">{{ props.item.recentMessages?.length || 0 }} messages</span>
+          </div>
+          <div class="message-list">
+            <div class="message" for="message in props.item.recentMessages || []" bind:class="'message ' + message.author">
+              <div class="label">{{ message.author === 'human' ? 'You' : 'Agent' }}</div>
+              <div>{{ display(message.content) }}</div>
+              <a bind:class="message.workId ? 'message-link' : 'hidden'" bind:href="message.workUrl">View Work →</a>
+            </div>
+            <div class="empty" if="!props.item.recentMessages?.length">
+              Send a prompt to begin this Session.
+            </div>
+          </div>
+        </section>
+        <section class="panel composer" if="props.item.status === 'open'">
+          <div class="section-head">
+            <div>
+              <h2>Message Agent</h2>
+              <div class="muted">
+                {{ active() ? 'Queue this message for the next Work, or steer the current Work.' :
+                'A message starts new durable Work.' }}
+              </div>
+            </div>
+            <span if="active()"><Status bind:value="props.item.foregroundWork.status" /></span>
+          </div>
+          <textarea aria-label="Message Agent" placeholder="Ask the Agent to investigate, compare, or act…" bind:value="draft" on:input="input" on:keydown="keydown"></textarea>
+          <div class="actions">
+            <button class="primary" on:click="queue">
+              {{ active() ? 'Queue message' : 'Send message' }}
+            </button><button if="active()" on:click="steer">Steer current Work</button>
+          </div>
+        </section>
+      </div>
+      <aside class="stack">
+        <section class="panel">
+          <h2>Session</h2>
+          <div class="fact-list">
+            <div class="fact">
+              <span class="label">Agent</span><span>{{ props.item.agent.id }}</span>
+            </div>
+            <div class="fact">
+              <span class="label">Revision</span><span class="mono">{{ short(props.item.agent.revision) }}</span>
+            </div>
+            <div class="fact">
+              <span class="label">Created</span><span>{{ time(props.item.createdAt) }}</span>
+            </div>
+            <div class="fact" if="props.item.queuedWorkIds?.length">
+              <span class="label">Queued Work</span><span>{{ props.item.queuedWorkIds.length }}</span>
+            </div>
+          </div>
+        </section>
+        <section class="panel" if="props.item.foregroundWork">
+          <div class="section-head">
+            <h2>Current Work</h2>
+            <Status bind:value="props.item.foregroundWork.status" />
+          </div>
+          <div class="value mono">{{ props.item.foregroundWork.id }}</div>
+          <div class="muted">{{ props.item.foregroundWork.definition.id }}</div>
+          <p>
+            <a class="message-link" bind:href="'/work/' + encodeURIComponent(props.item.foregroundWork.id)">Open execution →</a>
+          </p>
+        </section>
+        <section class="panel" if="!props.item.foregroundWork">
+          <div class="section-head">
+            <h2>Current Work</h2>
+            <span class="pill">Idle</span>
+          </div>
+          <div class="muted">The next message will start new Work.</div>
+        </section>
+      </aside>
+    </div>
+    <InteractionList bind:work="props.item.foregroundWork" on:respond="respond" on:question="question" />
+  </div></template>
+<script lang="ts">
+import PageHeader from '../components/PageHeader.weiv';
+import Status from '../components/Status.weiv';
+import InteractionList from '../components/InteractionList.weiv';
+import { display, short, terminal, time } from '../api.ts';
+export interface Props {
+  item: any;
+}
+export let props: Props;
+let draft = '';
+function input(event: Event) {
+  draft = (event.target as HTMLTextAreaElement).value;
+}
+function active() {
+  return props.item.foregroundWork && !terminal.has(props.item.foregroundWork.status);
+}
+function send(delivery: string) {
+  if (!draft.trim()) return;
+  emit('send', { id: props.item.id, content: draft, delivery });
+  draft = '';
+}
+function queue() {
+  send('queue');
+}
+function steer() {
+  send('steer');
+}
+function keydown(event: KeyboardEvent) {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') queue();
+}
+function close() {
+  emit('close', props.item.id);
+}
+function respond(value: any) {
+  emit('respond', value);
+}
+function question(value: any) {
+  emit('question', value);
+}
+</script>

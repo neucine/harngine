@@ -1,0 +1,134 @@
+<template><div>
+    <PageHeader bind:title="'Work'" bind:subtitle="props.item.subtitle"><Status bind:value="props.item.status" />
+      <button class="danger" if="!terminal.has(props.item.status)" on:click="cancel">
+        Cancel Work
+      </button></PageHeader>
+    <div class="split">
+      <div class="stack">
+        <section class="panel">
+          <div class="section-head">
+            <h2>Objective</h2>
+            <span class="label">Accepted input</span>
+          </div>
+          <div class="result">{{ display(props.item.objective) }}</div>
+        </section>
+        <section class="panel result-data" if="props.preview">
+          <div class="section-head">
+            <div>
+              <h2>Live model preview</h2>
+              <div class="muted">
+                Transient provider text; the completed result remains authoritative.
+              </div>
+            </div>
+            <span class="pill running">Live</span>
+          </div>
+          <div class="result">{{ props.preview }}</div>
+        </section>
+        <section class="panel result-data" if="props.item.status === 'completed'">
+          <div class="section-head">
+            <h2>Result</h2>
+            <Status bind:value="'completed'" />
+          </div>
+          <div class="result">{{ result() }}</div>
+          <details class="json-details" if="typeof props.item.result === 'object'">
+            <summary>View structured result</summary>
+            <pre>{{ pretty(props.item.result) }}</pre>
+          </details>
+        </section>
+        <section class="panel" if="props.item.error">
+          <div class="error">
+            <b>{{ props.item.error.code }}</b>
+            · {{ props.item.error.message }}
+          </div>
+        </section>
+        <InteractionList bind:work="props.item" on:respond="respond" on:question="question" />
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <h2>Inspection</h2>
+              <div class="muted">A durable timeline of decisions and calls.</div>
+            </div>
+            <select aria-label="Inspection detail" on:change="detailChange">
+              <option value="story">Story</option>
+              <option value="diagnostic">Diagnostic</option>
+            </select>
+          </div>
+          <div class="timeline">
+            <div class="entry" for="entry in props.entries">
+              <div class="toolbar">
+                <b>{{ entry.presentation.title }}</b><span class="muted">{{ entry.type }}</span>
+              </div>
+              <div bind:class="entry.presentation.summary ? '' : 'hidden'">
+                {{ entry.presentation.summary }}
+              </div>
+              <pre bind:class="entry.presentation.data !== undefined ? '' : 'hidden'">{{ pretty(entry.presentation.data) }}</pre>
+              <details bind:class="props.detail === 'diagnostic' ? '' : 'hidden'">
+                <summary>Event details</summary>
+                <pre>{{ pretty(entry) }}</pre>
+              </details>
+            </div>
+            <div class="muted" if="!props.entries.length">No inspection entries.</div>
+            <button if="props.next" on:click="more">Load more</button>
+          </div>
+        </section>
+      </div>
+      <aside class="stack">
+        <section class="panel">
+          <h2>Execution</h2>
+          <div class="fact-list">
+            <div class="fact">
+              <span class="label">Work ID</span><span class="mono">{{ props.item.id }}</span>
+            </div>
+            <div class="fact">
+              <span class="label">Definition</span><span>{{ props.item.definition.kind }} · {{ props.item.definition.id }}</span>
+            </div>
+            <div class="fact">
+              <span class="label">Revision</span><span class="mono">{{ short(props.item.definition.revision) }}</span>
+            </div>
+            <div class="fact" if="props.item.sessionId">
+              <span class="label">Session</span><a class="message-link" bind:href="'/sessions/' + encodeURIComponent(props.item.sessionId)">Open Session →</a>
+            </div>
+            <div class="fact">
+              <span class="label">Started</span><span>{{ time(props.item.createdAt) }}</span>
+            </div>
+          </div>
+          <details class="json-details">
+            <summary>View raw state</summary>
+            <pre>{{ pretty(props.item) }}</pre>
+          </details>
+        </section>
+      </aside>
+    </div>
+  </div></template>
+<script lang="ts">
+import PageHeader from '../components/PageHeader.weiv';
+import Status from '../components/Status.weiv';
+import InteractionList from '../components/InteractionList.weiv';
+import { display, pretty, short, terminal, time } from '../api.ts';
+export interface Props {
+  item: any;
+  entries: any[];
+  detail: string;
+  next: string;
+  preview: string;
+}
+export let props: Props;
+function result() {
+  return props.item.result?.message || display(props.item.result);
+}
+function cancel() {
+  emit('cancel', props.item.id);
+}
+function detailChange(event: Event) {
+  emit('detail', (event.target as HTMLSelectElement).value);
+}
+function more() {
+  emit('more', props.next);
+}
+function respond(value: any) {
+  emit('respond', value);
+}
+function question(value: any) {
+  emit('question', value);
+}
+</script>

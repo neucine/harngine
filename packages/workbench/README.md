@@ -5,6 +5,10 @@ Work, responding to Interactions, inspecting execution and reviewing payload-saf
 It uses only the public `harngine` API. Work views show transient model previews when the selected
 adapter emits them; previews are clearly separated from the durable final result.
 
+The browser UI lives in `src/ui/App.weiv`, with page views in `src/ui/views` and shared controls
+in `src/ui/components`. Run `bun run --cwd packages/workbench build:ui` to refresh the checked in
+`public` assets. The server serves those assets and loads `src/ui/index.html` as its page template.
+
 ```ts
 import { serveWorkbench } from '@harngine/workbench';
 

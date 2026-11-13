@@ -1,0 +1,7 @@
+<template><span bind:class="'pill ' + props.value">{{ props.value ? props.value[0].toUpperCase() + props.value.slice(1) : '' }}</span></template>
+<script lang="ts">
+export interface Props {
+  value: string;
+}
+export let props: Props;
+</script>

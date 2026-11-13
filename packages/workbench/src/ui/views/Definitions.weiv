@@ -1,0 +1,29 @@
+<template><div>
+    <PageHeader bind:title="'Definitions'" bind:subtitle="props.history ? 'Browse current and historical immutable revisions.' : 'Agents, Workflows, and Tools available to this App.'"><button on:click="toggle">
+        {{ props.history ? 'Show current only' : 'View revision history' }}
+      </button></PageHeader>
+    <div class="grid">
+      <a class="card" for="item in props.items" bind:href="path(item)"><div class="card-kind">{{ item.kind }}</div>
+        <h2>{{ item.id }}</h2>
+        <div class="muted mono" bind:title="item.revision">{{ short(item.revision) }}</div>
+        <div class="meta">
+          <span bind:class="'pill ' + item.availability">{{ item.availability }}</span>
+        </div></a>
+    </div>
+  </div></template>
+<script lang="ts">
+import PageHeader from '../components/PageHeader.weiv';
+import Status from '../components/Status.weiv';
+import { short } from '../api.ts';
+export interface Props {
+  items: any[];
+  history: boolean;
+}
+export let props: Props;
+function path(item: any) {
+  return '/definitions/' + [item.kind, item.id, item.revision].map(encodeURIComponent).join('/');
+}
+function toggle() {
+  emit('toggle-history', null);
+}
+</script>

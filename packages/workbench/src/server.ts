@@ -1,6 +1,9 @@
 import { randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   ConflictError,
   type App,
@@ -17,6 +20,8 @@ import {
   type WorkId,
 } from 'harngine';
 import { workbenchHtml } from './ui.js';
+
+const uiDirectory = join(dirname(fileURLToPath(import.meta.url)), '../public');
 
 export type WorkbenchPermission =
   | 'definitions:read'
@@ -239,13 +244,29 @@ export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<Wo
       if (local && origin && request.headers.host !== new URL(origin).host)
         throw new HttpError(403, 'HOST_DENIED', 'Workbench host is not allowed');
       if (request.method === 'GET' && !url.pathname.startsWith('/api/')) {
+        if (
+          /^\/(?:main|bundle|App|props|api)\.(?:mjs|js)$|^\/styles\.css$|^\/(?:views|components)\/[A-Za-z]+\.mjs$/.test(
+            url.pathname,
+          )
+        ) {
+          const asset = readFileSync(join(uiDirectory, url.pathname.slice(1)));
+          response.writeHead(200, {
+            'content-type': url.pathname.endsWith('.css')
+              ? 'text/css; charset=utf-8'
+              : 'text/javascript; charset=utf-8',
+            'cache-control': 'no-store',
+            'x-content-type-options': 'nosniff',
+          });
+          response.end(asset);
+          return;
+        }
         response.writeHead(200, {
           'content-type': 'text/html; charset=utf-8',
           'cache-control': 'no-store',
           'referrer-policy': 'no-referrer',
           'x-content-type-options': 'nosniff',
           'content-security-policy':
-            "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'",
+            "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'",
         });
         response.end(workbenchHtml(local ? capability : null));
         return;

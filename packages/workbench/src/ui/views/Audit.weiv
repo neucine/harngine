@@ -1,0 +1,60 @@
+<template><div>
+    <PageHeader bind:title="'Audit'" bind:subtitle="'Payload-safe operational evidence across Work, policy, Attempts, Interactions, and Sessions.'"><label class="pill">Category
+        <select bind:value="props.category" on:change="categoryChange">
+          <option value="">All</option>
+          <option for="option in categories" bind:value="option">{{ option }}</option>
+        </select></label></PageHeader>
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <h2>Retained evidence</h2>
+          <div class="muted">{{ props.entries.length }} entries loaded</div>
+        </div>
+      </div>
+      <div class="timeline">
+        <div class="entry" for="entry in props.entries">
+          <div class="toolbar">
+            <b>{{ entry.action }}</b><span class="pill">{{ entry.category }}</span>
+          </div>
+          <div class="muted mono">{{ entry.id }}</div>
+          <div class="meta"><span class="pill">{{ entry.correlationText }}</span></div>
+          <div>Outcome: {{ entry.outcome || '—' }}</div>
+          <div>
+            <span class="label">Reason</span>
+            <div>{{ entry.reasonText }}</div>
+          </div>
+          <details>
+            <summary>Entry details</summary>
+            <pre>{{ pretty(entry) }}</pre>
+          </details>
+        </div>
+        <div class="muted" if="!props.entries.length">No audit entries match this filter.</div>
+        <button if="props.next" on:click="more">Load more</button>
+      </div>
+    </section>
+  </div></template>
+<script lang="ts">
+import PageHeader from '../components/PageHeader.weiv';
+import { pretty } from '../api.ts';
+export interface Props {
+  entries: any[];
+  category: string;
+  next: string;
+}
+export let props: Props;
+let categories = [
+  'work',
+  'decision',
+  'authorization',
+  'guardrail',
+  'attempt',
+  'interaction',
+  'session',
+];
+function categoryChange(event: Event) {
+  emit('category', (event.target as HTMLSelectElement).value);
+}
+function more() {
+  emit('more', props.next);
+}
+</script>

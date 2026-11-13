@@ -1,0 +1,23 @@
+<template><div>
+    <PageHeader bind:title="'Sessions'" bind:subtitle="'Long-running conversations with an Agent and durable history.'" />
+    <div class="grid" if="props.items.length">
+      <a class="card" for="item in props.items" bind:href="item.url"><div class="card-kind">Session</div>
+        <h2>{{ item.title }}</h2>
+        <div class="muted">{{ item.agent.id }}</div>
+        <div class="meta">
+          <span bind:class="'pill ' + item.status">{{ item.status }}</span><span bind:class="item.foregroundWorkId ? 'pill running' : 'hidden'">Work in progress</span>
+        </div></a>
+    </div>
+    <div class="empty" if="!props.items.length">
+      <h2>No Sessions yet</h2>
+      <p>Open an Agent Definition to start a conversation.</p>
+    </div>
+  </div></template>
+<script lang="ts">
+import PageHeader from '../components/PageHeader.weiv';
+import Status from '../components/Status.weiv';
+export interface Props {
+  items: any[];
+}
+export let props: Props;
+</script>

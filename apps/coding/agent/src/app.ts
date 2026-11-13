@@ -11,6 +11,8 @@ import { agent, createApp, schema, tool, workflow, type Json, type ModelAdapter 
 const runFile = promisify(execFile);
 export function createCodingApp(options: {
   repo: string;
+  /** Alternate Harngine data directory, for example a consistent review snapshot. */
+  dataDirectory?: string;
   writable: boolean;
   modelId?: string;
   /** Provider selection. Defaults to the local Magpie gateway in development. */
@@ -28,7 +30,7 @@ export function createCodingApp(options: {
   const root = realpathSync(resolve(options.repo));
   const writable = options.writable;
   const modelId = options.modelId;
-  const data = resolve(root, '.harngine/coding-agent');
+  const data = resolve(options.dataDirectory ?? resolve(root, '.harngine/coding-agent'));
   mkdirSync(data, { recursive: true });
   const editJournal = resolve(data, 'edit-journal');
   mkdirSync(editJournal, { recursive: true, mode: 0o700 });

@@ -1,0 +1,14 @@
+<template><div class="top">
+    <div>
+      <h1>{{ props.title }}</h1>
+      <div class="sub">{{ props.subtitle }}</div>
+    </div>
+    <div class="actions"><slot /></div>
+  </div></template>
+<script lang="ts">
+export interface Props {
+  title: string;
+  subtitle: string;
+}
+export let props: Props;
+</script>

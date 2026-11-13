@@ -14,7 +14,7 @@
     "manifest": "bun packages/harngine/src/build/manifest-cli.ts",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "build": "bun run manifest && bun run clean && bun node_modules/typescript/bin/tsc -b --force",
+    "build": "bun run manifest && bun run clean && bun run --cwd packages/workbench build:ui && bun node_modules/typescript/bin/tsc -b --force",
     "typecheck": "bun node_modules/typescript/bin/tsc --noEmit -p tsconfig.test.json",
     "test": "bun run build && node_modules/node/bin/node node_modules/vitest/vitest.mjs run",
     "check": "bun run format:check && bun run typecheck && bun run test",

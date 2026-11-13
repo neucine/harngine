@@ -1,0 +1,95 @@
+<template><div>
+    <div class="modal-backdrop" if="props.open">
+      <section class="modal panel" role="dialog" aria-modal="true" bind:aria-label="props.title">
+        <h2>{{ props.title }}</h2>
+        <p class="muted">{{ props.help }}</p>
+        <div class="toolbar">
+          <span class="label">Contract input</span><button type="button" on:click="toggleMode">
+            {{ formMode ? 'JSON editor' : 'Generated form' }}
+          </button>
+        </div>
+        <div class="schema-form" bind:class="formMode ? 'schema-form' : 'hidden'">
+          <label for="field in props.fields">{{ field.label }}<input bind:data-path="field.path" bind:data-type="field.type" bind:value="field.value" /></label>
+        </div>
+        <textarea id="contract-input" class="json-editor" bind:class="formMode ? 'hidden' : 'json-editor'" rows="12" bind:value="props.initial"></textarea>
+        <div class="error" if="error">{{ error }}</div>
+        <div class="dialog-actions">
+          <button on:click="cancel">Cancel</button><button class="primary" on:click="submit">Continue</button>
+        </div>
+      </section>
+    </div>
+  </div></template>
+<script lang="ts">
+export interface Props {
+  open: boolean;
+  title: string;
+  help: string;
+  initial: string;
+  fields: { label: string; path: string; type: string; value: string }[];
+}
+export let props: Props;
+let formMode = true;
+let error = '';
+function setPath(target: any, path: string, value: any) {
+  if (!path) return value;
+  const names = path.split('.');
+  let at = target;
+  for (const name of names.slice(0, -1)) at = at[name] ??= {};
+  at[names[names.length - 1]] = value;
+  return target;
+}
+function dialog(event: Event) {
+  const root = (event.currentTarget as Element).closest('[role="dialog"]');
+  if (!root) throw new Error('Input dialog is unavailable');
+  return root;
+}
+function formValue(root: Element) {
+  let value: any = props.fields[0]?.path === '' ? undefined : {};
+  for (const input of root.querySelectorAll<HTMLInputElement>('.schema-form [data-path]')) {
+    let field: any = input.value;
+    if (input.dataset.type === 'boolean') field = field === 'true';
+    else if (input.dataset.type === 'number' || input.dataset.type === 'integer')
+      field = Number(field);
+    else if (input.dataset.type === 'array' || input.dataset.type === 'object')
+      field = JSON.parse(field);
+    value = setPath(value, input.dataset.path || '', field);
+  }
+  return value;
+}
+function getPath(value: any, path: string) {
+  return path ? path.split('.').reduce((at, name) => at?.[name], value) : value;
+}
+function toggleMode(event: Event) {
+  try {
+    const root = dialog(event);
+    const json = root.querySelector<HTMLTextAreaElement>('#contract-input')!;
+    if (formMode) json.value = JSON.stringify(formValue(root), null, 2);
+    else {
+      const value = JSON.parse(json.value);
+      for (const input of root.querySelectorAll<HTMLInputElement>('.schema-form [data-path]')) {
+        const field = getPath(value, input.dataset.path || '');
+        input.value = typeof field === 'object' ? JSON.stringify(field) : String(field ?? '');
+      }
+    }
+    formMode = !formMode;
+    error = '';
+  } catch (cause) {
+    error = String(cause);
+  }
+}
+function cancel() {
+  emit('cancel', null);
+}
+function submit(event: Event) {
+  try {
+    const root = dialog(event);
+    const value = formMode
+      ? formValue(root)
+      : JSON.parse(root.querySelector<HTMLTextAreaElement>('#contract-input')!.value);
+    emit('submit', value);
+    error = '';
+  } catch (cause) {
+    error = String(cause);
+  }
+}
+</script>

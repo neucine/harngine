@@ -1,0 +1,411 @@
+<template><div class="shell">
+    <Sidebar bind:active="active" bind:connected="connected" bind:note="connectionNote" />
+    <main>
+      <div class="error" if="error" role="alert">{{ error }}</div>
+      <div class="empty" if="loading">Loading Workbench…</div>
+      <div if="!loading && view === 'definitions'">
+        <Definitions bind:items="data" bind:history="showHistory" on:toggle-history="toggleHistory" />
+      </div>
+      <div if="!loading && view === 'definition'">
+        <Definition bind:item="data" on:new-session="newSession" on:start-work="startWork" />
+      </div>
+      <div if="!loading && view === 'sessions'"><Sessions bind:items="data" /></div>
+      <div if="!loading && view === 'session'">
+        <Session bind:item="data" on:send="sendMessage" on:close="closeSession" on:respond="respond" on:question="question" />
+      </div>
+      <div if="!loading && view === 'works'"><Works bind:items="data" /></div>
+      <div if="!loading && view === 'work'">
+        <Work bind:item="data" bind:entries="inspection" bind:detail="detail" bind:next="inspectionNext" bind:preview="preview" on:cancel="cancelWork" on:detail="changeDetail" on:more="moreInspection" on:respond="respond" on:question="question" />
+      </div>
+      <div if="!loading && view === 'audit'">
+        <Audit bind:entries="data" bind:category="category" bind:next="auditNext" on:category="changeCategory" on:more="moreAudit" />
+      </div>
+      <div if="!loading && view === 'missing'">
+        <h1>Not found</h1>
+        <p>{{ missingPath }}</p>
+      </div>
+    </main>
+    <div if="inputOpen">
+      <InputDialog bind:open="inputOpen" bind:title="inputTitle" bind:help="inputHelp" bind:initial="inputInitial" on:cancel="dismissInput" on:submit="submitInput" bind:fields="inputFields" />
+    </div>
+  </div></template>
+<script lang="ts">
+import Sidebar from './components/Sidebar.weiv';
+import InputDialog from './components/InputDialog.weiv';
+import Definitions from './views/Definitions.weiv';
+import Definition from './views/Definition.weiv';
+import Sessions from './views/Sessions.weiv';
+import Session from './views/Session.weiv';
+import Works from './views/Works.weiv';
+import Work from './views/Work.weiv';
+import Audit from './views/Audit.weiv';
+import { api, pretty, short, terminal, watch } from './api.ts';
+export interface Props {}
+export let props: Props;
+let missingPath = '';
+let active = 'definitions';
+let view = '';
+let data: any = null;
+let loading = true;
+let error = '';
+let connected = true;
+let connectionNote = 'public App API';
+let source: EventSource | null = null;
+let showHistory = false;
+let inspection: any[] = [];
+let detail = 'story';
+let inspectionNext = '';
+let preview = '';
+let auditNext = '';
+let category = '';
+let inputOpen = false;
+let inputTitle = '';
+let inputHelp = '';
+let inputInitial = 'null';
+let inputFields: { label: string; path: string; type: string; value: string }[] = [];
+let inputSchema: any = null;
+let inputSubmit: ((value: any) => Promise<void>) | null = null;
+function prepareSession(value: any) {
+  return {
+    ...value,
+    recentMessages: (value.recentMessages || []).map((message: any) => ({
+      ...message,
+      workUrl: message.workId ? '/work/' + encodeURIComponent(message.workId) : '',
+    })),
+  };
+}
+function prepareWork(value: any) {
+  return { ...value, subtitle: value.definition.id + ' · ' + short(value.id) };
+}
+function parts() {
+  return location.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+}
+function navigate(path: string) {
+  history.pushState({}, '', path);
+  return load();
+}
+function closeWatch() {
+  source?.close();
+  source = null;
+}
+function showError(cause: any) {
+  error = (cause?.code ? cause.code + ' · ' : '') + (cause?.message || String(cause));
+}
+function schemaValue(schema: any): any {
+  if (schema?.default !== undefined) return schema.default;
+  if (schema?.type === 'object')
+    return Object.fromEntries(
+      Object.entries(schema.properties || {}).map(([name, child]) => [name, schemaValue(child)]),
+    );
+  if (schema?.type === 'array') return [];
+  if (schema?.type === 'boolean') return false;
+  if (schema?.type === 'number' || schema?.type === 'integer') return 0;
+  return '';
+}
+function fieldsFor(
+  schema: any,
+  value: any,
+  path = '',
+): { label: string; path: string; type: string; value: string }[] {
+  if (schema?.type === 'object')
+    return Object.entries(schema.properties || {}).flatMap(([name, child]) =>
+      fieldsFor(child, value?.[name], path ? path + '.' + name : name),
+    );
+  return [
+    {
+      label: path || 'Value',
+      path,
+      type: schema?.type || 'string',
+      value:
+        schema?.type === 'array' || schema?.type === 'object' ? pretty(value) : String(value ?? ''),
+    },
+  ];
+}
+function openInput(
+  title: string,
+  schema: any,
+  help: string,
+  submit: (value: any) => Promise<void>,
+) {
+  const value = schemaValue(schema);
+  inputTitle = title;
+  inputHelp = help;
+  inputSchema = schema;
+  inputInitial = pretty(value);
+  inputFields = fieldsFor(schema, value);
+  inputSubmit = submit;
+  inputOpen = true;
+}
+function dismissInput() {
+  inputOpen = false;
+}
+async function submitInput(value: any) {
+  try {
+    await inputSubmit?.(value);
+    inputOpen = false;
+  } catch (cause) {
+    showError(cause);
+  }
+}
+function newSession(item: any) {
+  openInput(
+    'New Session',
+    { type: 'string', default: item.id },
+    'Choose a title for this Agent Session.',
+    async (title) => {
+      const session = await api('/sessions', {
+        method: 'POST',
+        body: JSON.stringify({
+          agent: { object: item.object, kind: item.kind, id: item.id, revision: item.revision },
+          title,
+        }),
+      });
+      return navigate('/sessions/' + encodeURIComponent(session.id));
+    },
+  );
+}
+function startWork(item: any) {
+  openInput(
+    'Start ' + item.id,
+    item.objective,
+    'The server validates this value against the Definition contract.',
+    async (objective) => {
+      const work = await api('/works', {
+        method: 'POST',
+        body: JSON.stringify({
+          definition: {
+            object: item.object,
+            kind: item.kind,
+            id: item.id,
+            revision: item.revision,
+          },
+          objective,
+        }),
+      });
+      return navigate('/work/' + encodeURIComponent(work.id));
+    },
+  );
+}
+function question(value: any) {
+  openInput('Reply to question', value.item.response, value.item.prompt, async (response) =>
+    respond({ ...value, id: value.item.id, response }),
+  );
+}
+async function respond(value: any) {
+  try {
+    await api(
+      '/works/' +
+        encodeURIComponent(value.work) +
+        '/interactions/' +
+        encodeURIComponent(value.id) +
+        '/response',
+      { method: 'POST', body: JSON.stringify({ response: value.response }) },
+    );
+  } catch (cause) {
+    showError(cause);
+  }
+}
+async function sendMessage(value: any) {
+  try {
+    await api('/sessions/' + encodeURIComponent(value.id) + '/messages', {
+      method: 'POST',
+      body: JSON.stringify({ content: value.content, delivery: value.delivery }),
+    });
+  } catch (cause) {
+    showError(cause);
+  }
+}
+async function closeSession(id: string) {
+  try {
+    await api('/sessions/' + encodeURIComponent(id) + '/close', { method: 'POST', body: '{}' });
+    await load();
+  } catch (cause) {
+    showError(cause);
+  }
+}
+async function cancelWork(id: string) {
+  try {
+    await api('/works/' + encodeURIComponent(id) + '/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ reason: 'Canceled from Workbench' }),
+    });
+  } catch (cause) {
+    showError(cause);
+  }
+}
+async function loadInspection(after = '') {
+  if (view !== 'work') return;
+  try {
+    const page = await api(
+      '/works/' +
+        encodeURIComponent(data.id) +
+        '/inspection?detail=' +
+        detail +
+        '&limit=100' +
+        (after ? '&after=' + encodeURIComponent(after) : ''),
+    );
+    inspection = after ? [...inspection, ...page.entries] : page.entries;
+    inspectionNext = page.hasMore ? page.next || '' : '';
+  } catch (cause) {
+    showError(cause);
+  }
+}
+function changeDetail(value: string) {
+  detail = value;
+  return loadInspection();
+}
+function moreInspection(after: string) {
+  return loadInspection(after);
+}
+async function loadAudit(after = '') {
+  const query =
+    'limit=50' +
+    (category ? '&category=' + encodeURIComponent(category) : '') +
+    (after ? '&after=' + encodeURIComponent(after) : '');
+  const page = await api('/audit?' + query);
+  const entries = page.entries.map((entry: any) => ({
+    ...entry,
+    correlationText: Object.entries(entry.correlation || {})
+      .map(([name, value]) => name + ' · ' + value)
+      .join(' · '),
+    reasonText: entry.reason ? entry.reason.code + ' · ' + entry.reason.message : '—',
+  }));
+  data = after ? [...data, ...entries] : entries;
+  auditNext = page.next || '';
+}
+function changeCategory(value: string) {
+  return navigate('/audit' + (value ? '?category=' + encodeURIComponent(value) : ''));
+}
+async function moreAudit(after: string) {
+  try {
+    await loadAudit(after);
+  } catch (cause) {
+    showError(cause);
+  }
+}
+function toggleHistory() {
+  return navigate(showHistory ? '/definitions' : '/definitions?history=1');
+}
+async function load() {
+  closeWatch();
+  error = '';
+  loading = true;
+  preview = '';
+  inspection = [];
+  inspectionNext = '';
+  const route = parts();
+  try {
+    if (!route.length) {
+      await navigate('/definitions');
+      return;
+    }
+    active =
+      route[0] === 'definitions'
+        ? 'definitions'
+        : route[0] === 'sessions'
+          ? 'sessions'
+          : route[0] === 'audit'
+            ? 'audit'
+            : 'work';
+    if (route[0] === 'definitions' && route.length === 1) {
+      view = 'definitions';
+      showHistory = new URLSearchParams(location.search).get('history') === '1';
+      data = (
+        await api('/definitions?' + (showHistory ? '' : 'availability=available&') + 'limit=100')
+      ).definitions;
+    } else if (route[0] === 'definitions' && route.length === 4) {
+      view = 'definition';
+      const definition = await api(
+        '/definitions/' + route.slice(1).map(encodeURIComponent).join('/'),
+      );
+      data = { ...definition, subtitle: definition.kind + ' · ' + short(definition.revision) };
+    } else if (route[0] === 'sessions' && route.length === 1) {
+      view = 'sessions';
+      data = (await api('/sessions?limit=100')).sessions.map((item: any) => ({
+        ...item,
+        url: '/sessions/' + encodeURIComponent(item.id),
+      }));
+    } else if (route[0] === 'sessions' && route.length === 2) {
+      view = 'session';
+      data = prepareSession(await api('/sessions/' + encodeURIComponent(route[1])));
+      source = watch(
+        'sessions',
+        route[1],
+        (value) =>
+          queueMicrotask(() => {
+            data = prepareSession(value);
+            connected = true;
+            connectionNote = 'Live updates';
+          }),
+        () =>
+          queueMicrotask(() => {
+            connected = false;
+            connectionNote = 'Last durable state shown';
+          }),
+      );
+    } else if (route[0] === 'work' && route.length === 1) {
+      view = 'works';
+      data = (await api('/works?limit=100')).works.map((item: any) => ({
+        ...item,
+        url: '/work/' + encodeURIComponent(item.id),
+      }));
+    } else if (route[0] === 'work' && route.length === 2) {
+      view = 'work';
+      data = prepareWork(await api('/works/' + encodeURIComponent(route[1])));
+      detail = 'story';
+      await loadInspection();
+      if (!terminal.has(data.status)) {
+        source = watch(
+          'works',
+          route[1],
+          (value) =>
+            queueMicrotask(() => {
+              data = prepareWork(value);
+              connected = true;
+              connectionNote = 'Live updates';
+              if (terminal.has(value.status)) {
+                preview = '';
+                closeWatch();
+              }
+            }),
+          () =>
+            queueMicrotask(() => {
+              connected = false;
+              connectionNote = 'Last durable state shown';
+            }),
+        );
+        source.addEventListener('model.delta', (event) => {
+          const delta = JSON.parse((event as MessageEvent).data);
+          if (delta.item?.type === 'text' && delta.workId === data.id)
+            queueMicrotask(() => {
+              preview = (preview + delta.item.text).slice(-131072);
+            });
+        });
+      } else connectionNote = 'Durable terminal state';
+    } else if (route[0] === 'audit' && route.length === 1) {
+      view = 'audit';
+      category = new URLSearchParams(location.search).get('category') || '';
+      data = [];
+      await loadAudit();
+    } else {
+      view = 'missing';
+      missingPath = location.pathname;
+      data = null;
+    }
+  } catch (cause) {
+    showError(cause);
+    view = 'missing';
+  } finally {
+    loading = false;
+  }
+}
+document.addEventListener('click', (event) => {
+  const anchor = (event.target as Element).closest?.('a[href^="/"]') as HTMLAnchorElement | null;
+  if (anchor && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+    event.preventDefault();
+    queueMicrotask(() => navigate(anchor.pathname + anchor.search));
+  }
+});
+addEventListener('popstate', () => queueMicrotask(() => load()));
+queueMicrotask(() => load());
+</script>

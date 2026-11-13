@@ -6,7 +6,7 @@ jobs:
   slice-a:
     strategy:
       matrix:
-        os: [macos-26-intel, ubuntu-24.04]
+        os: [macos-26, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -18,4 +18,10 @@ jobs:
       - run: bun run test:package
       - run: bun run test:quickstart
       - run: bun run test:demo:quest
+        if: runner.os == 'macOS'
+      - run: node_modules/node/bin/node node_modules/vitest/vitest.mjs run examples/quest/test/quest.test.ts
+        if: runner.os == 'Linux'
       - run: bun run test:demo:support
+        if: runner.os == 'macOS'
+      - run: bun run manifest && bun node_modules/typescript/bin/tsc -b examples/support --force && node_modules/node/bin/node node_modules/vitest/vitest.mjs run examples/support/test/support.test.ts
+        if: runner.os == 'Linux'

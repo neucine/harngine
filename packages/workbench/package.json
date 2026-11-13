@@ -19,10 +19,17 @@
   },
   "files": [
     "dist",
+    "public",
     "LICENSE",
     "README.md"
   ],
   "peerDependencies": {
     "harngine": "0.1.0"
+  },
+  "devDependencies": {
+    "weivjs": "0.1.0"
+  },
+  "scripts": {
+    "build:ui": "bun build-ui.mjs"
   }
 }

@@ -170,6 +170,9 @@
       "bin": {
         "harngine-workbench": "./dist/cli.js",
       },
+      "devDependencies": {
+        "weivjs": "0.1.0",
+      },
       "peerDependencies": {
         "harngine": "0.1.0",
       },

@@ -1,4 +1,11 @@
-import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
@@ -15,6 +22,38 @@ const model: ModelAdapter = {
 };
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
+
+test('coding App reopens Session history from an alternate data directory', async () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'harngine-coding-repo-')));
+  const dataDirectory = realpathSync(mkdtempSync(join(tmpdir(), 'harngine-coding-data-')));
+  roots.push(root, dataDirectory);
+  const first = createCodingApp({
+    repo: root,
+    dataDirectory,
+    writable: false,
+    modelAdapter: model,
+    principal: 'desktop',
+  });
+  try {
+    await first.app.sessions.create({ agent: first.assistant, title: 'Saved review' });
+  } finally {
+    await first.app.close();
+  }
+  const reopened = createCodingApp({
+    repo: root,
+    dataDirectory,
+    writable: false,
+    modelAdapter: model,
+    principal: 'desktop',
+  });
+  try {
+    const page = await reopened.app.sessions.list({ limit: 10 });
+    expect(page.sessions.map((session) => session.title)).toContain('Saved review');
+    expect(existsSync(join(root, '.harngine/coding-agent/state.sqlite'))).toBe(false);
+  } finally {
+    await reopened.app.close();
+  }
 });
 
 test('coding edit journal reconciles applied, absent, and ambiguous file effects', async () => {

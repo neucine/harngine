@@ -1,0 +1,30 @@
+<template><aside class="side">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div>
+        <div class="brand-name">Harngine <span>Workbench</span></div>
+        <div class="brand-note">Agent runtime console</div>
+      </div>
+    </div>
+    <nav aria-label="Workbench navigation">
+      <a href="/definitions" data-nav="definitions" bind:class="navClass('definitions')">Definitions</a>
+      <a href="/sessions" data-nav="sessions" bind:class="navClass('sessions')">Sessions</a>
+      <a href="/work" data-nav="work" bind:class="navClass('work')">Work</a>
+      <a href="/audit" data-nav="audit" bind:class="navClass('audit')">Audit</a>
+    </nav>
+    <div class="connection">
+      <b>{{ props.connected ? '● Connected' : '● Reconnecting' }}</b><br />
+      <span class="connection-note">{{ props.note }}</span>
+    </div>
+  </aside></template>
+<script lang="ts">
+export interface Props {
+  active: string;
+  connected: boolean;
+  note: string;
+}
+export let props: Props;
+function navClass(name: string) {
+  return props.active === name ? 'active' : '';
+}
+</script>
