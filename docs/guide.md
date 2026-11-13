@@ -138,7 +138,7 @@ an object. Generated entity IDs use readable prefixes with compact opaque suffix
 
 ## Install
 
-Harngine currently targets Node.js 24.21 and uses Bun for project tooling. The npm package is not published yet; the following commands apply after publication:
+Harngine 0.1.0 is published on npm. It requires Node.js 24.21 or later in the 24.x line. Bun is used for project tooling and generating the definition manifest:
 
 ```bash
 bun add harngine
