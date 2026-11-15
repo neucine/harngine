@@ -1,4 +1,12 @@
 steps:
+  - label: ":label: Check release candidate"
+    if: build.branch =~ /^release\/v[0-9]+\.[0-9]+\.[0-9]+$/
+    command: node scripts/release-ci.mjs candidate
+    agents:
+      queue: macos-local
+
+  - wait
+
   - label: ":bun: Check Harngine"
     key: check
     command: |
@@ -14,5 +22,13 @@ steps:
       node scripts/quickstart-smoke.mjs
       bun run test:demo:quest
       bun run test:demo:support
+    agents:
+      queue: macos-local
+
+  - wait
+
+  - label: ":mag: Detect merged release"
+    if: build.branch == "main" && build.source == "webhook"
+    command: node scripts/release-ci.mjs detect
     agents:
       queue: macos-local

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -51,50 +51,80 @@ for (const name of packages) {
   }
 }
 
-execFileSync('npm', ['whoami'], { stdio: 'inherit' });
-execFileSync('gh', ['auth', 'status'], { stdio: 'inherit' });
-const remoteTag = execFileSync('git', ['ls-remote', '--tags', 'origin', `refs/tags/${tag}`], {
-  encoding: 'utf8',
-}).trim();
-if (!remoteTag) throw new Error(`Release tag ${tag} has not been pushed to origin`);
-
-const destination = mkdtempSync(join(tmpdir(), 'harngine-release-'));
+const configDirectory = process.env.NPM_TOKEN ? mkdtempSync(join(tmpdir(), 'harngine-npm-')) : null;
+if (configDirectory) {
+  const config = join(configDirectory, 'npmrc');
+  writeFileSync(config, `//registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}\n`, {
+    mode: 0o600,
+  });
+  process.env.NPM_CONFIG_USERCONFIG = config;
+}
+if (process.env.GITHUB_RELEASE_TOKEN) process.env.GH_TOKEN = process.env.GITHUB_RELEASE_TOKEN;
 try {
-  for (const name of packages) {
-    const npmName = packageName(name);
-    if (isPublished(npmName, version)) {
-      console.log(`Skipping ${npmName}@${version}: already published`);
-      continue;
-    }
+  execFileSync('npm', ['whoami'], { stdio: 'inherit' });
+  execFileSync('gh', ['auth', 'status'], { stdio: 'inherit' });
+  const remoteTag = execFileSync('git', ['ls-remote', '--tags', 'origin', `refs/tags/${tag}`], {
+    encoding: 'utf8',
+  }).trim();
+  const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  if (remoteTag) {
+    const tagged = execFileSync('git', ['ls-remote', '--tags', 'origin', `refs/tags/${tag}^{}`], {
+      encoding: 'utf8',
+    }).trim();
+    const target = tagged ? tagged.split(/\s/)[0] : remoteTag.split(/\s/)[0];
+    if (target !== commit) throw new Error(`Release tag ${tag} points to another commit`);
+  } else {
+    if (!process.env.BUILDKITE) throw new Error(`Release tag ${tag} has not been pushed to origin`);
+    run('gh', [
+      'api',
+      'repos/neucine/harngine/git/refs',
+      '-f',
+      `ref=refs/tags/${tag}`,
+      '-f',
+      `sha=${commit}`,
+    ]);
+  }
 
-    const cwd = resolve(root, 'packages', name);
-    run('bun', ['pm', 'pack', '--destination', destination], { cwd });
-    const prefix = name === 'harngine' ? 'harngine-' : `harngine-${name}-`;
-    const tarball = readdirSync(destination).find(
-      (file) => file.startsWith(prefix) && file.endsWith('.tgz'),
+  const destination = mkdtempSync(join(tmpdir(), 'harngine-release-'));
+  try {
+    for (const name of packages) {
+      const npmName = packageName(name);
+      if (isPublished(npmName, version)) {
+        console.log(`Skipping ${npmName}@${version}: already published`);
+        continue;
+      }
+
+      const cwd = resolve(root, 'packages', name);
+      run('bun', ['pm', 'pack', '--destination', destination], { cwd });
+      const prefix = name === 'harngine' ? 'harngine-' : `harngine-${name}-`;
+      const tarball = readdirSync(destination).find(
+        (file) => file.startsWith(prefix) && file.endsWith('.tgz'),
+      );
+      if (!tarball) throw new Error(`Missing tarball for ${name}`);
+      run('npm', ['publish', join(destination, tarball), '--access', 'public']);
+    }
+  } finally {
+    rmSync(destination, { recursive: true, force: true });
+  }
+
+  if (hasGitHubRelease(tag)) {
+    console.log(`Skipping GitHub release ${tag}: already exists`);
+  } else {
+    run(
+      'gh',
+      [
+        'release',
+        'create',
+        tag,
+        '--verify-tag',
+        '--title',
+        `Harngine ${tag}`,
+        '--generate-notes',
+        '--latest',
+      ],
+      { cwd: root },
     );
-    if (!tarball) throw new Error(`Missing tarball for ${name}`);
-    run('npm', ['publish', join(destination, tarball), '--access', 'public']);
   }
 } finally {
-  rmSync(destination, { recursive: true, force: true });
-}
-
-if (hasGitHubRelease(tag)) {
-  console.log(`Skipping GitHub release ${tag}: already exists`);
-} else {
-  run(
-    'gh',
-    [
-      'release',
-      'create',
-      tag,
-      '--verify-tag',
-      '--title',
-      `Harngine ${tag}`,
-      '--generate-notes',
-      '--latest',
-    ],
-    { cwd: root },
-  );
+  if (configDirectory) rmSync(configDirectory, { recursive: true, force: true });
 }

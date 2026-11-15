@@ -1,0 +1,13 @@
+steps:
+  - block: ":rocket: Approve Harngine release"
+    key: approve-release
+    prompt: "Publish the six npm packages and create the GitHub release for this checked commit?"
+
+  - label: ":npm: Publish Harngine"
+    key: publish-release
+    command: |
+      set -euo pipefail
+      export PATH="$HOME/.bun/bin:/opt/homebrew/bin:$PATH"
+      node scripts/release-ci.mjs publish
+    agents:
+      queue: macos-local
