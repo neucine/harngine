@@ -3,6 +3,8 @@ steps:
     key: check
     command: |
       set -euo pipefail
+      export PATH="$HOME/.bun/bin:/opt/homebrew/bin:$PATH"
+      test "$(bun --version)" = 1.2.16
       bun install --frozen-lockfile
       bun run format:check
       bun run typecheck
