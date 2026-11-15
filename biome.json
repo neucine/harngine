@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!**/public/styles.css"]
+    "includes": ["**", "!**/public/styles.css", "!packages/workbench/public/**"]
   },
   "formatter": {
     "enabled": true,

@@ -1,0 +1,16 @@
+steps:
+  - label: ":bun: Check Harngine"
+    key: check
+    command: |
+      set -euo pipefail
+      bun install --frozen-lockfile
+      bun run format:check
+      bun run typecheck
+      bun run build
+      node_modules/node/bin/node node_modules/vitest/vitest.mjs run
+      bun scripts/package-smoke.mjs
+      node scripts/quickstart-smoke.mjs
+      bun run test:demo:quest
+      bun run test:demo:support
+    agents:
+      queue: macos-local

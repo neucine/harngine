@@ -64,7 +64,10 @@ if (result.status !== 0) {
 const generated = readFileSync(join(output, 'styles.css'), 'utf8');
 writeFileSync(
   join(output, 'styles.css'),
-  readFileSync(join(root, 'src/ui/styles.css'), 'utf8').trimEnd() + '\n' + generated.trimEnd() + '\n',
+  readFileSync(join(root, 'src/ui/styles.css'), 'utf8').trimEnd() +
+    '\n' +
+    generated.trimEnd() +
+    '\n',
 );
 copyFileSync(join(root, 'src/ui/index.html'), join(output, 'index.html'));
 writeFileSync(fingerprintFile, fingerprint() + '\n');
