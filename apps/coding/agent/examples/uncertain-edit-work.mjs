@@ -16,7 +16,9 @@ writeFileSync(file, before);
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const text = schema({ id: 'demo.text', version: '1', jsonSchema: { type: 'string' } });
 let allowLookup;
-const lookupAllowed = new Promise((resolve) => { allowLookup = resolve; });
+const lookupAllowed = new Promise((resolve) => {
+  allowLookup = resolve;
+});
 let lookups = 0;
 let writes = 0;
 
@@ -30,11 +32,15 @@ const edit = tool({
     writes++;
     const original = readFileSync(file, 'utf8');
     assert.equal(original, before);
-    writeFileSync(journal, JSON.stringify({
-      key: context.idempotencyKey,
-      before: hash(original),
-      after: hash(replacement),
-    }), { flush: true });
+    writeFileSync(
+      journal,
+      JSON.stringify({
+        key: context.idempotencyKey,
+        before: hash(original),
+        after: hash(replacement),
+      }),
+      { flush: true },
+    );
     writeFileSync(file, replacement, { flush: true });
     return context.effectUnknown({
       code: 'LOST_EDIT_RECEIPT',
@@ -48,10 +54,11 @@ const edit = tool({
     assert.equal(record.key, context.idempotencyKey);
     const current = hash(readFileSync(file, 'utf8'));
     if (current === record.after) return { status: 'success', value: 'Edit applied' };
-    if (current === record.before) return {
-      status: 'not-applied',
-      reason: { code: 'EDIT_ABSENT', message: 'File matches its original content' },
-    };
+    if (current === record.before)
+      return {
+        status: 'not-applied',
+        reason: { code: 'EDIT_ABSENT', message: 'File matches its original content' },
+      };
     return {
       status: 'unknown',
       reason: { code: 'EDIT_AMBIGUOUS', message: 'File matches neither journal hash' },
@@ -71,8 +78,9 @@ try {
   let uncertain;
   for (let n = 0; n < 200; n++) {
     const inspection = await work.inspect({ detail: 'diagnostic' });
-    uncertain = inspection.entries.find((entry) =>
-      entry.type === 'call' && entry.tool.id === edit.id && entry.phase === 'uncertain');
+    uncertain = inspection.entries.find(
+      (entry) => entry.type === 'call' && entry.tool.id === edit.id && entry.phase === 'uncertain',
+    );
     if (uncertain) break;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
@@ -83,8 +91,10 @@ try {
   allowLookup();
   assert.equal(await work.result({ signal: AbortSignal.timeout(10000) }), 'Edit applied');
   const inspection = await work.inspect({ detail: 'diagnostic' });
-  const resolved = inspection.entries.find((entry) =>
-    entry.type === 'call' && entry.callId === uncertain.callId && entry.phase === 'resolved');
+  const resolved = inspection.entries.find(
+    (entry) =>
+      entry.type === 'call' && entry.callId === uncertain.callId && entry.phase === 'resolved',
+  );
   assert.ok(resolved, 'Expected the same Call to be resolved');
   assert.equal(writes, 1);
   assert.equal(lookups, 1);
