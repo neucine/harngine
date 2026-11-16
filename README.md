@@ -4,14 +4,29 @@
 
 <img src="docs/social-preview.svg" alt="Harngine: durable, inspectable work for agent applications" width="560">
 
-Harngine is a TypeScript runtime for agents and workflows. It keeps model decisions, Tool calls,
-approvals, and results durable enough to inspect or resume after a restart.
+Suppose a coding agent proposes a file edit. You approve it, but its process stops before it can
+tell you whether the edit happened. Starting over could apply the change twice; assuming success
+could leave the file untouched. The agent needs to know what it already did.
+
+Harngine is a TypeScript runtime for building agents that can recover from interruptions like
+this. It saves each run as inspectable **Work**: model decisions, Tool calls, approvals, and
+results. When a Tool's effect is uncertain, the Work keeps that uncertainty visible until the app
+checks the outside world or an operator resolves it.
 
 Harngine is pre-release software. Its public API may change.
 
 [Run the two-minute recovery demo](examples/quickstart/README.md) with the published package. It
 kills a process during a durable wait and recovers the result from a new process without a model
 account.
+
+For a concrete application, [Harngine Coding](apps/coding/cli/README.md) reads a repository,
+asks for approval before an exact edit, and runs a focused check. Its
+[restart example](apps/coding/agent/examples/pending-approval-restart.mjs) stops while approval is
+pending and reopens the same task with the file unchanged. A separate
+[uncertain edit example](apps/coding/agent/examples/uncertain-edit-work.mjs) deliberately loses
+the result *after* changing a file. The saved Work shows the unknown outcome; a read-only check
+of the file resolves it without another edit. Both examples run from a source checkout; see their
+[run instructions](apps/coding/agent/examples/README.md).
 
 # Get Started
 
