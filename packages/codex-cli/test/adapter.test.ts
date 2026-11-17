@@ -259,7 +259,7 @@ test.each([
   const result = await createCodexCliModel({
     command,
     cliVersion: 'codex-cli test',
-    timeoutMs: 200,
+    timeoutMs: mode === 'timeout' ? 200 : 2_000,
   }).invoke(input());
   expect(result).toEqual({
     status: 'unknown',
