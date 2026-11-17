@@ -97,6 +97,7 @@ const dim = (value: string) => style('2', value);
 const green = (value: string) => style('32', value);
 const amber = (value: string) => style('33', value);
 const cyan = (value: string) => style('36', value);
+const blue = (value: string) => style('94', value);
 const bold = (value: string) => style('1', value);
 
 function progress(line: string) {
@@ -109,7 +110,11 @@ function formatProgress(line: string) {
 
 function dimToolProgress(line: string) {
   const value = line.trimStart();
-  const subdued = /^(?:[→✓✕?…]|Thinking\b)/.test(value) ? dim(line) : line;
+  const subdued = value.startsWith('Thinking')
+    ? `${amber('Thinking')}${dim(value.slice('Thinking'.length))}`
+    : /^(?:[→✓✕?…])/.test(value)
+      ? cyan(line)
+      : line;
   process.stderr.write(`${dim('│')} ${subdued}\n`);
 }
 
@@ -147,9 +152,11 @@ function createActivity(enabled: boolean) {
     const text = detail ? `${label} · ${detail}` : `${label}…`;
     const width = Math.max(24, (process.stderr.columns || 80) - 20);
     const fitted = text.length > width ? `${text.slice(0, width - 1)}…` : text;
-    const styled = detail ? dim(fitted) : fitted;
+    const styled = fitted.startsWith(label)
+      ? `${amber(label)}${detail ? dim(fitted.slice(label.length)) : fitted.slice(label.length)}`
+      : amber(fitted);
     process.stderr.write(
-      `\r\u001b[2K${dim('│')} ${cyan(icon!)} ${styled} ${dim(elapsed(Date.now() - startedAt))}`,
+      `\r\u001b[2K${dim('│')} ${amber(icon!)} ${styled} ${dim(elapsed(Date.now() - startedAt))}`,
     );
     visible = true;
   };
@@ -190,7 +197,7 @@ function createActivity(enabled: boolean) {
       detail = '';
       startedAt = 0;
       if (activeMs > 0) {
-        process.stderr.write(`${green('✓')} Thought for ${elapsed(activeMs)}\n`);
+        process.stderr.write(`${dim('│')} ${green('✓')} Thought for ${elapsed(activeMs)}\n`);
         activeMs = 0;
       }
     },
@@ -219,7 +226,7 @@ function createToolProgress(enabled: boolean, activity: ReturnType<typeof create
   let active: { callId: string; label: string } | undefined;
   const write = (symbol: string, label: string, final: boolean) => {
     if (!enabled) return;
-    process.stderr.write(`\r\u001b[2K${dim('│')} ${dim(`${symbol} ${label}`)}${final ? '\n' : ''}`);
+    process.stderr.write(`\r\u001b[2K${dim('│')} ${cyan(symbol)} ${label}${final ? '\n' : ''}`);
   };
   const finish = (symbol: string) => {
     if (!active) return;
@@ -534,6 +541,7 @@ async function runOneShot(
   const startedAt = Date.now();
   if (!values.json) printSessionHeader(coding.root, selected.intercept.id, selected.write);
   if (!values.json) printRouting(coding);
+  if (!values.json) info(`${blue('› You')}  ${task}\n`);
   const { work } = await selected.intercept.send(task);
   if (!values.json) info(`${dim('Work')} ${work.id}\n`);
 
@@ -544,7 +552,6 @@ async function runOneShot(
       approval,
       json: values.json,
       showThinking: values['show-thinking'],
-      onResult: printAnswer,
     });
   } catch (error) {
     if (!values.json) throw error;
@@ -592,6 +599,7 @@ async function runOneShot(
   }
 
   printCompletion(result);
+  printAnswer(result);
 }
 
 async function executeWork(
@@ -600,7 +608,6 @@ async function executeWork(
     readonly approval: ApprovalMode;
     readonly json: boolean;
     readonly showThinking: boolean;
-    readonly onResult?: (result: CodingWorkResult<Json>) => void;
   },
 ) {
   let readline: ReturnType<typeof createInterface> | undefined;
@@ -627,7 +634,6 @@ async function executeWork(
       ...(toolProgress ? { toolProgress: toolProgress.update } : {}),
       showThinking: options.showThinking,
     });
-    options.onResult?.(result);
     completed = true;
     return result;
   } finally {
@@ -651,13 +657,13 @@ function printAnswer(result: CodingWorkResult<Json>) {
     !result.streamedText.trim().endsWith(text.trim()) ||
     text.trim() === ''
   ) {
-    console.log(`\n${bold('Agent')}\n${text}`);
+    console.log(`\n${process.stdout.isTTY ? green('● Reply') : '● Reply'}\n${text}`);
   }
 }
 
 function printCompletion(result: CodingWorkResult<Json>) {
   const usage = result.usage
-    ? ` · ${result.usage.modelTurns} model · ${result.usage.toolExecutions} tools`
+    ? ` · ${result.usage.modelTurns} model ${result.usage.modelTurns === 1 ? 'turn' : 'turns'} · ${result.usage.toolExecutions} ${result.usage.toolExecutions === 1 ? 'Tool' : 'Tools'}`
     : '';
   progress(`${green('Complete')} · ${elapsed(result.elapsedMs)}${usage}`);
 }
@@ -694,7 +700,7 @@ async function runInteractive(coding: Coding, initial: SelectedSession, values: 
     while (!closed) {
       const line = (
         await readline.question(
-          `${cyan(`[${selected.write ? 'edit' : 'read'}]`)} ${bold('repo')} › `,
+          `${blue('›')} ${dim(`[${selected.write ? 'edit' : 'read'}]`)} ${bold('repo')}  `,
         )
       ).trim();
       if (!line) continue;
@@ -765,9 +771,9 @@ async function runInteractive(coding: Coding, initial: SelectedSession, values: 
           showThinking: values['show-thinking'],
         });
         last = result;
-        printAnswer(result);
         activity.collapse();
         printCompletion(result);
+        printAnswer(result);
       } catch (error) {
         console.error(`\n${amber('Task stopped')} · ${message(error)}`);
       } finally {

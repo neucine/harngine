@@ -21,7 +21,7 @@ API key; the key is masked and kept in memory for that process only.
 The default Session is read only. Type a request and press Enter:
 
 ```text
-[read] repo › Explain why token refresh tests fail
+› [read] repo  Explain why token refresh tests fail
 ```
 
 Use `/write` to open an edit Session. Before Harngine changes a file, it shows the exact removed and
@@ -55,17 +55,18 @@ so a later run can inspect or reconcile the same Work.
 
 Session and Work IDs, an animated `Thinking`/`Working` indicator, Tool activity, approval diffs and
 timing go to stderr. The Agent answer stays on stdout, so normal one-shot commands remain safe to
-pipe. Thinking previews and Tool activity use dim styling. A Tool row changes in place from
-`→ Read package.json` while running to `✓ Read package.json` when it settles. After the final reply,
+pipe. A blue `›` marks the user prompt, amber marks thinking, cyan marks Tool activity, and a
+green `● Reply` introduces the final answer. A Tool row changes in place from
+`→ Read package.json` while running to `✓ Read package.json` when it settles. Before the reply,
 the thinking indicator collapses to one compact
 `✓ Thought for 4.2s` line. Provider reasoning summaries appear inside the animated indicator and
-are removed when the reply finishes; pass `--show-thinking` to keep them expanded in the progress
+are removed when the run finishes; pass `--show-thinking` to keep them expanded in the progress
 output. `Ctrl+C` asks the active Work to stop. Animation is disabled for redirected output and
 `--json`.
 
 Provider text is used as a live preview in the animated thinking indicator while a model turn runs.
 That provisional prose never enters the terminal transcript. When the run finishes, the final answer
-is printed once, followed by the collapsed thinking time. This keeps interim narration out of both
+is printed once, after the collapsed thinking time. This keeps interim narration out of both
 interactive sessions and redirected output.
 
 ## Providers

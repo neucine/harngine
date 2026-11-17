@@ -77,6 +77,16 @@ Harngine Coding is a terminal agent for repository work, with inspectable progre
 before file edits. See the [CLI guide](apps/coding/cli/README.md) for setup and commands. A
 [macOS desktop guide](apps/coding/desktop/README.md) is also available.
 
+![Harngine Coding reading a repository file, showing live progress and the final answer](docs/images/coding-cli.gif)
+
+## Workbench
+
+Workbench lets you browse definitions, start Work, respond to approvals, and inspect the saved
+history in a browser. The view below shows a completed workflow and its Tool call timeline. See
+the [Workbench guide](packages/workbench/README.md) to run it with your app.
+
+![Harngine Workbench showing a completed workflow and its inspection timeline](docs/images/workbench.png)
+
 ## Support Desk
 
 The offline Support Desk example follows a duplicate charge through an approval-gated refund.
