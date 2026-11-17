@@ -812,7 +812,8 @@ function formatSession(session: SessionState, compact: boolean) {
 }
 
 function printSessionHeader(repo: string, id: string, write: boolean) {
-  info(`${bold('Session')} ${id}  ${dim(write ? 'edit access' : 'read access')}  ${repo}`);
+  info(`${bold('Session')} ${id}  ${dim(write ? 'edit access' : 'read access')}`);
+  info(`${dim('Repo')} ${repo}`);
 }
 
 function printRouting(coding: Coding) {
