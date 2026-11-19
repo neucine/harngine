@@ -118,7 +118,7 @@ try {
   });
   execFileSync(nodeRuntime, ['smoke.mjs'], { cwd: temp, stdio: 'inherit' });
   const consumer = `
-    import { agent, createApp, schema, tool, workflow, type ModelAdapter, type Work } from 'harngine';
+    import { agent, createApp, schema, tool, workflow, type ModelAdapter, type WorkHandle } from 'harngine';
     const text = schema<string>({ id: 'typed.text', version: '1', jsonSchema: { type: 'string' } });
     const echo = tool({ id: 'typed.echo', description: 'Echo text.', input: text, output: text,
       effect: 'read', execute: value => value });
@@ -128,7 +128,7 @@ try {
     const assistant = agent({ id: 'typed.agent', instructions: 'Answer.', objective: text, model });
     declare const app: ReturnType<typeof createApp>;
     async function check() {
-      const work: Work<string, string> = await app.start(flow, 'hello');
+      const work: WorkHandle<string, string> = await app.start(flow, 'hello');
       const result: string = await app.run(assistant, 'hello');
       // @ts-expect-error Objective type is inferred from the Workflow.
       await app.run(flow, 42);

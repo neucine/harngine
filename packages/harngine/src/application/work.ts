@@ -14,7 +14,7 @@ import type {
   EffectResolution,
   InspectionPage,
   Watch,
-  Work,
+  WorkHandle as WorkHandleContract,
   WorkSnapshot,
   WorkUpdate,
 } from './contracts.js';
@@ -27,7 +27,7 @@ function unwrapClosure<R extends Json>(closure: Closure<R>): R {
   throw new WorkFailedError(closure.reason);
 }
 
-export class WorkHandle<O extends Json, R extends Json> implements Work<O, R> {
+export class WorkHandle<O extends Json, R extends Json> implements WorkHandleContract<O, R> {
   readonly id: WorkId;
 
   constructor(
@@ -35,7 +35,7 @@ export class WorkHandle<O extends Json, R extends Json> implements Work<O, R> {
     private readonly caller: Caller,
     private readonly ref: WorkRef<O, R>,
     private readonly steerable: boolean,
-    private readonly session?: { readonly id: SessionId },
+    private readonly session?: SessionId,
   ) {
     this.id = ref.id;
   }

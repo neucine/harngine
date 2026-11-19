@@ -1,10 +1,10 @@
 import type { AnyAgent } from './agent.js';
 import type { Closure } from './work.js';
-import type { Policy } from './work.js';
+import type { ExecutionPolicy } from './work.js';
 import type { Receipt } from './work.js';
 import type { WorkRef } from './work.js';
 import type { Identity, Json, RequestId, SessionId, WorkId } from './types.js';
-import type { DefinitionReference } from './definition.js';
+import type { DefinitionRef } from './definition.js';
 import type { WorkSnapshot } from './work.js';
 
 export interface Message {
@@ -21,7 +21,7 @@ export interface SessionState {
   readonly id: SessionId;
   readonly title: string;
   readonly status: 'open' | 'closed';
-  readonly agent: DefinitionReference & { readonly type: 'agent' };
+  readonly agent: DefinitionRef & { readonly type: 'agent' };
   readonly foregroundWorkId: WorkId | null;
   readonly queuedWorkIds: readonly WorkId[];
   readonly createdAt: number;
@@ -36,8 +36,8 @@ export interface SessionSnapshot extends SessionState {
 export interface SessionHandoff {
   readonly object: 'session_handoff';
   readonly id: `handoff_${string}`;
-  readonly from: DefinitionReference & { readonly type: 'agent' };
-  readonly to: DefinitionReference & { readonly type: 'agent' };
+  readonly from: DefinitionRef & { readonly type: 'agent' };
+  readonly to: DefinitionRef & { readonly type: 'agent' };
   readonly reason?: string;
   readonly recordedAt: number;
   readonly sessionVersion: number;
@@ -59,9 +59,6 @@ export type SessionUpdate = {
 declare const brand: unique symbol;
 export type SessionVersion = number & { readonly [brand]: 'SessionVersion' };
 export type SessionCursor = number & { readonly [brand]: 'SessionCursor' };
-export interface SessionRef {
-  readonly id: SessionId;
-}
 export type SessionReceipt<T> = Receipt<T, SessionId, SessionCursor>;
 export interface SessionCreate {
   readonly requestId: RequestId;
@@ -72,7 +69,7 @@ export interface SessionCreate {
 export interface SessionSend {
   readonly requestId: RequestId;
   readonly content: Json;
-  readonly limits?: Partial<Policy>;
+  readonly limits?: Partial<ExecutionPolicy>;
 }
 export interface SessionSendAcceptance extends SessionChange {
   readonly sequence: SessionCursor;

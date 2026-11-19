@@ -1,5 +1,5 @@
 import type { Json, SessionId, WorkId } from './types.js';
-import type { DefinitionReference, DefinitionType } from './definition.js';
+import type { DefinitionRef, DefinitionType } from './definition.js';
 
 export type AuditCategory =
   | 'work'
@@ -40,7 +40,7 @@ export interface AuditEntry {
   readonly policyRevision?: string;
   readonly target?: AuditTarget;
   readonly guardrail?: { readonly id: string; readonly revision: `rev_${string}` };
-  readonly definition?: DefinitionReference;
+  readonly definition?: DefinitionRef;
 }
 
 export interface AuditQuery {

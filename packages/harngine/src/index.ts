@@ -28,12 +28,12 @@ export type {
   Definition,
   DefinitionDescription,
   DefinitionType,
-  DefinitionReference,
+  DefinitionRef,
   Definitions,
   AgentDescription,
   WorkflowDescription,
   ToolDescription,
-  ExecutableDefinitionReference,
+  ExecutableDefinitionRef,
   RegisteredDefinition,
   ExecutionLimits,
   InspectionEntry,
@@ -59,13 +59,14 @@ export type {
   StartOptions,
   Watch,
   WatchedUpdate,
-  Work,
+  WorkHandle,
   Works,
   WorkSnapshot,
   WorkSummary,
   WorkStatus,
   WorkUpdate,
 } from './application/contracts.js';
+export type { Work } from './core/work.js';
 export {
   ConflictError,
   HarngineError,
@@ -128,8 +129,8 @@ export {
   normalizeModelEnvelope,
 } from './adapter/contract.js';
 export type { Agent, AgentDefinition } from './authoring/agent.js';
-export { artifactReference, artifactReferences } from './core/artifact.js';
-export type { ArtifactReference, ArtifactReferenceInput } from './core/artifact.js';
+export { createArtifact, findArtifacts } from './core/artifact.js';
+export type { Artifact, ArtifactInput } from './core/artifact.js';
 export {
   DEFAULT_MODEL_ARTIFACT_LIMITS,
   resolveModelArtifacts,

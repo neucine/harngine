@@ -2,13 +2,13 @@ import { frozen, validate } from '../support/schema.js';
 import {
   RuntimeError,
   type AnyWorkflow,
-  type CallRecord,
+  type Call,
   type ChildWorkRecord,
   type Closure,
   type ControlToken,
   type ObjectiveRevision,
   type Json,
-  type Policy,
+  type ExecutionPolicy,
   type Proposal,
   type Reason,
   type View,
@@ -26,7 +26,7 @@ import { inputCount, latestInputSequence, pendingInputs } from '../storage/sqlit
 import type { OperationExecutor } from './operation.js';
 import type { CallAccessPolicy } from './operation.js';
 import type { RequestRow, SqliteStore, WorkRow } from '../storage/sqlite/store.js';
-import { validateWaitBindings, workflowWaits } from '../storage/sqlite/wait.js';
+import { validateWaitBindings, workWaits } from '../storage/sqlite/wait.js';
 import {
   runGuardrails,
   type GuardrailDecision,
@@ -89,12 +89,12 @@ export class ExecutionEngine {
         blocked.add(row.id);
         continue;
       }
-      const workPolicy = JSON.parse(row.policy) as Policy;
+      const workPolicy = JSON.parse(row.policy) as ExecutionPolicy;
       if (workPolicy.maxOperations === undefined && row.decisions >= workPolicy.maxDecisions) {
         this.fail(row, { code: 'DECISION_LIMIT', message: 'Decision limit reached' });
         continue;
       }
-      const waits = workflowWaits(this.options.store, row.id);
+      const waits = workWaits(this.options.store, row.id);
       const batch = pendingInputs(this.options.store, row.id, definition.input?.batchSize ?? 0);
       const inputBoundary =
         batch.at(-1)?.sequence ?? latestInputSequence(this.options.store, row.id);
@@ -102,7 +102,7 @@ export class ExecutionEngine {
       let proposal: Proposal;
       let childCalls: readonly PreparedChild[] | undefined;
       try {
-        const calls: Record<string, CallRecord> = Object.create(null);
+        const calls: Record<string, Call> = Object.create(null);
         for (const call of this.options.store.requests(row.id)) calls[call.slot] = callRecord(call);
         const children: Record<string, ChildWorkRecord> = Object.create(null);
         for (const child of childRecords(this.options.store, row.id)) children[child.slot] = child;
@@ -355,7 +355,7 @@ function childRecords(store: SqliteStore, parentWorkId: string): ChildWorkRecord
   }));
 }
 
-function callRecord(row: RequestRow): CallRecord {
+function callRecord(row: RequestRow): Call {
   return {
     id: row.id,
     slot: row.slot,
@@ -370,7 +370,7 @@ function callRecord(row: RequestRow): CallRecord {
 function ensureChildCapacity(
   store: SqliteStore,
   row: WorkRow,
-  policy: Policy,
+  policy: ExecutionPolicy,
   additional: number,
 ): void {
   const ancestor = (
@@ -400,7 +400,7 @@ function ensureChildCapacity(
         )
         .get(workId) as { count: number }
     ).count;
-  const rootPolicy = JSON.parse(store.work(root).policy) as Policy;
+  const rootPolicy = JSON.parse(store.work(root).policy) as ExecutionPolicy;
   if (subtree(root) + additional > (rootPolicy.maxChildWork ?? 100))
     throw new RuntimeError('LIMIT_EXCEEDED', 'Child Work allowance reached');
   if (subtree(row.id) + additional > (policy.maxChildWork ?? 100))

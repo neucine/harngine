@@ -1,5 +1,5 @@
 import type { Json, WorkId } from './types.js';
-import type { ArtifactReference } from './artifact.js';
+import type { Artifact } from './artifact.js';
 
 export type ModelItem =
   | { readonly type: 'text'; readonly text: string }
@@ -97,7 +97,7 @@ export interface ModelContext {
   readonly objective: Json;
   readonly items: readonly ContextItem[];
   /** Deduplicated references embedded in the selected objective and Context Items. */
-  readonly artifacts: readonly ArtifactReference[];
+  readonly artifacts: readonly Artifact[];
   readonly policy: string;
   readonly budget: {
     readonly inputTokens: number;

@@ -6,7 +6,7 @@ import type {
   Outcome,
   Proposal,
   Reason,
-  InputRecord,
+  Input,
   ReconciliationResult,
   WaitPlan,
 } from '../core/execution.js';
@@ -23,7 +23,7 @@ export function checkedProposal(
   raw: unknown,
   tools: ReadonlyMap<string, AnyTool>,
   workflow: (reference: Identity) => AnyWorkflow | undefined,
-  inputs: readonly InputRecord[] = [],
+  inputs: readonly Input[] = [],
   hasMoreInputs = false,
   children: Readonly<Record<string, ChildWorkRecord>> = {},
 ): Proposal {

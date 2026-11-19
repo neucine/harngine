@@ -1,7 +1,7 @@
 import { RuntimeError } from './types.js';
 import type { Json } from './types.js';
 
-export type ArtifactReference = {
+export type Artifact = {
   readonly object: 'artifact';
   /** Stable application-owned handle used to resolve the content. */
   readonly id: string;
@@ -11,14 +11,14 @@ export type ArtifactReference = {
   readonly name?: string;
 };
 
-export type ArtifactReferenceInput = Omit<ArtifactReference, 'object'>;
+export type ArtifactInput = Omit<Artifact, 'object'>;
 
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 const MEDIA_TYPE = /^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*\/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*$/;
 const FIELDS = new Set(['object', 'id', 'mediaType', 'byteLength', 'digest', 'name']);
 
 /** Validate and freeze metadata for immutable application-owned content. */
-export function artifactReference(input: ArtifactReferenceInput): ArtifactReference {
+export function createArtifact(input: ArtifactInput): Artifact {
   if (typeof input.id !== 'string' || !input.id.trim() || input.id.length > 256)
     throw new RuntimeError('INVALID_DATA', 'Artifact id must contain 1–256 characters');
   if (typeof input.mediaType !== 'string' || !MEDIA_TYPE.test(input.mediaType))
@@ -46,8 +46,8 @@ export function artifactReference(input: ArtifactReferenceInput): ArtifactRefere
  * Collect artifact references embedded in a selected JSON value.
  * An object using the reserved `object: 'artifact'` discriminator is validated rather than ignored.
  */
-export function artifactReferences(value: Json): readonly ArtifactReference[] {
-  const found = new Map<string, ArtifactReference>();
+export function findArtifacts(value: Json): readonly Artifact[] {
+  const found = new Map<string, Artifact>();
   const visited = new WeakSet<object>();
   const pending: unknown[] = [value];
   while (pending.length) {
@@ -67,7 +67,7 @@ export function artifactReferences(value: Json): readonly ArtifactReference[] {
             'INVALID_DATA',
             'Artifact references cannot contain payload or unrecognized fields',
           );
-      const reference = artifactReference(record as unknown as ArtifactReferenceInput);
+      const reference = createArtifact(record as unknown as ArtifactInput);
       found.set(`${reference.id}\0${reference.digest}`, reference);
       continue;
     }

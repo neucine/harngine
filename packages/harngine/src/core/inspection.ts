@@ -1,4 +1,4 @@
-import type { CallRecord } from './operation.js';
+import type { Call } from './operation.js';
 import type { ControlToken } from './types.js';
 import type { Identity } from './types.js';
 import type { ObjectiveRevision } from './types.js';
@@ -6,8 +6,9 @@ import type { Outcome } from './operation.js';
 import type { ProgressCursor } from './types.js';
 import type { Proposal } from './work.js';
 import type { Json, WorkId } from './types.js';
-import type { ExecutableDefinitionReference, DefinitionReference } from './definition.js';
-import type { WorkSnapshot, Interaction } from './work.js';
+import type { ExecutableDefinitionRef, DefinitionRef } from './definition.js';
+import type { WorkSnapshot } from './work.js';
+import type { Interaction } from './interaction.js';
 import type { ModelContext, ModelRequest, ModelResponse, ModelUsage } from './model.js';
 import type { GuardrailStage } from './guardrail.js';
 
@@ -29,7 +30,7 @@ interface InspectionEntryBase {
 
 export interface WorkStartedInspectionEntry extends InspectionEntryBase {
   readonly type: 'work.started';
-  readonly definition: ExecutableDefinitionReference;
+  readonly definition: ExecutableDefinitionRef;
 }
 
 export interface InputInspectionEntry extends InspectionEntryBase {
@@ -78,7 +79,7 @@ export interface GuardrailInspectionEntry extends InspectionEntryBase {
 export interface CallInspectionEntry extends InspectionEntryBase {
   readonly type: 'call';
   readonly callId: string;
-  readonly tool: DefinitionReference & { readonly type: 'tool' };
+  readonly tool: DefinitionRef & { readonly type: 'tool' };
   readonly phase:
     | 'committed'
     | 'authorized'
@@ -116,7 +117,7 @@ export interface ChildInspectionEntry extends InspectionEntryBase {
   readonly phase: 'started' | 'joined' | 'closed';
   readonly mode: 'sequential' | 'concurrent';
   readonly joinSlot?: string;
-  readonly definition: ExecutableDefinitionReference;
+  readonly definition: ExecutableDefinitionRef;
   readonly status?: 'completed' | 'failed' | 'canceled';
 }
 
@@ -192,7 +193,7 @@ export interface DecisionInspection {
     readonly controlToken: ControlToken;
   } | null;
 }
-export interface CallInspection extends CallRecord {
+export interface CallInspection extends Call {
   readonly tool: Identity;
   readonly input: Json;
   readonly decisionSequence: number;

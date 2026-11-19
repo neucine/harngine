@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { ArtifactReference } from '../core/artifact.js';
+import type { Artifact } from '../core/artifact.js';
 
 export const DEFAULT_MODEL_ARTIFACT_LIMITS = Object.freeze({
   maxArtifacts: 8,
@@ -8,12 +8,12 @@ export const DEFAULT_MODEL_ARTIFACT_LIMITS = Object.freeze({
 });
 
 export type ArtifactResolver = (
-  reference: ArtifactReference,
+  reference: Artifact,
   options: { readonly signal: AbortSignal },
 ) => Promise<Uint8Array>;
 
 export interface ResolvedModelArtifact {
-  readonly reference: ArtifactReference;
+  readonly reference: Artifact;
   readonly bytes: Uint8Array;
 }
 
@@ -37,7 +37,7 @@ function positiveInteger(value: number, name: string): number {
  * Callers must encode the verified bytes inline before starting provider I/O.
  */
 export async function resolveModelArtifacts(
-  references: readonly ArtifactReference[],
+  references: readonly Artifact[],
   options: ResolveModelArtifactsOptions,
 ): Promise<readonly ResolvedModelArtifact[]> {
   const maxArtifacts = positiveInteger(

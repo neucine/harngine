@@ -1,7 +1,7 @@
 import { canonical, frozen } from '../support/schema.js';
 import {
   RuntimeError,
-  type CallRecord,
+  type Call,
   type ControlToken,
   type Json,
   type ObjectiveRevision,
@@ -15,7 +15,7 @@ import {
 import type { DefinitionRegistry } from './definitions.js';
 import { inputRecords } from '../storage/sqlite/input.js';
 import type { RequestRow, SqliteStore, WorkRow } from '../storage/sqlite/store.js';
-import type { RuntimeWorkRecord } from '../core/work.js';
+import type { Work } from '../core/work.js';
 import type { WaitManager } from './wait.js';
 
 /** Renders committed durable state without owning telemetry or execution transitions. */
@@ -32,7 +32,7 @@ export class InspectionService {
     return frozen(this.store.rawRecords(workId));
   }
 
-  workRecord(caller: { readonly principal: string }, id: WorkId): RuntimeWorkRecord {
+  workRecord(caller: { readonly principal: string }, id: WorkId): Work {
     this.open();
     const row = this.store.work(id);
     if (row.principal !== caller.principal)
@@ -40,7 +40,7 @@ export class InspectionService {
     return this.projectWork(row);
   }
 
-  workRecords(caller: { readonly principal: string }): readonly RuntimeWorkRecord[] {
+  workRecords(caller: { readonly principal: string }): readonly Work[] {
     this.open();
     const rows = this.store.db
       .prepare('SELECT * FROM work WHERE principal=?')
@@ -120,7 +120,7 @@ export class InspectionService {
     });
   }
 
-  private projectWork(row: WorkRow): RuntimeWorkRecord {
+  private projectWork(row: WorkRow): Work {
     const definition = JSON.parse(row.definition) as { id: string; version: string };
     const saved = this.store.db
       .prepare('SELECT kind FROM definitions WHERE id=? AND version=? AND kind IN (?,?)')
@@ -168,7 +168,7 @@ export class InspectionService {
   }
 }
 
-export function callRecord(row: RequestRow): CallRecord {
+export function callRecord(row: RequestRow): Call {
   return {
     id: row.id,
     slot: row.slot,

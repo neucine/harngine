@@ -16,7 +16,7 @@ import {
   type ModelRequest,
   type Session,
   type StateStoreConfiguration,
-  type Work,
+  type WorkHandle,
 } from 'harngine';
 
 export type SupportRequest = {
@@ -161,8 +161,8 @@ const refundLimitGuardrail = guardrail({
 export interface RoutedSupportConversation {
   readonly triageSession: Session<SupportRequest, TriageDecision>;
   readonly billingSession: Session<SupportRequest, BillingResolution>;
-  readonly triageWork: Work<SupportRequest, TriageDecision>;
-  readonly billingWork: Work<SupportRequest, BillingResolution>;
+  readonly triageWork: WorkHandle<SupportRequest, TriageDecision>;
+  readonly billingWork: WorkHandle<SupportRequest, BillingResolution>;
   readonly decision: TriageDecision;
 }
 
@@ -592,7 +592,7 @@ export async function routeSupportConversation(
 }
 
 export async function waitForApproval(
-  work: Work,
+  work: WorkHandle,
   timeoutMs = 5_000,
 ): Promise<{
   readonly id: string;

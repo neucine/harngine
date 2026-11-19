@@ -6,7 +6,7 @@ import {
   type AnyWorkflow,
   type InputRequest,
   type InputAcceptance,
-  type InputRecord,
+  type Input,
   type InputDisposition,
   type Receipt,
   type Reason,
@@ -23,11 +23,11 @@ interface InputRow {
   accepted_sequence: number;
   objective_revision: number;
   payload: string;
-  status: InputRecord['status'];
+  status: Input['status'];
   reason: string | null;
   decision_sequence: number | null;
 }
-function record(row: InputRow): InputRecord {
+function record(row: InputRow): Input {
   return {
     id: row.id,
     sequence: row.accepted_sequence,
@@ -38,14 +38,14 @@ function record(row: InputRow): InputRecord {
     decision: row.decision_sequence,
   };
 }
-export function inputRecords(store: SqliteStore, workId: string): InputRecord[] {
+export function inputRecords(store: SqliteStore, workId: string): Input[] {
   return (
     store.db
       .prepare('SELECT * FROM inputs WHERE work_id=? ORDER BY accepted_sequence')
       .all(workId) as InputRow[]
   ).map(record);
 }
-export function pendingInputs(store: SqliteStore, workId: string, limit: number): InputRecord[] {
+export function pendingInputs(store: SqliteStore, workId: string, limit: number): Input[] {
   return (
     store.db
       .prepare(

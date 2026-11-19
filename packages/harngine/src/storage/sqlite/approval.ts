@@ -4,7 +4,7 @@ import {
   RuntimeError,
   requestId,
   type ApprovalPolicy,
-  type ApprovalRecord,
+  type Approval,
   type ApprovalReply,
   type ApprovalAcceptance,
   type Receipt,
@@ -27,8 +27,8 @@ interface WaitRow {
   binding: string;
   approvers: string;
   expires_at: number;
-  status: ApprovalRecord['status'];
-  invalidation: ApprovalRecord['invalidation'];
+  status: Approval['status'];
+  invalidation: Approval['invalidation'];
   admitted_attempt_id: string | null;
 }
 function binding(call: RequestRow): string {
@@ -48,14 +48,14 @@ function byOperation(store: SqliteStore, id: string): WaitRow | undefined {
     | WaitRow
     | undefined;
 }
-export function approvals(store: SqliteStore, workId: string): ApprovalRecord[] {
+export function approvals(store: SqliteStore, workId: string): Approval[] {
   return (
     store.db.prepare('SELECT * FROM waits WHERE work_id=? ORDER BY rowid').all(workId) as WaitRow[]
   ).map((w) => describe(w));
 }
-function describe(wait: WaitRow): ApprovalRecord {
+function describe(wait: WaitRow): Approval {
   const action = decodeStoredJson<
-    Pick<ApprovalRecord, 'tool' | 'input' | 'objectiveRevision' | 'controlToken'>
+    Pick<Approval, 'tool' | 'input' | 'objectiveRevision' | 'controlToken'>
   >(wait.binding, 'approval.binding');
   return frozen({
     wait: { id: wait.id, workId: wait.work_id as WorkId },
@@ -77,7 +77,7 @@ export function inspectApproval(
   caller: { principal: string },
   work: WorkRef,
   ref: WaitRef,
-): ApprovalRecord {
+): Approval {
   return describe(authorized(store, caller, work, ref, true));
 }
 function authorized(

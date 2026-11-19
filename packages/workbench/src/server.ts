@@ -10,7 +10,7 @@ import {
   type AuditCategory,
   type AuditQuery,
   type DefinitionType,
-  type DefinitionReference,
+  type DefinitionRef,
   HarngineError,
   NotFoundError,
   type SessionId,
@@ -121,7 +121,7 @@ function positiveInteger(value: string | null, fallback?: number): number | unde
   return result;
 }
 
-function reference(kind: string, id: string, revision: string): DefinitionReference {
+function reference(kind: string, id: string, revision: string): DefinitionRef {
   if (!['agent', 'workflow', 'tool'].includes(kind) || !revision.startsWith('rev_'))
     throw new HttpError(400, 'INVALID_DEFINITION', 'Invalid Definition reference');
   return {
@@ -336,7 +336,7 @@ export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<Wo
       if (parts[0] === 'works' && parts.length === 1 && method === 'POST') {
         requirePermission(identity, 'work:control');
         const value = await body(request, options.maxBodyBytes ?? 1_048_576);
-        const selected = value.definition as DefinitionReference | undefined;
+        const selected = value.definition as DefinitionRef | undefined;
         if (
           !selected ||
           selected.object !== 'definition' ||
@@ -450,7 +450,7 @@ export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<Wo
       if (parts[0] === 'sessions' && parts.length === 1 && method === 'POST') {
         requirePermission(identity, 'work:control');
         const value = await body(request, options.maxBodyBytes ?? 1_048_576);
-        const selected = value.agent as DefinitionReference | undefined;
+        const selected = value.agent as DefinitionRef | undefined;
         if (!selected || selected.object !== 'definition' || selected.type !== 'agent')
           throw new HttpError(400, 'INVALID_DEFINITION', 'Agent reference is required');
         const session = await scope.sessions.create({

@@ -17,9 +17,9 @@ import type { PolicyEvaluator } from './policy.js';
 import {
   expireWaits,
   inspectWait,
-  isWorkflowWait,
+  isWorkWait,
   replyWait,
-  workflowWaits,
+  workWaits,
 } from '../storage/sqlite/wait.js';
 
 /** Owns durable human waits, Tool approvals, expiry, and deadline discovery. */
@@ -35,7 +35,7 @@ export class WaitManager {
   }
 
   waits(workId: string) {
-    return workflowWaits(this.store, workId);
+    return workWaits(this.store, workId);
   }
 
   approval<O extends Json, R extends Json>(
@@ -78,7 +78,7 @@ export class WaitManager {
       }),
     );
     if (!allowed) throw new RuntimeError('ACCESS_DENIED', 'Interaction response is not authorized');
-    return isWorkflowWait(this.store, request.wait)
+    return isWorkWait(this.store, request.wait)
       ? replyWait(this.store, caller, work, request, this.clock)
       : replyApproval(this.store, caller, work, request as ApprovalReply, this.clock);
   }

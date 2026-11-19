@@ -8,7 +8,7 @@ import {
   type Identity,
   type Json,
   type Outcome,
-  type Policy,
+  type ExecutionPolicy,
   type Receipt,
   type ReconciliationResult,
   type ResolveEffectRequest,
@@ -223,7 +223,7 @@ export class OperationStore {
     return this.store.write(() => {
       const current = this.store.work(input.workId);
       const operation = this.operation(input.workId, input.operationId);
-      const policy = decodeStoredJson(current.policy, 'operation.policy') as Policy;
+      const policy = decodeStoredJson(current.policy, 'operation.policy') as ExecutionPolicy;
       if (
         !operation ||
         current.status === 'closed' ||

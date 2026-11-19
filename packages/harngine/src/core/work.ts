@@ -1,11 +1,12 @@
-import type { ApprovalRecord } from './interaction.js';
-import type { CallRecord } from './operation.js';
+import type { Approval } from './interaction.js';
+import type { Call } from './operation.js';
 import type { InputDisposition } from './interaction.js';
 import type { InputPolicy } from './interaction.js';
-import type { InputRecord } from './interaction.js';
+import type { Input } from './interaction.js';
+import type { Interaction } from './interaction.js';
 import type { Tool } from './operation.js';
 import type { WaitPlan } from './interaction.js';
-import type { WorkflowWait } from './interaction.js';
+import type { Wait } from './interaction.js';
 import type {
   ControlToken,
   Identity,
@@ -18,14 +19,14 @@ import type {
   SessionId,
   WorkId,
 } from './types.js';
-import type { ExecutableDefinitionReference } from './definition.js';
+import type { ExecutableDefinitionRef } from './definition.js';
 
 export type WorkStatus = 'queued' | 'running' | 'waiting' | 'completed' | 'failed' | 'canceled';
 
 export interface WorkSummary<O extends Json = Json> {
   readonly object: 'work';
   readonly id: WorkId;
-  readonly definition: ExecutableDefinitionReference;
+  readonly definition: ExecutableDefinitionRef;
   readonly objective: O;
   readonly status: WorkStatus;
   readonly sessionId?: SessionId;
@@ -64,25 +65,6 @@ export interface WorkSnapshot<O extends Json = Json, R extends Json = Json> exte
     | 'definition-unavailable';
 }
 
-export type Interaction =
-  | {
-      readonly object: 'interaction';
-      readonly id: string;
-      readonly type: 'question';
-      readonly prompt: string;
-      readonly response: Json;
-      readonly blocking: boolean;
-    }
-  | {
-      readonly object: 'interaction';
-      readonly id: string;
-      readonly type: 'approval';
-      readonly blocking: boolean;
-      readonly title: string;
-      readonly details: Json;
-      readonly tool?: { readonly id: string; readonly revision: string };
-    };
-
 export type WorkUpdate<O extends Json = Json, R extends Json = Json> = {
   readonly object: 'work_update';
   readonly type: 'work.updated';
@@ -108,7 +90,7 @@ export interface ExecutionLimits {
   readonly depth?: number;
 }
 
-export interface Policy {
+export interface ExecutionPolicy {
   readonly maxDecisions: number;
   readonly maxAttempts: number;
   readonly maxOperations?: number;
@@ -138,10 +120,10 @@ export interface View<O extends Json = Json, S extends Json = Json, I extends Js
   readonly objectiveRevision: ObjectiveRevision;
   readonly stateRevision: ObjectiveRevision;
   readonly controlToken: ControlToken;
-  readonly calls: Readonly<Record<string, CallRecord>>;
+  readonly calls: Readonly<Record<string, Call>>;
   readonly children: Readonly<Record<string, ChildWorkRecord>>;
-  readonly waits: Readonly<Record<string, WorkflowWait>>;
-  readonly inputs: readonly InputRecord<I>[];
+  readonly waits: Readonly<Record<string, Wait>>;
+  readonly inputs: readonly Input<I>[];
   readonly inputBoundary: number;
   readonly hasMoreInputs: boolean;
 }
@@ -186,7 +168,7 @@ export interface Workflow<
   readonly result: Schema<R>;
   readonly input?: InputPolicy<I>;
   readonly replySchemas?: readonly Schema[];
-  readonly policy: Policy;
+  readonly policy: ExecutionPolicy;
   readonly tools: readonly Identity[];
   readonly children?: readonly Identity[];
   readonly initial: (objective: O) => S;
@@ -220,11 +202,11 @@ export interface ExecutionSnapshot<O extends Json = Json, R extends Json = Json>
   readonly controlToken: ControlToken;
   readonly status: 'active' | 'waiting' | 'closed';
   readonly closure: Closure<R> | null;
-  readonly calls: readonly CallRecord[];
-  readonly approvals: readonly ApprovalRecord[];
-  readonly waits: readonly WorkflowWait[];
-  readonly inputs: readonly InputRecord[];
-  readonly limits: Policy;
+  readonly calls: readonly Call[];
+  readonly approvals: readonly Approval[];
+  readonly waits: readonly Wait[];
+  readonly inputs: readonly Input[];
+  readonly limits: ExecutionPolicy;
   readonly usage: {
     readonly decisions: number;
     readonly attempts: number;
@@ -253,7 +235,7 @@ export interface ControlAcceptance {
 }
 
 /** Current durable Work metadata used alongside an execution snapshot or committed event. */
-export interface RuntimeWorkRecord {
+export interface Work {
   readonly ref: WorkRef;
   readonly kind: 'agent' | 'workflow';
   readonly objective: Json;

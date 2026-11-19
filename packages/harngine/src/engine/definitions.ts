@@ -10,22 +10,14 @@ import {
   type AnyTool,
   type AnyWorkflow,
   type Identity,
-  type Json,
 } from '../core/execution.js';
 import type { SqliteStore } from '../storage/sqlite/store.js';
+import type { DefinitionRegistration } from '../core/definition.js';
 
 export interface DefinitionRegistryOptions {
   readonly definitions?: readonly (AnyWorkflow | PublicWorkflow<any, any>)[];
   readonly agents?: readonly (AnyAgent | PublicAgent<any, any>)[];
   readonly tools?: readonly (AnyTool | PublicTool<any, any>)[];
-}
-
-export interface DefinitionRecord {
-  readonly kind: 'agent' | 'workflow' | 'tool';
-  readonly id: string;
-  readonly version: string;
-  readonly manifest: Json;
-  readonly available: boolean;
 }
 
 export function registeredIdentity(value: object): Identity {
@@ -274,13 +266,13 @@ export class DefinitionRegistry {
     return this.agents.get(key(registeredIdentity(value))) === value;
   }
 
-  records(): readonly DefinitionRecord[] {
+  records(): readonly DefinitionRegistration[] {
     const rows = this.store.db
       .prepare(
         "SELECT kind,id,version,manifest FROM definitions WHERE kind IN ('agent','workflow','tool') ORDER BY kind,id,version",
       )
       .all() as {
-      kind: DefinitionRecord['kind'];
+      kind: DefinitionRegistration['kind'];
       id: string;
       version: string;
       manifest: string;

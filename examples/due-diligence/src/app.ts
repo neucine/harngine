@@ -4,16 +4,16 @@ import { join } from 'node:path';
 import { retrievalTool, type Retriever, type RetrievedPassage } from '@harngine/retrieval';
 import {
   agent,
-  artifactReference,
+  createArtifact,
   createApp,
   schema,
   tool,
   type App,
-  type ArtifactReference,
+  type Artifact,
   type ContextItem,
   type ModelAdapter,
   type ModelRequest,
-  type Work,
+  type WorkHandle,
 } from 'harngine';
 
 export type Citation = {
@@ -23,24 +23,24 @@ export type Citation = {
 
 export type DueDiligenceRequest = {
   readonly question: string;
-  readonly attachments: ArtifactReference[];
+  readonly attachments: Artifact[];
 };
 
 export type DueDiligenceAnswer = {
   readonly status: 'review';
   readonly summary: string;
   readonly citations: Citation[];
-  readonly report: ArtifactReference;
+  readonly report: Artifact;
 };
 
 type Document = {
-  readonly artifact: ArtifactReference;
+  readonly artifact: Artifact;
   readonly bytes: Uint8Array;
   readonly text: string;
 };
 
 type PublishReceipt = {
-  readonly report: ArtifactReference;
+  readonly report: Artifact;
 };
 
 const digestBytes = (bytes: Uint8Array) =>
@@ -51,18 +51,13 @@ const digestToken = (text: string) => digestBytes(Buffer.from(text, 'utf8'));
 export class DocumentLibrary implements Retriever {
   private readonly documents = new Map<string, Document>();
 
-  add(name: string, text: string, mediaType = 'text/plain'): ArtifactReference {
+  add(name: string, text: string, mediaType = 'text/plain'): Artifact {
     return this.addBinary(name, Buffer.from(text, 'utf8'), mediaType, text);
   }
 
-  addBinary(
-    name: string,
-    content: Uint8Array,
-    mediaType: string,
-    extractedText = '',
-  ): ArtifactReference {
+  addBinary(name: string, content: Uint8Array, mediaType: string, extractedText = ''): Artifact {
     const bytes = Uint8Array.from(content);
-    const artifact = artifactReference({
+    const artifact = createArtifact({
       id: `attachment:${name}`,
       name,
       mediaType,
@@ -77,11 +72,11 @@ export class DocumentLibrary implements Retriever {
     return artifact;
   }
 
-  read(artifact: ArtifactReference): string {
+  read(artifact: Artifact): string {
     return this.verify(artifact).text;
   }
 
-  verify(artifact: ArtifactReference): Document {
+  verify(artifact: Artifact): Document {
     const document = this.documents.get(`${artifact.id}\0${artifact.digest}`);
     if (!document) throw new Error(`Artifact ${artifact.id} is unavailable at ${artifact.digest}`);
     if (
@@ -93,7 +88,7 @@ export class DocumentLibrary implements Retriever {
   }
 
   async resolve(
-    artifact: ArtifactReference,
+    artifact: Artifact,
     options: { readonly signal: AbortSignal },
   ): Promise<Uint8Array> {
     options.signal.throwIfAborted();
@@ -149,7 +144,7 @@ const citation = schema<Citation>({
   },
 });
 
-const artifact = schema<ArtifactReference>({
+const artifact = schema<Artifact>({
   id: 'diligence.artifact',
   version: '1',
   jsonSchema: {
@@ -185,7 +180,7 @@ const publishInput = schema<{
   title: string;
   summary: string;
   citations: Citation[];
-  attachments: ArtifactReference[];
+  attachments: Artifact[];
 }>({
   id: 'diligence.publish-input',
   version: '1',
@@ -342,7 +337,7 @@ function definePublish(outputDirectory: string) {
       mkdirSync(outputDirectory, { recursive: true });
       writeFileSync(join(outputDirectory, fileName), content, 'utf8');
       return {
-        report: artifactReference({
+        report: createArtifact({
           id: `report:${fileName}`,
           name: fileName,
           mediaType: 'application/json',
@@ -399,13 +394,13 @@ export function createDueDiligenceDesk(options: {
 export async function runDueDiligence(
   desk: DueDiligenceDesk,
   request: DueDiligenceRequest,
-): Promise<Work<DueDiligenceRequest, DueDiligenceAnswer>> {
+): Promise<WorkHandle<DueDiligenceRequest, DueDiligenceAnswer>> {
   for (const attachment of request.attachments) desk.library.verify(attachment);
   return desk.app.start(desk.reviewer, request);
 }
 
 export async function waitForApproval(
-  work: Work,
+  work: WorkHandle,
   timeoutMs = 5_000,
 ): Promise<{
   readonly id: string;

@@ -13,7 +13,7 @@ import {
   type Receipt,
   type SessionReceipt,
 } from '../src/engine/index.js';
-import type { ModelContext as LegacyModelContext } from '../src/core/execution.js';
+import type { AgentModelInput } from '../src/core/execution.js';
 import type { Runtime } from '../src/engine/runtime.js';
 
 const dirs: string[] = [];
@@ -72,7 +72,7 @@ test('Agent owns the model/tool loop and exposes selected context to the model',
   const modelInputs: Json[] = [];
   const f = fixture((input) => {
     modelInputs.push(input);
-    const context = input as LegacyModelContext;
+    const context = input as AgentModelInput;
     if (!context.items.some((item) => item.type === 'tool_outcome'))
       return { type: 'call', tool: { id: 'lookup', version: '1' }, input: context.objective };
     return { type: 'complete', result: 'done' };
@@ -202,8 +202,8 @@ test('Agent exposure requires a semantic Tool description while Workflow tools r
 test('Session.send atomically records intake, selects history, and starts bound Agent Work', async () => {
   const contexts: Json[] = [];
   const f = fixture((input) => {
-    contexts.push((input as LegacyModelContext).items as unknown as Json);
-    return { type: 'complete', result: `answered:${(input as LegacyModelContext).objective}` };
+    contexts.push((input as AgentModelInput).items as unknown as Json);
+    return { type: 'complete', result: `answered:${(input as AgentModelInput).objective}` };
   });
   const dir = directory();
   const runtime = createRuntime({ directory: dir, agents: [f.definition] });
@@ -264,7 +264,7 @@ test('Session.send atomically records intake, selects history, and starts bound 
 test('queued Session Work survives restart and is promoted in FIFO order', async () => {
   const f = fixture((input) => ({
     type: 'complete',
-    result: `answered:${(input as LegacyModelContext).objective}`,
+    result: `answered:${(input as AgentModelInput).objective}`,
   }));
   const dir = directory();
   const firstRuntime = createRuntime({ directory: dir, agents: [f.definition] });
@@ -335,8 +335,7 @@ test('Agent ask creates an inspectable reply wait and resumes with the answer', 
       ? { type: 'ask', question: 'Which order?' }
       : {
           type: 'complete',
-          result: (input as LegacyModelContext).items.find((item) => item.type === 'reply')!
-            .content,
+          result: (input as AgentModelInput).items.find((item) => item.type === 'reply')!.content,
         },
   );
   const definition = agent({
@@ -373,7 +372,7 @@ test('objective revision resets Agent turns and excludes calls from the old revi
   const seen: { objective: Json; items: readonly Json[] }[] = [];
   const text = schema<string>({ id: 'revise-text', version: '1', jsonSchema: { type: 'string' } });
   const modelAdapter = model('revise-model', (input) => {
-    const value = input as LegacyModelContext;
+    const value = input as AgentModelInput;
     seen.push({ objective: value.objective, items: value.items });
     return value.objective === 'old'
       ? { type: 'ask', question: 'More?' }

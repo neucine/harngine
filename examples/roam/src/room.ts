@@ -1,6 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { createApp, type App, type InspectionEntry, type Work, type WorkSnapshot } from 'harngine';
+import {
+  createApp,
+  type App,
+  type InspectionEntry,
+  type WorkHandle,
+  type WorkSnapshot,
+} from 'harngine';
 import {
   buildJourneyWorlds,
   demoBrief,
@@ -74,9 +80,9 @@ export async function openRoam(
     tools: [...definitions.all],
     access: { allowAuthenticated: true },
   });
-  let work: Work<AtlasBrief, AtlasResult>;
+  let work: WorkHandle<AtlasBrief, AtlasResult>;
   if (stored.workId)
-    work = (await app.works.get(stored.workId as `work_${string}`)) as Work<
+    work = (await app.works.get(stored.workId as `work_${string}`)) as WorkHandle<
       AtlasBrief,
       AtlasResult
     >;

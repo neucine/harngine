@@ -1,13 +1,13 @@
-import { Runtime, type RuntimeDefinitionRecord } from '../engine/runtime.js';
+import { Runtime, type DefinitionRegistration } from '../engine/runtime.js';
 import { NotFoundError, ValidationError } from '../core/errors.js';
 import type { Agent as PublicAgent } from '../authoring/agent.js';
 import type { Workflow as PublicWorkflow } from '../authoring/workflow.js';
-import type { Definition, DefinitionReference, ExecutionLimits } from './contracts.js';
+import type { Definition, DefinitionRef, ExecutionLimits } from './contracts.js';
 
 export function runtimeDefinition(
   runtime: Runtime,
-  selected: DefinitionReference,
-): RuntimeDefinitionRecord {
+  selected: DefinitionRef,
+): DefinitionRegistration {
   const record = runtime
     .definitionRecords()
     .find(
@@ -25,7 +25,7 @@ export function workLimits(
   definition: Definition,
   requested: ExecutionLimits | undefined,
   ceiling: ExecutionLimits | undefined,
-): Partial<import('../core/execution.js').Policy> | undefined {
+): Partial<import('../core/execution.js').ExecutionPolicy> | undefined {
   const publicDefinition = definition as PublicAgent<any, any> | PublicWorkflow<any, any>;
   // A Work may narrow its definition and App limits, but cannot expand either budget.
   const agentDefinition = 'instructions' in publicDefinition;

@@ -6,7 +6,7 @@ import type {
   WorkEvent,
   WorkRef,
 } from '../core/execution.js';
-import type { RuntimeWorkRecord } from '../core/work.js';
+import type { Work } from '../core/work.js';
 import { Runtime, type Caller } from '../engine/runtime.js';
 import type { Json, WorkId } from '../core/types.js';
 import { translateError } from './error.js';
@@ -14,7 +14,7 @@ import type { ModelRequest, ModelResponse } from '../core/model.js';
 import type {
   CallInspectionEntry,
   DecisionInspectionEntry,
-  DefinitionReference,
+  DefinitionRef,
   InspectionEntry,
   InspectionPage,
   Interaction,
@@ -36,7 +36,7 @@ export class WorkInspection<O extends Json, R extends Json> {
   }
   private async decisionEntry(
     event: WorkEvent,
-    record: RuntimeWorkRecord,
+    record: Work,
     snapshot: ExecutionSnapshot,
     diagnostic: boolean,
   ): Promise<DecisionInspectionEntry | null> {
@@ -224,7 +224,7 @@ export class WorkInspection<O extends Json, R extends Json> {
                           : 'Execution was authorized',
       },
       callId,
-      tool: reference('tool', call.tool.id, call.tool.version) as DefinitionReference & {
+      tool: reference('tool', call.tool.id, call.tool.version) as DefinitionRef & {
         type: 'tool';
       },
       phase,
@@ -243,7 +243,7 @@ export class WorkInspection<O extends Json, R extends Json> {
 
   private async inspectionEntry(
     event: WorkEvent,
-    record: RuntimeWorkRecord,
+    record: Work,
     snapshot: ExecutionSnapshot,
     diagnostic: boolean,
   ): Promise<InspectionEntry | null> {

@@ -7,7 +7,7 @@ import {
   requestId,
   type Json,
   type Outcome,
-  type Policy,
+  type ExecutionPolicy,
   type WorkId,
 } from '../src/core/execution.js';
 import { OperationStore } from '../src/storage/sqlite/operation.js';
@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 function fixture(
-  options: { workToken?: string; operationToken?: string; policy?: Partial<Policy> } = {},
+  options: { workToken?: string; operationToken?: string; policy?: Partial<ExecutionPolicy> } = {},
 ) {
   const directory = realpathSync(mkdtempSync(join(tmpdir(), 'harngine-operation-store-')));
   directories.push(directory);
@@ -31,7 +31,7 @@ function fixture(
   stores.push(store);
   const workToken = options.workToken ?? 'control-current';
   const operationToken = options.operationToken ?? workToken;
-  const policy: Policy = {
+  const policy: ExecutionPolicy = {
     maxDecisions: 4,
     maxAttempts: 2,
     ...options.policy,

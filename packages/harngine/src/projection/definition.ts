@@ -2,14 +2,14 @@ import type { Json } from '../core/types.js';
 import type {
   DefinitionDescription,
   DefinitionType,
-  DefinitionReference,
-  ExecutableDefinitionReference,
+  DefinitionRef,
+  ExecutableDefinitionRef,
 } from '../core/definition.js';
-import type { RuntimeDefinitionRecord } from '../core/definition.js';
-import type { RuntimeWorkRecord } from '../core/work.js';
+import type { DefinitionRegistration } from '../core/definition.js';
+import type { Work } from '../core/work.js';
 import type { GuardrailStage } from '../core/guardrail.js';
 
-export function reference(kind: DefinitionType, id: string, revision: string): DefinitionReference {
+export function reference(kind: DefinitionType, id: string, revision: string): DefinitionRef {
   return Object.freeze({
     object: 'definition',
     type: kind,
@@ -18,12 +18,12 @@ export function reference(kind: DefinitionType, id: string, revision: string): D
   });
 }
 
-function toolReferences(value: unknown): readonly (DefinitionReference & { type: 'tool' })[] {
+function toolReferences(value: unknown): readonly (DefinitionRef & { type: 'tool' })[] {
   if (!Array.isArray(value)) return Object.freeze([]);
   return Object.freeze(
     value.map((item) => {
       const selected = item as { id: string; version: string };
-      return reference('tool', selected.id, selected.version) as DefinitionReference & {
+      return reference('tool', selected.id, selected.version) as DefinitionRef & {
         type: 'tool';
       };
     }),
@@ -36,7 +36,7 @@ function schemaValue(value: unknown): Json {
   return {};
 }
 
-export function definitionDescription(record: RuntimeDefinitionRecord): DefinitionDescription {
+export function definitionDescription(record: DefinitionRegistration): DefinitionDescription {
   const manifest = record.manifest as Record<string, Json>;
   const base = {
     id: record.id,
@@ -79,11 +79,7 @@ export function definitionDescription(record: RuntimeDefinitionRecord): Definiti
         Array.isArray(manifest.children)
           ? manifest.children.map((value) => {
               const child = value as { id: string; version: string; kind: 'agent' | 'workflow' };
-              return reference(
-                child.kind,
-                child.id,
-                child.version,
-              ) as ExecutableDefinitionReference;
+              return reference(child.kind, child.id, child.version) as ExecutableDefinitionRef;
             })
           : [],
       ),
@@ -119,7 +115,7 @@ export function definitionDescription(record: RuntimeDefinitionRecord): Definiti
               delegate.kind,
               delegate.id,
               delegate.version,
-            ) as ExecutableDefinitionReference;
+            ) as ExecutableDefinitionRef;
           })
         : [],
     ),
@@ -151,10 +147,10 @@ function guardrailDescriptions(value: Json | undefined) {
   );
 }
 
-export function workReference(record: RuntimeWorkRecord): ExecutableDefinitionReference {
+export function workReference(record: Work): ExecutableDefinitionRef {
   return reference(
     record.kind,
     record.ref.definition.id,
     record.ref.definition.version,
-  ) as ExecutableDefinitionReference;
+  ) as ExecutableDefinitionRef;
 }

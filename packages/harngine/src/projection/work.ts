@@ -1,16 +1,17 @@
 import type { Json, WorkId } from '../core/types.js';
 import type { Closure, ExecutionSnapshot } from '../core/execution.js';
-import type { RuntimeWorkRecord } from '../core/work.js';
-import type { Interaction, WorkSnapshot, WorkStatus, WorkSummary } from '../core/work.js';
+import type { Work } from '../core/work.js';
+import type { WorkSnapshot, WorkStatus, WorkSummary } from '../core/work.js';
+import type { Interaction } from '../core/interaction.js';
 import { workReference } from './definition.js';
 
-export function recordStatus(record: RuntimeWorkRecord): WorkStatus {
+export function recordStatus(record: Work): WorkStatus {
   if (record.closure) return record.closure.status;
   if (record.queued) return 'queued';
   return record.status === 'waiting' ? 'waiting' : 'running';
 }
 
-export function workSummary(record: RuntimeWorkRecord): WorkSummary {
+export function workSummary(record: Work): WorkSummary {
   return Object.freeze({
     object: 'work',
     id: record.ref.id,
@@ -33,7 +34,7 @@ function workStatus(snapshot: ExecutionSnapshot): WorkStatus {
 /** Project a direct engine inspection of current Work state. */
 export function publicSnapshot<O extends Json, R extends Json>(
   snapshot: ExecutionSnapshot<O, R>,
-  record: RuntimeWorkRecord,
+  record: Work,
 ): WorkSnapshot<O, R> {
   const closure = snapshot.closure;
   const interactions = Object.freeze([
@@ -118,7 +119,7 @@ export function publicSnapshot<O extends Json, R extends Json>(
 /** Decode the public state stored with an event, preserving that event's point in time. */
 export function projectionSnapshot<O extends Json, R extends Json>(
   value: Json,
-  record: RuntimeWorkRecord,
+  record: Work,
 ): WorkSnapshot<O, R> {
   const projection = value as {
     id: WorkId;

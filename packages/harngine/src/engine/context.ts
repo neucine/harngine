@@ -1,6 +1,6 @@
 import type { ContextCandidate, ContextItem, ContextPolicy, ModelContext } from '../core/model.js';
 import type { Json } from '../core/types.js';
-import { artifactReferences } from '../core/artifact.js';
+import { findArtifacts } from '../core/artifact.js';
 import type { View } from '../core/execution.js';
 import { RuntimeError } from '../core/execution.js';
 
@@ -66,7 +66,7 @@ export class ContextEngine {
       object: 'model_context',
       objective: view.objective,
       items,
-      artifacts: Object.freeze(artifactReferences([view.objective, ...items] as unknown as Json)),
+      artifacts: Object.freeze(findArtifacts([view.objective, ...items] as unknown as Json)),
       policy: this.options.policy?.id ?? 'harngine.default-context-v1',
       budget: {
         inputTokens: this.options.maxInputTokens,

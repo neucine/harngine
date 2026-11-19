@@ -1,5 +1,5 @@
 import type { WorkEvent } from '../core/inspection.js';
-import type { RuntimeWorkRecord } from '../core/work.js';
+import type { Work } from '../core/work.js';
 import type { Json } from '../core/types.js';
 import type {
   GuardrailInspectionEntry,
@@ -9,7 +9,7 @@ import type {
 import type { ModelUsage } from '../core/model.js';
 import { workReference } from './definition.js';
 import type { ExecutionSnapshot } from '../core/work.js';
-import type { Interaction } from '../core/work.js';
+import type { Interaction } from '../core/interaction.js';
 
 /** Derive a public interaction from a committed execution snapshot. */
 export function interactionFromSnapshot(
@@ -53,7 +53,7 @@ export function interactionFromSnapshot(
 /** Map committed facts that need no further reads to inspection entries. */
 export function simpleInspectionEntry(
   event: WorkEvent,
-  record: RuntimeWorkRecord,
+  record: Work,
   diagnostic: boolean,
 ): InspectionEntry | null {
   const body = event.body as Record<string, Json>;

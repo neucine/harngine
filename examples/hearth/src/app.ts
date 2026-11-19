@@ -1,4 +1,4 @@
-import { createApp, type App, type Work, type WorkSnapshot } from 'harngine';
+import { createApp, type App, type WorkHandle, type WorkSnapshot } from 'harngine';
 import type { HearthWorld, PersonId, Visibility } from './domain.js';
 import { PublicDataClient } from './public-data.js';
 import { HomeStore } from './store.js';
@@ -9,7 +9,7 @@ export type HearthState = {
   participants: { id: PersonId; name: string; initials: string; colour: string }[];
   work: WorkSnapshot<AttunementObjective, HearthWorld>;
   world: HearthWorld | null;
-  story: Awaited<ReturnType<Work['inspect']>>;
+  story: Awaited<ReturnType<WorkHandle['inspect']>>;
 };
 export type Hearth = {
   state(viewer: PersonId): Promise<HearthState>;
@@ -43,7 +43,7 @@ export async function openHearth(options: {
       canRespond: () => false,
     },
   });
-  const works = new Map<string, Work<AttunementObjective, HearthWorld>>();
+  const works = new Map<string, WorkHandle<AttunementObjective, HearthWorld>>();
   async function current(viewer: PersonId) {
     const home = await options.store.view(viewer);
     const key = `${viewer}:${home.version}`;

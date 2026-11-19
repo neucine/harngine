@@ -20,7 +20,7 @@ import {
   type ReplyRequest,
   type SessionCreate,
   type SessionHandoffRequest,
-  type SessionRef,
+  type SessionId,
   type SessionSend,
   type ResolveEffectRequest,
 } from '../core/execution.js';
@@ -42,8 +42,8 @@ import { WaitManager } from './wait.js';
 import { ControlService } from './control.js';
 import { SessionCoordinator } from './session.js';
 import { InspectionService } from './inspection.js';
-import type { RuntimeWorkRecord } from '../core/work.js';
-import type { RuntimeDefinitionRecord } from '../core/definition.js';
+import type { Work } from '../core/work.js';
+import type { DefinitionRegistration } from '../core/definition.js';
 import { WorkService, type Start } from './work.js';
 import { ChildWorkManager } from './child.js';
 import type { TelemetrySink } from '../core/telemetry.js';
@@ -51,8 +51,8 @@ import type { StateStoreConfiguration, StateStoreContract } from '../storage/sql
 import type { Audit, AuditOptions } from '../application/contracts.js';
 import type { ModelDelta } from '../core/model.js';
 import { AuditReader } from '../storage/sqlite/audit.js';
-export type { RuntimeWorkRecord } from '../core/work.js';
-export type { RuntimeDefinitionRecord } from '../core/definition.js';
+export type { Work } from '../core/work.js';
+export type { DefinitionRegistration } from '../core/definition.js';
 export type { RuntimeAccessPolicy } from './policy.js';
 export type { Start } from './work.js';
 export interface RuntimeOptions {
@@ -109,7 +109,7 @@ export class Runtime {
   }[] {
     return this.inspection.diagnosticRecords(workId);
   }
-  definitionRecords(): readonly RuntimeDefinitionRecord[] {
+  definitionRecords(): readonly DefinitionRegistration[] {
     if (this.scheduler.closed) throw new RuntimeError('CLOSED', 'Runtime is closed');
     return this.registry.records();
   }
@@ -121,10 +121,10 @@ export class Runtime {
     if (this.scheduler.closed) throw new RuntimeError('CLOSED', 'Runtime is closed');
     return this.registry.executable(reference);
   }
-  workRecord(caller: Caller, id: WorkId): RuntimeWorkRecord {
+  workRecord(caller: Caller, id: WorkId): Work {
     return this.inspection.workRecord(caller, id);
   }
-  workRecords(caller: Caller): readonly RuntimeWorkRecord[] {
+  workRecords(caller: Caller): readonly Work[] {
     return this.inspection.workRecords(caller);
   }
   audit(caller: Caller, options?: AuditOptions): Audit {
@@ -288,14 +288,14 @@ export class Runtime {
             ...(request.agent ? { agent: registeredIdentity(request.agent) } : {}),
           } as SessionCreate);
         },
-        send: (session: SessionRef, request: SessionSend) =>
+        send: (session: SessionId, request: SessionSend) =>
           this.sessionCoordinator.send(caller, session, request),
-        handoff: (session: SessionRef, request: SessionHandoffRequest) => {
+        handoff: (session: SessionId, request: SessionHandoffRequest) => {
           if (!this.registry.agent(request.agent))
             throw new RuntimeError('UNAVAILABLE', 'Use a registered Agent');
           return this.sessionCoordinator.handoff(caller, session, request);
         },
-        work: async (session: SessionRef, workId: WorkId): Promise<WorkRef> => {
+        work: async (session: SessionId, workId: WorkId): Promise<WorkRef> => {
           return this.sessionCoordinator.work(caller, session, workId);
         },
       },
@@ -327,7 +327,7 @@ export class Runtime {
         steer: async <O extends Json, R extends Json, I extends Json>(
           work: WorkRef<O, R, I>,
           request: InputRequest<NoInfer<I>>,
-          session?: SessionRef,
+          session?: SessionId,
         ) => {
           const row = this.authorize(caller, work);
           const definition = this.registry.workflow(JSON.parse(row.definition));

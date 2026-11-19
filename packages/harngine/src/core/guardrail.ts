@@ -2,6 +2,12 @@ export type GuardrailStage = 'model-input' | 'model-output' | 'tool-input' | 'to
 
 import type { Json } from './types.js';
 
+export interface GuardrailDescription {
+  readonly id: string;
+  readonly revision: `rev_${string}`;
+  readonly stages: readonly GuardrailStage[];
+}
+
 export interface GuardrailSubject {
   readonly type: 'agent' | 'tool';
   readonly id: string;

@@ -6,6 +6,8 @@ import type { RequestId } from './types.js';
 import type { Json, Schema } from './types.js';
 import type { Guardrail } from './guardrail.js';
 import type { ModelItem } from './model.js';
+import type { ToolCapabilities } from './definition.js';
+export type { ToolCapabilities } from './definition.js';
 
 export type Outcome<O extends Json = Json> =
   | { status: 'success'; value: O }
@@ -15,14 +17,6 @@ export type ReconciliationResult<O extends Json = Json> =
   | { readonly status: 'success'; readonly value: O }
   | { readonly status: 'failure'; readonly effect: 'partial' | 'occurred'; readonly reason: Reason }
   | { readonly status: 'not-applied' | 'unknown'; readonly reason: Reason };
-export type ToolCapabilities =
-  | { readonly effect: 'read'; readonly invocation: 'repeatable' }
-  | {
-      readonly effect: 'write';
-      readonly idempotency: 'none' | 'operation-key' | 'intrinsic';
-      readonly reconciliation: 'manual' | 'automatic';
-      readonly reversibility: 'unknown' | 'reversible' | 'irreversible';
-    };
 export interface Tool<I extends Json = Json, O extends Json = Json> extends Identity {
   readonly artifactDigest: string;
   readonly description?: string;
@@ -58,7 +52,7 @@ export interface Tool<I extends Json = Json, O extends Json = Json> extends Iden
     call: Readonly<{ input: I; operationId: string; attemptId: string; signal: AbortSignal }>,
   ) => Promise<ReconciliationResult<O>>;
 }
-export interface CallRecord {
+export interface Call {
   readonly id: string;
   readonly slot: string;
   readonly tool: Identity;

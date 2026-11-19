@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage } from 'node:http';
 import { resolve } from 'node:path';
-import type { App, Json, Work, Workflow } from 'harngine';
+import type { App, Json, WorkHandle, Workflow } from 'harngine';
 import type { EditorialRevision, ResearchBrief, StudioDocument } from './domain.js';
 import { musePage } from './page.js';
 import {
@@ -30,7 +30,7 @@ async function body(request: IncomingMessage): Promise<Record<string, unknown>> 
   return value as Record<string, unknown>;
 }
 
-const editorialStudio = (snapshot: Awaited<ReturnType<Work['snapshot']>>) => {
+const editorialStudio = (snapshot: Awaited<ReturnType<WorkHandle['snapshot']>>) => {
   const interaction = snapshot.interactions.find((item) => item.type === 'approval') ?? null;
   const details =
     interaction?.type === 'approval' &&
@@ -50,7 +50,7 @@ const editorialStudio = (snapshot: Awaited<ReturnType<Work['snapshot']>>) => {
 export async function serveMuse(options: MuseServerOptions) {
   const token = randomBytes(24).toString('hex');
   let origin = '';
-  let work: Work | null = null;
+  let work: WorkHandle | null = null;
   let revision = 0;
   let space: CreativeSpace | null = null;
   const defaults: ResearchBrief = {

@@ -645,7 +645,7 @@ components:
         status:
           type: string
           const: ok
-    DefinitionReference:
+    DefinitionRef:
       type: object
       required: [object, type, id, revision]
       properties:
@@ -660,9 +660,9 @@ components:
         revision:
           type: string
           pattern: "^rev_.+"
-    ExecutableDefinitionReference:
+    ExecutableDefinitionRef:
       allOf:
-        - $ref: "#/components/schemas/DefinitionReference"
+        - $ref: "#/components/schemas/DefinitionRef"
         - type: object
           properties:
             type:
@@ -670,7 +670,7 @@ components:
               enum: [agent, workflow]
     AgentReference:
       allOf:
-        - $ref: "#/components/schemas/DefinitionReference"
+        - $ref: "#/components/schemas/DefinitionRef"
         - type: object
           required: [object, type]
           properties:
@@ -731,7 +731,7 @@ components:
           type: string
           pattern: "^work_.+"
         definition:
-          $ref: "#/components/schemas/ExecutableDefinitionReference"
+          $ref: "#/components/schemas/ExecutableDefinitionRef"
         objective:
           $ref: "#/components/schemas/JsonValue"
         status:
@@ -1158,7 +1158,7 @@ components:
               type: string
               pattern: "^rev_.+"
         definition:
-          $ref: "#/components/schemas/ExecutableDefinitionReference"
+          $ref: "#/components/schemas/ExecutableDefinitionRef"
       additionalProperties: false
     AuditPage:
       type: object

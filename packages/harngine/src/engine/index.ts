@@ -8,7 +8,7 @@ export type {
   Checkpoint,
 } from './runtime.js';
 export { agent } from '../authoring/agent-runtime.js';
-export type { AgentDefinition } from '../authoring/agent-runtime.js';
+export type { RuntimeAgentDefinition } from '../authoring/agent-runtime.js';
 export { schema } from '../support/schema.js';
 export { tool, workflow } from '../authoring/definition-schema.js';
 export { requestId, RuntimeError } from '../core/execution.js';

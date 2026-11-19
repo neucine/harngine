@@ -6,7 +6,7 @@ import {
   Runtime,
   type Caller,
   type RuntimeAccessPolicy,
-  type RuntimeDefinitionRecord,
+  type DefinitionRegistration,
 } from '../engine/runtime.js';
 import type { Agent as PublicAgent } from '../authoring/agent.js';
 import type { Workflow as PublicWorkflow } from '../authoring/workflow.js';
@@ -18,16 +18,16 @@ import type {
   Definition,
   DefinitionDescription,
   DefinitionType,
-  DefinitionReference,
+  DefinitionRef,
   Definitions,
   DiagnosticPage,
   Diagnostics,
-  ExecutableDefinitionReference,
+  ExecutableDefinitionRef,
   ExecutionLimits,
   RegisteredDefinition,
   Sessions,
   StartOptions,
-  Work,
+  WorkHandle as WorkHandleContract,
   Works,
   WorkStatus,
 } from './contracts.js';
@@ -157,7 +157,7 @@ class DefinitionManager implements Definitions {
           message: 'Invalid Definition page token',
         });
     }
-    const keyOf = (record: RuntimeDefinitionRecord) =>
+    const keyOf = (record: DefinitionRegistration) =>
       `${record.kind}\u0000${record.id}\u0000${record.version}`;
     const afterKey = after ? `${after.kind}\u0000${after.id}\u0000${after.revision}` : undefined;
     const rows = this.runtime
@@ -182,7 +182,7 @@ class DefinitionManager implements Definitions {
     });
   }
 
-  async get(selected: DefinitionReference): Promise<DefinitionDescription> {
+  async get(selected: DefinitionRef): Promise<DefinitionDescription> {
     const record = this.runtime
       .definitionRecords()
       .find(
@@ -206,7 +206,7 @@ class WorkManager implements Works {
   async list(
     options: {
       status?: WorkStatus | readonly WorkStatus[];
-      definition?: ExecutableDefinitionReference;
+      definition?: ExecutableDefinitionRef;
       sessionId?: SessionId;
       page?: string;
       limit?: number;
@@ -273,7 +273,7 @@ class WorkManager implements Works {
     });
   }
 
-  async get(id: WorkId): Promise<Work> {
+  async get(id: WorkId): Promise<WorkHandleContract> {
     try {
       const record = this.runtime.workRecord(this.caller, id);
       return new WorkHandle(
@@ -281,7 +281,7 @@ class WorkManager implements Works {
         this.caller,
         record.ref,
         record.kind === 'agent',
-        record.sessionId ? { id: record.sessionId } : undefined,
+        record.sessionId ?? undefined,
       );
     } catch (error) {
       throw translateError(error);
@@ -311,17 +311,17 @@ class Scope implements AppScope {
     definition: D,
     objective: ObjectiveOf<D>,
     options?: StartOptions,
-  ): Promise<Work<ObjectiveOf<D>, ResultOf<D>>>;
+  ): Promise<WorkHandleContract<ObjectiveOf<D>, ResultOf<D>>>;
   async start(
-    definition: ExecutableDefinitionReference,
+    definition: ExecutableDefinitionRef,
     objective: Json,
     options?: StartOptions,
-  ): Promise<Work>;
+  ): Promise<WorkHandleContract>;
   async start(
-    definition: Definition | ExecutableDefinitionReference,
+    definition: Definition | ExecutableDefinitionRef,
     objective: Json,
     options: StartOptions = {},
-  ): Promise<Work> {
+  ): Promise<WorkHandleContract> {
     const failed = this.schedulerError();
     if (failed) throw translateError(failed);
     try {
@@ -354,12 +354,12 @@ class Scope implements AppScope {
     options?: StartOptions & { signal?: AbortSignal },
   ): Promise<ResultOf<D>>;
   async run(
-    definition: ExecutableDefinitionReference,
+    definition: ExecutableDefinitionRef,
     objective: Json,
     options?: StartOptions & { signal?: AbortSignal },
   ): Promise<Json>;
   async run(
-    definition: Definition | ExecutableDefinitionReference,
+    definition: Definition | ExecutableDefinitionRef,
     objective: Json,
     options: StartOptions & { signal?: AbortSignal } = {},
   ): Promise<Json> {

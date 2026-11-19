@@ -36,8 +36,8 @@ export interface ApprovalPolicy {
   readonly timeoutMs: number;
 }
 
-import type { ToolCapabilities, WriteToolCapabilities } from '../core/tool.js';
-export type { ToolCapabilities, WriteToolCapabilities } from '../core/tool.js';
+import type { ToolCapabilities, WriteToolCapabilities } from '../core/definition.js';
+export type { ToolCapabilities, WriteToolCapabilities } from '../core/definition.js';
 
 export interface ToolDefinition<I extends Json, O extends Json> {
   readonly id: string;

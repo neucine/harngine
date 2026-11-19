@@ -13,7 +13,7 @@ import { ConflictError, UnavailableError, ValidationError } from '../core/errors
 import { commandError, translateError } from './error.js';
 import type { Agent as PublicAgent } from '../authoring/agent.js';
 import type {
-  DefinitionReference,
+  DefinitionRef,
   ExecutionLimits,
   Message,
   Session,
@@ -24,7 +24,7 @@ import type {
   SessionState,
   SessionUpdate,
   Watch,
-  Work,
+  WorkHandle as WorkHandleContract,
   WorkSnapshot,
 } from './contracts.js';
 import { WorkHandle } from './work.js';
@@ -49,7 +49,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
     private readonly runtime: Runtime,
     private readonly caller: Caller,
     private readonly agent: PublicAgent<O, R> | undefined,
-    private readonly expectedAgent: DefinitionReference & { readonly type: 'agent' },
+    private readonly expectedAgent: DefinitionRef & { readonly type: 'agent' },
     private sessionVersion: SessionVersion,
     private readonly limitCeiling?: ExecutionLimits,
   ) {}
@@ -58,7 +58,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
     if (cursor === 0) return Object.freeze([]);
     const history = await this.runtime
       .forCaller(this.caller)
-      .session.history({ id: this.id }, { before: (cursor + 1) as SessionCursor, limit });
+      .session.history(this.id, { before: (cursor + 1) as SessionCursor, limit });
     return Object.freeze(
       history.entries.flatMap((entry): Message[] => {
         if (entry.entry.type !== 'input' && entry.entry.type !== 'output') return [];
@@ -78,12 +78,12 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
 
   private async snapshotAt(cursor: SessionWatchCursor): Promise<SessionSnapshot> {
     const api = this.runtime.forCaller(this.caller);
-    const low = await api.session.inspect({ id: this.id });
+    const low = await api.session.inspect(this.id);
     const recentMessages = await this.messagesThrough(cursor.session as SessionCursor, 100);
     const foregroundId = (cursor.workId as WorkId | undefined) ?? null;
     let foregroundWork: WorkSnapshot | null = null;
     if (foregroundId) {
-      const ref = await api.session.work({ id: this.id }, foregroundId);
+      const ref = await api.session.work(this.id, foregroundId);
       foregroundWork =
         cursor.workId === foregroundId && cursor.workEvent
           ? projectionSnapshot(
@@ -113,7 +113,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
   async snapshot(): Promise<SessionSnapshot> {
     try {
       const api = this.runtime.forCaller(this.caller);
-      const value = await api.session.inspect({ id: this.id });
+      const value = await api.session.inspect(this.id);
       let workSequence: number | undefined;
       let workEvent: string | undefined;
       if (value.foregroundWork) {
@@ -144,15 +144,12 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
   async messages(options: { before?: string; limit?: number } = {}): Promise<readonly Message[]> {
     try {
       const api = this.runtime.forCaller(this.caller);
-      const snapshot = await api.session.inspect({ id: this.id });
+      const snapshot = await api.session.inspect(this.id);
       let before = (snapshot.cursor + 1) as SessionCursor;
       if (options.before !== undefined) {
         before = messageSequence(this.id, options.before) as SessionCursor;
       }
-      const history = await api.session.history(
-        { id: this.id },
-        { before, limit: options.limit ?? 50 },
-      );
+      const history = await api.session.history(this.id, { before, limit: options.limit ?? 50 });
       return Object.freeze(
         history.entries.flatMap((entry): Message[] => {
           if (entry.entry.type !== 'input' && entry.entry.type !== 'output') return [];
@@ -178,7 +175,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
   ): Promise<readonly SessionHandoff[]> {
     try {
       const api = this.runtime.forCaller(this.caller);
-      const snapshot = await api.session.inspect({ id: this.id });
+      const snapshot = await api.session.inspect(this.id);
       const limit = options.limit ?? 50;
       if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
         throw new ValidationError({
@@ -191,10 +188,10 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
           : handoffSequence(this.id, options.before);
       const selected: SessionHandoff[] = [];
       while (selected.length < limit && before > 1) {
-        const history = await api.session.history(
-          { id: this.id },
-          { before: before as SessionCursor, limit: 100 },
-        );
+        const history = await api.session.history(this.id, {
+          before: before as SessionCursor,
+          limit: 100,
+        });
         for (const entry of [...history.entries].reverse()) {
           if (entry.entry.type !== 'handoff') continue;
           selected.push(
@@ -205,12 +202,12 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
                 'agent',
                 entry.entry.fromAgent.id,
                 entry.entry.fromAgent.version,
-              ) as DefinitionReference & { readonly type: 'agent' },
+              ) as DefinitionRef & { readonly type: 'agent' },
               to: reference(
                 'agent',
                 entry.entry.toAgent.id,
                 entry.entry.toAgent.version,
-              ) as DefinitionReference & { readonly type: 'agent' },
+              ) as DefinitionRef & { readonly type: 'agent' },
               ...(entry.entry.reason ? { reason: entry.entry.reason } : {}),
               recordedAt: entry.recordedAt,
               sessionVersion: entry.version,
@@ -232,11 +229,11 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
     options?: SessionHandoffOptions,
   ): Promise<Session<NO, NR>>;
   async handoff(
-    agent: DefinitionReference & { readonly type: 'agent' },
+    agent: DefinitionRef & { readonly type: 'agent' },
     options?: SessionHandoffOptions,
   ): Promise<Session>;
   async handoff<NO extends Json, NR extends Json>(
-    selected: PublicAgent<NO, NR> | (DefinitionReference & { readonly type: 'agent' }),
+    selected: PublicAgent<NO, NR> | (DefinitionRef & { readonly type: 'agent' }),
     options: SessionHandoffOptions = {},
   ): Promise<Session<NO, NR>> {
     const api = this.runtime.forCaller(this.caller);
@@ -252,7 +249,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
           code: 'AGENT_UNAVAILABLE',
           message: 'The exact target Agent revision is unavailable',
         });
-      const current = await api.session.inspect({ id: this.id });
+      const current = await api.session.inspect(this.id);
       const currentMatches =
         current.agent?.id === this.expectedAgent.id &&
         current.agent.version === this.expectedAgent.revision;
@@ -261,18 +258,15 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
           code: 'SESSION_HANDED_OFF',
           message: 'Inspect the Session and use its current Agent handle',
         });
-      const targetAgent = reference('agent', target.id, target.revision) as DefinitionReference & {
+      const targetAgent = reference('agent', target.id, target.revision) as DefinitionRef & {
         readonly type: 'agent';
       };
-      const receipt = await api.session.handoff(
-        { id: this.id },
-        {
-          requestId: generatedRequestId(options.idempotencyKey),
-          expectedVersion: currentMatches ? current.version : this.sessionVersion,
-          agent: { id: target.id, version: target.revision },
-          ...(options.reason ? { reason: options.reason } : {}),
-        },
-      );
+      const receipt = await api.session.handoff(this.id, {
+        requestId: generatedRequestId(options.idempotencyKey),
+        expectedVersion: currentMatches ? current.version : this.sessionVersion,
+        agent: { id: target.id, version: target.revision },
+        ...(options.reason ? { reason: options.reason } : {}),
+      });
       if (receipt.status !== 'accepted') throw commandError(receipt.reason, receipt.status);
       return new SessionHandle(
         this.id,
@@ -297,7 +291,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
     if (options.after) {
       try {
         state = decodeSessionCursor(options.after);
-        if (state.session > (await api.session.inspect({ id: this.id })).cursor)
+        if (state.session > (await api.session.inspect(this.id)).cursor)
           throw new Error('invalid cursor');
       } catch {
         reset = true;
@@ -320,14 +314,14 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
       async *[Symbol.asyncIterator]() {
         while (true) {
           options.signal?.throwIfAborted();
-          const low = await api.session.inspect({ id: thisSession.id });
-          const sessionChanges = await api.session.history(
-            { id: thisSession.id },
-            { after: state.session as SessionCursor, limit: 100 },
-          );
+          const low = await api.session.inspect(thisSession.id);
+          const sessionChanges = await api.session.history(thisSession.id, {
+            after: state.session as SessionCursor,
+            limit: 100,
+          });
           let yielded = false;
           if (state.workId) {
-            const ref = await api.session.work({ id: thisSession.id }, state.workId as WorkId);
+            const ref = await api.session.work(thisSession.id, state.workId as WorkId);
             const page = await api.work.history(ref, {
               after: (state.workSequence ?? 0) as ProgressCursor,
               limit: 100,
@@ -436,7 +430,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
 
   private async currentWatchCursor(): Promise<SessionWatchCursor> {
     const api = this.runtime.forCaller(this.caller);
-    const session = await api.session.inspect({ id: this.id });
+    const session = await api.session.inspect(this.id);
     if (!session.foregroundWork)
       return {
         session: session.cursor,
@@ -466,7 +460,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
   async send(
     content: O,
     options: { limits?: ExecutionLimits; idempotencyKey?: string } = {},
-  ): Promise<{ message: Message; work: Work<O, R> }> {
+  ): Promise<{ message: Message; work: WorkHandleContract<O, R> }> {
     const api = this.runtime.forCaller(this.caller);
     try {
       if (!this.agent)
@@ -474,7 +468,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
           code: 'AGENT_UNAVAILABLE',
           message: 'The Session Agent revision is unavailable',
         });
-      const current = await api.session.inspect({ id: this.id });
+      const current = await api.session.inspect(this.id);
       if (
         !current.agent ||
         current.agent.id !== this.expectedAgent.id ||
@@ -485,20 +479,16 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
           message: 'Inspect the Session and use its current Agent handle',
         });
       const limits = workLimits(this.agent, options.limits, this.limitCeiling);
-      const receipt = await api.session.send(
-        { id: this.id },
-        {
-          requestId: generatedRequestId(options.idempotencyKey),
-          content,
-          ...(limits ? { limits } : {}),
-        },
-      );
+      const receipt = await api.session.send(this.id, {
+        requestId: generatedRequestId(options.idempotencyKey),
+        content,
+        ...(limits ? { limits } : {}),
+      });
       if (receipt.status !== 'accepted') throw commandError(receipt.reason, receipt.status);
       this.sessionVersion = receipt.value.version;
-      const page = await api.session.history(
-        { id: this.id },
-        { after: (receipt.value.sequence - 1) as SessionCursor },
-      );
+      const page = await api.session.history(this.id, {
+        after: (receipt.value.sequence - 1) as SessionCursor,
+      });
       const entry = page.entries[0]!;
       return {
         message: {
@@ -509,9 +499,13 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
           recordedAt: entry.recordedAt,
           workId: receipt.value.work.id,
         },
-        work: new WorkHandle(this.runtime, this.caller, receipt.value.work as WorkRef<O, R>, true, {
-          id: this.id,
-        }),
+        work: new WorkHandle(
+          this.runtime,
+          this.caller,
+          receipt.value.work as WorkRef<O, R>,
+          true,
+          this.id,
+        ),
       };
     } catch (error) {
       throw translateError(error);
@@ -521,7 +515,7 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
   async close(options: { idempotencyKey?: string } = {}): Promise<SessionState> {
     const api = this.runtime.forCaller(this.caller);
     try {
-      const before = await api.session.inspect({ id: this.id });
+      const before = await api.session.inspect(this.id);
       if (before.status === 'closed') return this.snapshot();
       if (before.foregroundWork)
         throw new ConflictError({
@@ -535,13 +529,10 @@ export class SessionHandle<O extends Json, R extends Json> implements Session<O,
           message: 'Session has queued Work',
           details: { workId: before.queuedWork[0]!.id },
         });
-      const receipt = await api.session.close(
-        { id: this.id },
-        {
-          requestId: generatedRequestId(options.idempotencyKey),
-          expectedVersion: before.version,
-        },
-      );
+      const receipt = await api.session.close(this.id, {
+        requestId: generatedRequestId(options.idempotencyKey),
+        expectedVersion: before.version,
+      });
       if (receipt.status !== 'accepted') throw commandError(receipt.reason, receipt.status);
       return this.snapshot();
     } catch (error) {
@@ -564,12 +555,12 @@ export class SessionManager implements Sessions {
     idempotencyKey?: string;
   }): Promise<Session<O, R>>;
   async create(options: {
-    agent: DefinitionReference & { type: 'agent' };
+    agent: DefinitionRef & { type: 'agent' };
     title: string;
     idempotencyKey?: string;
   }): Promise<Session>;
   async create<O extends Json, R extends Json>(options: {
-    agent: PublicAgent<O, R> | (DefinitionReference & { type: 'agent' });
+    agent: PublicAgent<O, R> | (DefinitionRef & { type: 'agent' });
     title: string;
     idempotencyKey?: string;
   }): Promise<Session<O, R>> {
@@ -588,13 +579,11 @@ export class SessionManager implements Sessions {
       agent: selected as unknown as CoreAgent,
     });
     if (receipt.status !== 'accepted') throw commandError(receipt.reason, receipt.status);
-    const currentAgent = reference(
-      'agent',
-      selected.id,
-      selected.revision,
-    ) as DefinitionReference & { readonly type: 'agent' };
+    const currentAgent = reference('agent', selected.id, selected.revision) as DefinitionRef & {
+      readonly type: 'agent';
+    };
     return new SessionHandle(
-      receipt.value.id,
+      receipt.value,
       this.runtime,
       this.caller,
       selected,
@@ -615,7 +604,7 @@ export class SessionManager implements Sessions {
       'agent',
       snapshot.agent.id,
       snapshot.agent.version,
-    ) as DefinitionReference & { readonly type: 'agent' };
+    ) as DefinitionRef & { readonly type: 'agent' };
     return new SessionHandle(
       id,
       this.runtime,

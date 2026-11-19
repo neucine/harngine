@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import {
   agent,
-  artifactReference,
-  artifactReferences,
+  createArtifact,
+  findArtifacts,
   createApp,
   schema,
   type App,
-  type ArtifactReference,
+  type Artifact,
   type ModelAdapter,
   type ModelRequest,
 } from '../src/index.js';
@@ -26,7 +26,7 @@ afterEach(async () => {
 const digest = `sha256:${'a'.repeat(64)}` as const;
 
 test('artifact references validate metadata without accepting payload fields', () => {
-  const artifact = artifactReference({
+  const artifact = createArtifact({
     id: 'attachment:agreement',
     name: 'agreement.md',
     mediaType: 'text/markdown',
@@ -35,13 +35,13 @@ test('artifact references validate metadata without accepting payload fields', (
   });
   expect(Object.isFrozen(artifact)).toBe(true);
   expect(
-    artifactReferences({
+    findArtifacts({
       attachments: [artifact],
       repeated: artifact,
     }),
   ).toEqual([artifact]);
   expect(() =>
-    artifactReferences({
+    findArtifacts({
       object: 'artifact',
       id: 'attachment:payload',
       mediaType: 'text/plain',
@@ -51,7 +51,7 @@ test('artifact references validate metadata without accepting payload fields', (
     } as never),
   ).toThrow(/cannot contain payload/);
   expect(() =>
-    artifactReference({
+    createArtifact({
       id: 'attachment:invalid',
       mediaType: 'text/plain',
       byteLength: 1,
@@ -74,14 +74,14 @@ test('selected Model Context exposes deduplicated attachment references as a sid
       };
     },
   };
-  const attachment = artifactReference({
+  const attachment = createArtifact({
     id: 'attachment:agreement',
     name: 'agreement.md',
     mediaType: 'text/markdown',
     byteLength: 128,
     digest,
   });
-  const objective = schema<{ question: string; attachments: ArtifactReference[] }>({
+  const objective = schema<{ question: string; attachments: Artifact[] }>({
     id: 'artifact-request',
     version: '1',
     jsonSchema: {

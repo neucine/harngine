@@ -5,6 +5,26 @@ import type { Reason } from './types.js';
 import type { RequestId } from './types.js';
 import type { Json, Schema, WorkId } from './types.js';
 
+/** A question or approval shown in a public Work snapshot. */
+export type Interaction =
+  | {
+      readonly object: 'interaction';
+      readonly id: string;
+      readonly type: 'question';
+      readonly prompt: string;
+      readonly response: Json;
+      readonly blocking: boolean;
+    }
+  | {
+      readonly object: 'interaction';
+      readonly id: string;
+      readonly type: 'approval';
+      readonly blocking: boolean;
+      readonly title: string;
+      readonly details: Json;
+      readonly tool?: { readonly id: string; readonly revision: string };
+    };
+
 export interface ApprovalPolicy {
   readonly approvers: readonly string[];
   readonly timeoutMs: number;
@@ -22,7 +42,7 @@ export interface ApprovalAcceptance {
   readonly wait: WaitRef;
   readonly decision: 'approve' | 'deny';
 }
-export interface ApprovalRecord {
+export interface Approval {
   readonly wait: WaitRef;
   readonly operationId: string;
   readonly tool: Identity;
@@ -55,7 +75,7 @@ export interface InputAcceptance {
 export type InputDisposition =
   | { readonly id: string; readonly status: 'incorporated' }
   | { readonly id: string; readonly status: 'ignored'; readonly reason: Reason };
-export interface InputRecord<I extends Json = Json> extends InputAcceptance {
+export interface Input<I extends Json = Json> extends InputAcceptance {
   readonly objectiveRevision: ObjectiveRevision;
   readonly payload: I;
   readonly status: 'pending' | 'incorporated' | 'ignored' | 'superseded' | 'canceled' | 'failed';
@@ -91,7 +111,7 @@ export interface ReplyRequest {
 export interface ReplyAcceptance {
   readonly wait: WaitRef;
 }
-export interface WorkflowWait {
+export interface Wait {
   readonly wait: WaitRef;
   readonly slot: string;
   readonly kind: 'reply' | 'timer';

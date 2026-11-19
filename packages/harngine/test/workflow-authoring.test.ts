@@ -13,7 +13,7 @@ import {
   type App,
   type Json,
   type ModelAdapter,
-  type Work,
+  type WorkHandle,
   type Workflow,
 } from '../src/index.js';
 
@@ -331,7 +331,7 @@ test('flow.all provides durable ordered fan-out/fan-in without arbitrary Promise
   }
   expect(children).toHaveLength(3);
   const handles = await Promise.all(children.map((id) => app.works.get(id)));
-  let waiting: Work | undefined;
+  let waiting: WorkHandle | undefined;
   for (const handle of handles) {
     const snapshot = await handle.snapshot();
     if (snapshot.interactions.length) waiting = handle;

@@ -8,14 +8,13 @@ import {
   type Closure,
   type Json,
   type InputRequest,
-  type Policy,
+  type ExecutionPolicy,
   type Reason,
   type SessionCursor,
   type SessionHandoffAcceptance,
   type SessionHandoffRequest,
   type SessionId,
   type SessionReceipt,
-  type SessionRef,
   type SessionSend,
   type SessionSendAcceptance,
   type SessionVersion,
@@ -71,15 +70,16 @@ export class SessionCoordinator {
 
   async send(
     caller: { readonly principal: string; readonly source: string },
-    session: SessionRef,
+    session: SessionId,
     raw: SessionSend,
   ): Promise<SessionReceipt<SessionSendAcceptance>> {
     if (this.isClosed()) throw new RuntimeError('CLOSED', 'Runtime is closed');
-    exact(session, ['id']);
+    if (typeof session !== 'string' || !session)
+      throw new RuntimeError('INVALID_ID', 'Session identity required');
     const request = copy(raw);
     requestId(request.requestId);
     const scope = canonical([caller.principal, caller.source]);
-    const command = canonical({ type: 'session.send', target: session, request });
+    const command = canonical({ type: 'session.send', target: { id: session }, request });
     const prior = this.store.db
       .prepare('SELECT command,receipt FROM receipts WHERE source_scope=? AND request_id=?')
       .get(scope, request.requestId) as { command: string; receipt: string } | undefined;
@@ -90,7 +90,7 @@ export class SessionCoordinator {
           : {
               requestId: request.requestId,
               status: 'conflict',
-              target: session.id,
+              target: session,
               reason: {
                 code: 'IDENTITY_CONFLICT',
                 message: 'Request identity has different content',
@@ -106,7 +106,7 @@ export class SessionCoordinator {
     }
     const preliminary = this.store.db
       .prepare('SELECT principal,agent FROM sessions WHERE id=?')
-      .get(session.id) as { principal: string; agent: string | null } | undefined;
+      .get(session) as { principal: string; agent: string | null } | undefined;
     if (!preliminary) throw new RuntimeError('NOT_FOUND', 'Session not found');
     if (preliminary.principal !== caller.principal)
       throw new RuntimeError('ACCESS_DENIED', 'Session belongs to another principal');
@@ -122,7 +122,7 @@ export class SessionCoordinator {
         invalid = { code: 'ACCESS_DENIED', message: 'Starting Session Work is not authorized' };
     }
     const receipt = this.store.write((): SessionReceipt<SessionSendAcceptance> => {
-      const row = this.store.db.prepare('SELECT * FROM sessions WHERE id=?').get(session.id) as
+      const row = this.store.db.prepare('SELECT * FROM sessions WHERE id=?').get(session) as
         | {
             id: string;
             principal: string;
@@ -151,7 +151,7 @@ export class SessionCoordinator {
         result = {
           requestId: request.requestId,
           status: 'rejected',
-          target: session.id as SessionId,
+          target: session as SessionId,
           cursor: row.cursor as SessionCursor,
           reason: rejection,
         };
@@ -183,7 +183,7 @@ export class SessionCoordinator {
                   );
                 continue;
               }
-              const configured = definition.policy[name as keyof Policy];
+              const configured = definition.policy[name as keyof ExecutionPolicy];
               if (
                 !Number.isSafeInteger(limit) ||
                 (limit as number) < 1 ||
@@ -201,11 +201,11 @@ export class SessionCoordinator {
           result = {
             requestId: request.requestId,
             status: 'rejected',
-            target: session.id as SessionId,
+            target: session as SessionId,
             cursor: row.cursor as SessionCursor,
             reason: problem,
           };
-          this.recordCommand(scope, request.requestId, command, session.id, result, null);
+          this.recordCommand(scope, request.requestId, command, session, result, null);
           if (startAllowed !== undefined)
             this.recordStartAuthorization(
               caller.principal,
@@ -218,7 +218,7 @@ export class SessionCoordinator {
         }
         const route = row.foreground_work_id ? ('queued' as const) : ('started' as const);
         const sequence = row.cursor + 1;
-        const context = route === 'started' ? this.context(session.id, agent, sequence) : [];
+        const context = route === 'started' ? this.context(session, agent, sequence) : [];
         workId = entityId('work');
         const controlToken = entityId('control');
         this.store.db
@@ -247,11 +247,11 @@ export class SessionCoordinator {
         result = {
           requestId: request.requestId,
           status: 'accepted',
-          target: session.id as SessionId,
+          target: session as SessionId,
           cursor,
           value: { version, sequence: cursor, work, route },
         };
-        this.recordCommand(scope, request.requestId, command, session.id, result, workId);
+        this.recordCommand(scope, request.requestId, command, session, result, workId);
         this.store.db
           .prepare(
             route === 'started'
@@ -260,14 +260,14 @@ export class SessionCoordinator {
           )
           .run(
             ...(route === 'started'
-              ? [version, cursor, workId, session.id]
-              : [version, cursor, session.id]),
+              ? [version, cursor, workId, session]
+              : [version, cursor, session]),
           );
-        this.store.db.prepare('INSERT INTO session_work VALUES(?,?)').run(session.id, workId);
+        this.store.db.prepare('INSERT INTO session_work VALUES(?,?)').run(session, workId);
         this.store.db
           .prepare('INSERT INTO session_entries VALUES(?,?,?,?,?,?,?,?)')
           .run(
-            session.id,
+            session,
             cursor,
             version,
             caller.source,
@@ -279,7 +279,7 @@ export class SessionCoordinator {
         if (route === 'queued')
           this.store.db
             .prepare('INSERT INTO session_queue VALUES(?,?,?)')
-            .run(session.id, cursor, workId);
+            .run(session, cursor, workId);
         if (startAllowed !== undefined)
           this.recordStartAuthorization(
             caller.principal,
@@ -300,7 +300,7 @@ export class SessionCoordinator {
           preliminary.agent,
           workId,
         );
-      this.recordCommand(scope, request.requestId, command, session.id, result, workId);
+      this.recordCommand(scope, request.requestId, command, session, result, workId);
       return result;
     });
     this.checkpoint('session');
@@ -310,11 +310,12 @@ export class SessionCoordinator {
 
   async handoff(
     caller: { readonly principal: string; readonly source: string },
-    session: SessionRef,
+    session: SessionId,
     raw: SessionHandoffRequest,
   ): Promise<SessionReceipt<SessionHandoffAcceptance>> {
     if (this.isClosed()) throw new RuntimeError('CLOSED', 'Runtime is closed');
-    exact(session, ['id']);
+    if (typeof session !== 'string' || !session)
+      throw new RuntimeError('INVALID_ID', 'Session identity required');
     let request = copy(raw);
     requestId(request.requestId);
     let invalid: Reason | undefined;
@@ -338,7 +339,7 @@ export class SessionCoordinator {
     const scope = canonical([caller.principal, caller.source]);
     const command = canonical({
       type: 'session.handoff',
-      target: session,
+      target: { id: session },
       request: {
         requestId: request.requestId,
         agent: request.agent,
@@ -355,7 +356,7 @@ export class SessionCoordinator {
           : {
               requestId: request.requestId,
               status: 'conflict',
-              target: session.id,
+              target: session,
               reason: {
                 code: 'IDENTITY_CONFLICT',
                 message: 'Request identity has different content',
@@ -364,7 +365,7 @@ export class SessionCoordinator {
       );
     const preliminary = this.store.db
       .prepare('SELECT principal,status,version,agent,foreground_work_id FROM sessions WHERE id=?')
-      .get(session.id) as
+      .get(session) as
       | {
           principal: string;
           status: string;
@@ -381,7 +382,7 @@ export class SessionCoordinator {
     if (!invalid && previousAgent) {
       const decision = this.policy.canHandoff({
         principal: caller.principal,
-        sessionId: session.id,
+        sessionId: session,
         fromAgent: previousAgent,
         toAgent: request.agent,
         reason: request.reason,
@@ -393,7 +394,7 @@ export class SessionCoordinator {
       invalid = { code: 'AGENT_UNAVAILABLE', message: 'Session has no current Agent' };
 
     const receipt = this.store.write((): SessionReceipt<SessionHandoffAcceptance> => {
-      const row = this.store.db.prepare('SELECT * FROM sessions WHERE id=?').get(session.id) as
+      const row = this.store.db.prepare('SELECT * FROM sessions WHERE id=?').get(session) as
         | {
             principal: string;
             status: string;
@@ -410,7 +411,7 @@ export class SessionCoordinator {
       const currentAgent = row.agent ? JSON.parse(row.agent) : null;
       const queued = this.store.db
         .prepare('SELECT 1 FROM session_queue WHERE session_id=? LIMIT 1')
-        .get(session.id);
+        .get(session);
       let rejection = invalid;
       if (row.version !== request.expectedVersion)
         rejection = {
@@ -460,7 +461,7 @@ export class SessionCoordinator {
         result = {
           requestId: request.requestId,
           status: rejection.code === 'STALE_VERSION' ? 'conflict' : 'rejected',
-          target: session.id as SessionId,
+          target: session as SessionId,
           cursor: row.cursor as SessionCursor,
           reason: rejection,
         };
@@ -469,14 +470,14 @@ export class SessionCoordinator {
           .run(scope, request.requestId, command, null, canonical(result));
         this.store.db
           .prepare('INSERT INTO session_receipts VALUES(?,?,?)')
-          .run(scope, request.requestId, session.id);
+          .run(scope, request.requestId, session);
       } else {
         const version = (row.version + 1) as SessionVersion;
         const cursor = (row.cursor + 1) as SessionCursor;
         result = {
           requestId: request.requestId,
           status: 'accepted',
-          target: session.id as SessionId,
+          target: session as SessionId,
           cursor,
           value: {
             version,
@@ -491,12 +492,12 @@ export class SessionCoordinator {
           .run(scope, request.requestId, command, null, canonical(result));
         this.store.db
           .prepare('INSERT INTO session_receipts VALUES(?,?,?)')
-          .run(scope, request.requestId, session.id);
+          .run(scope, request.requestId, session);
         this.store.db
           .prepare('UPDATE sessions SET version=?,cursor=?,agent=? WHERE id=?')
-          .run(version, cursor, canonical(request.agent), session.id);
+          .run(version, cursor, canonical(request.agent), session);
         this.store.db.prepare('INSERT INTO session_entries VALUES(?,?,?,?,?,?,?,?)').run(
-          session.id,
+          session,
           cursor,
           version,
           caller.source,
@@ -517,17 +518,17 @@ export class SessionCoordinator {
     return frozen(receipt);
   }
 
-  work(caller: { readonly principal: string }, session: SessionRef, workId: WorkId): WorkRef {
+  work(caller: { readonly principal: string }, session: SessionId, workId: WorkId): WorkRef {
     if (this.isClosed()) throw new RuntimeError('CLOSED', 'Runtime is closed');
-    const row = this.store.db
-      .prepare('SELECT principal FROM sessions WHERE id=?')
-      .get(session.id) as { principal: string } | undefined;
+    const row = this.store.db.prepare('SELECT principal FROM sessions WHERE id=?').get(session) as
+      | { principal: string }
+      | undefined;
     if (!row) throw new RuntimeError('NOT_FOUND', 'Session not found');
     if (row.principal !== caller.principal)
       throw new RuntimeError('ACCESS_DENIED', 'Session belongs to another principal');
     const linked = this.store.db
       .prepare('SELECT 1 FROM session_work WHERE session_id=? AND work_id=?')
-      .get(session.id, workId);
+      .get(session, workId);
     if (!linked) throw new RuntimeError('NOT_FOUND', 'Work is not associated with Session');
     const work = this.store.work(workId);
     if (work.principal !== caller.principal)
@@ -537,16 +538,14 @@ export class SessionCoordinator {
 
   steer<O extends Json, R extends Json, I extends Json>(
     caller: { readonly principal: string; readonly source: string },
-    session: SessionRef,
+    session: SessionId,
     work: WorkRef<O, R, I>,
     request: InputRequest<NoInfer<I>>,
     definition: Workflow | undefined,
   ) {
     if (this.isClosed()) throw new RuntimeError('CLOSED', 'Runtime is closed');
     const receipt = this.store.write(() => {
-      const sessionRow = this.store.db
-        .prepare('SELECT * FROM sessions WHERE id=?')
-        .get(session.id) as
+      const sessionRow = this.store.db.prepare('SELECT * FROM sessions WHERE id=?').get(session) as
         | {
             principal: string;
             status: string;
@@ -571,14 +570,14 @@ export class SessionCoordinator {
       const cursor = sessionRow.cursor + 1;
       this.store.db
         .prepare('UPDATE sessions SET version=?,cursor=? WHERE id=?')
-        .run(version, cursor, session.id);
+        .run(version, cursor, session);
       this.store.db
         .prepare('INSERT INTO session_receipts VALUES(?,?,?)')
-        .run(canonical([caller.principal, caller.source]), request.requestId, session.id);
+        .run(canonical([caller.principal, caller.source]), request.requestId, session);
       this.store.db
         .prepare('INSERT INTO session_entries VALUES(?,?,?,?,?,?,?,?)')
         .run(
-          session.id,
+          session,
           cursor,
           version,
           caller.source,

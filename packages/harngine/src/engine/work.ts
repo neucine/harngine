@@ -6,7 +6,7 @@ import {
   requestId,
   type Agent,
   type Json,
-  type Policy,
+  type ExecutionPolicy,
   type ProgressCursor,
   type Reason,
   type Receipt,
@@ -25,7 +25,7 @@ export interface Start<O extends Json> {
   requestId: RequestId;
   objective: O;
   context?: readonly Json[];
-  limits?: Partial<Policy>;
+  limits?: Partial<ExecutionPolicy>;
 }
 
 /** Owns idempotent Work admission, validation, authorization evidence, and initial state. */
@@ -99,7 +99,7 @@ export class WorkService {
               throw new RuntimeError('INVALID_POLICY', 'Work depth may not exceed the default');
             continue;
           }
-          const configured = definition.policy[name as keyof Policy];
+          const configured = definition.policy[name as keyof ExecutionPolicy];
           if (configured === undefined || (limit as number) > configured)
             throw new RuntimeError('INVALID_POLICY', 'Work limits may only narrow the definition');
         }

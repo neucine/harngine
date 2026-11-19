@@ -13,7 +13,7 @@ import {
   requestId,
   type Receipt,
   type SessionReceipt,
-  type SessionRef,
+  type SessionId,
   type SessionRecord,
   type SessionVersion,
   type SessionCursor,
@@ -101,7 +101,7 @@ async function create(x: ReturnType<typeof open>, id = 'session', maxEntries = 1
 }
 async function record(
   x: ReturnType<typeof open>,
-  ref: SessionRef,
+  ref: SessionId,
   id: string,
   entry: SessionContent,
 ) {
@@ -146,7 +146,7 @@ test('Session creation and ordered history are durable without starting Work', a
   expect(rows(x.dir, 'SELECT * FROM work')).toHaveLength(0);
   await x.runtime.close();
   const y = open(fixture(), x.dir);
-  expect(await y.api.session.get(ref.id)).toEqual(ref);
+  expect(await y.api.session.get(ref)).toEqual(ref);
   expect(await y.api.session.history(ref)).toEqual(history);
 });
 test('paged history has stable append-only boundaries and validates page options', async () => {
@@ -193,6 +193,24 @@ test('exact create/record/close retries retain original receipts after closure a
   expect(
     await y.api.session.record(ref, { ...request, entry: { type: 'input', content: 'changed' } }),
   ).toMatchObject({ status: 'conflict', reason: { code: 'IDENTITY_CONFLICT' } });
+});
+test('a saved Session create receipt with the old ID wrapper replays as a Session ID', async () => {
+  const x = open();
+  const request = { requestId: requestId('legacy-session'), title: 'Support case' };
+  const created = await x.api.session.create(request);
+  const id = accepted(created);
+  await x.runtime.close();
+  const db = new Database(join(x.dir, 'state.sqlite'));
+  try {
+    db.prepare('UPDATE receipts SET receipt=? WHERE request_id=?').run(
+      JSON.stringify({ ...created, value: { id } }),
+      request.requestId,
+    );
+  } finally {
+    db.close();
+  }
+  const reopened = open(fixture(), x.dir);
+  expect(await reopened.api.session.create(request)).toEqual(created);
 });
 test('stale version rejection is durable even if resubmitted with a new expected version', async () => {
   const x = open();
@@ -248,7 +266,7 @@ test('Session ownership and Work access are checked independently', async () => 
       context: [],
     }),
   );
-  await expect(stranger.session.get(ref.id)).rejects.toMatchObject({ code: 'ACCESS_DENIED' });
+  await expect(stranger.session.get(ref)).rejects.toMatchObject({ code: 'ACCESS_DENIED' });
   await expect(stranger.session.history(ref)).rejects.toMatchObject({ code: 'ACCESS_DENIED' });
   await expect(
     stranger.session.close(ref, {

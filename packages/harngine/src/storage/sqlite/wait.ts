@@ -6,7 +6,7 @@ import {
   requestId,
   type AnyWorkflow,
   type WaitPlan,
-  type WorkflowWait,
+  type Wait,
   type ReplyRequest,
   type ReplyAcceptance,
   type Receipt,
@@ -45,11 +45,11 @@ interface WaitRow {
   presentation: string | null;
   responders: string;
   deadline: number | null;
-  status: WorkflowWait['status'];
+  status: Wait['status'];
   payload: string | null;
   responded_by: string | null;
 }
-function describe(row: WaitRow, blocking: boolean): WorkflowWait {
+function describe(row: WaitRow, blocking: boolean): Wait {
   return frozen({
     wait: { id: row.id, workId: row.work_id as WorkId },
     slot: row.slot,
@@ -72,7 +72,7 @@ function describe(row: WaitRow, blocking: boolean): WorkflowWait {
     respondedBy: row.responded_by,
   });
 }
-export function workflowWaits(store: SqliteStore, workId: string): WorkflowWait[] {
+export function workWaits(store: SqliteStore, workId: string): Wait[] {
   const blocking = new Set(
     (
       store.db.prepare('SELECT wait_id FROM wake_dependencies WHERE work_id=?').all(workId) as {
@@ -112,7 +112,7 @@ export function inspectWait(
   caller: { principal: string },
   work: WorkRef,
   ref: WaitRef,
-): WorkflowWait {
+): Wait {
   const row = authorized(store, caller, work, ref, true);
   const blocking = Boolean(
     store.db
@@ -121,7 +121,7 @@ export function inspectWait(
   );
   return describe(row, blocking);
 }
-export function isWorkflowWait(store: SqliteStore, ref: WaitRef): boolean {
+export function isWorkWait(store: SqliteStore, ref: WaitRef): boolean {
   return Boolean(
     ref &&
       typeof ref.id === 'string' &&
@@ -132,7 +132,7 @@ export function isWorkflowWait(store: SqliteStore, ref: WaitRef): boolean {
 type Condition = { type: 'wait'; id: string } | { type: 'all' | 'any'; conditions: Condition[] };
 export function validateWaitBindings(
   plan: WaitPlan,
-  waits: readonly WorkflowWait[],
+  waits: readonly Wait[],
   controlToken: string,
 ): void {
   const existing = new Map(waits.map((wait) => [wait.slot, wait]));

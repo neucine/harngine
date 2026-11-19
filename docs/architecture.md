@@ -66,6 +66,9 @@ Five public concepts describe application intent:
 - **Session** is optional continuity across multiple Work executions. It records conversation and
   ownership lineage without becoming the unit of execution.
 
+For field-level relationships and the variants of the types in `core/`, see the
+[core data structures](core-data-structures.md) page.
+
 Definitions are compiled into stable identities with a `revision` of the form `rev_...`.
 Registration makes a definition available; it does not automatically grant another Agent
 permission to call it. Callable Agents and Workflows must be declared explicitly, and the runtime
@@ -196,7 +199,7 @@ selected artifact references. Transient model deltas are advisory. The final val
 `ModelResponse`, durable Work updates and inspection entries remain authoritative.
 
 Context selection is bounded and recorded. Large application-owned bytes use
-`ArtifactReference`; Harngine verifies identity, length and digest before an adapter resolves them
+`Artifact`; Harngine verifies identity, length and digest before an adapter resolves them
 for provider-native input. The framework does not become the application's file store.
 
 ## Security boundaries

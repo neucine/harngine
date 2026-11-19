@@ -7,15 +7,15 @@ import type { TelemetrySink } from '../core/telemetry.js';
 import type { StateStoreConfiguration, StateStoreContract } from '../storage/sqlite/contracts.js';
 import type {
   DefinitionDescription,
-  DefinitionReference,
+  DefinitionRef,
   DefinitionType,
-  ExecutableDefinitionReference,
+  ExecutableDefinitionRef,
 } from '../core/definition.js';
 export type {
   DefinitionDescription,
-  DefinitionReference,
+  DefinitionRef,
   DefinitionType,
-  ExecutableDefinitionReference,
+  ExecutableDefinitionRef,
   AgentDescription,
   WorkflowDescription,
   ToolDescription,
@@ -35,10 +35,10 @@ export type {
   WorkSummary,
   WorkStatus,
   WorkUpdate,
-  Interaction,
   WatchedUpdate,
   Watch,
 } from '../core/work.js';
+export type { Interaction } from '../core/interaction.js';
 
 import type { InspectionPage } from '../core/inspection.js';
 export type {
@@ -74,10 +74,10 @@ export interface CancelOptions {
   readonly idempotencyKey?: string;
 }
 
-import type { EffectResolution } from '../core/attempt.js';
-export type { EffectResolution } from '../core/attempt.js';
+import type { EffectResolution } from '../core/operation.js';
+export type { EffectResolution } from '../core/operation.js';
 
-export interface Work<O extends Json = Json, R extends Json = Json> {
+export interface WorkHandle<O extends Json = Json, R extends Json = Json> {
   readonly id: WorkId;
   snapshot(): Promise<WorkSnapshot<O, R>>;
   result(options?: { signal?: AbortSignal }): Promise<R>;
@@ -136,19 +136,19 @@ export interface AppScope {
     definition: D,
     objective: ObjectiveOf<D>,
     options?: StartOptions,
-  ): Promise<Work<ObjectiveOf<D>, ResultOf<D>>>;
+  ): Promise<WorkHandle<ObjectiveOf<D>, ResultOf<D>>>;
   start(
-    definition: ExecutableDefinitionReference,
+    definition: ExecutableDefinitionRef,
     objective: Json,
     options?: StartOptions,
-  ): Promise<Work>;
+  ): Promise<WorkHandle>;
   run<D extends Definition>(
     definition: D,
     objective: ObjectiveOf<D>,
     options?: StartOptions & { signal?: AbortSignal },
   ): Promise<ResultOf<D>>;
   run(
-    definition: ExecutableDefinitionReference,
+    definition: ExecutableDefinitionRef,
     objective: Json,
     options?: StartOptions & { signal?: AbortSignal },
   ): Promise<Json>;
@@ -192,13 +192,13 @@ export interface Definitions {
     readonly definitions: readonly DefinitionDescription[];
     readonly next: string | null;
   }>;
-  get(reference: DefinitionReference): Promise<DefinitionDescription>;
+  get(reference: DefinitionRef): Promise<DefinitionDescription>;
 }
 
 export interface Works {
   list(options?: {
     readonly status?: WorkStatus | readonly WorkStatus[];
-    readonly definition?: ExecutableDefinitionReference;
+    readonly definition?: ExecutableDefinitionRef;
     readonly sessionId?: SessionId;
     readonly page?: string;
     readonly limit?: number;
@@ -207,7 +207,7 @@ export interface Works {
     readonly works: readonly WorkSummary[];
     readonly next: string | null;
   }>;
-  get(id: WorkId): Promise<Work>;
+  get(id: WorkId): Promise<WorkHandle>;
 }
 
 import type {
@@ -242,13 +242,13 @@ export interface Session<O extends Json = Json, R extends Json = Json> {
     options?: SessionHandoffOptions,
   ): Promise<Session<NO, NR>>;
   handoff(
-    agent: DefinitionReference & { readonly type: 'agent' },
+    agent: DefinitionRef & { readonly type: 'agent' },
     options?: SessionHandoffOptions,
   ): Promise<Session>;
   send(
     message: O,
     options?: { readonly limits?: ExecutionLimits; readonly idempotencyKey?: string },
-  ): Promise<{ message: Message; work: Work<O, R> }>;
+  ): Promise<{ message: Message; work: WorkHandle<O, R> }>;
   watch(options?: {
     after?: string;
     signal?: AbortSignal;
@@ -263,7 +263,7 @@ export interface Sessions {
     idempotencyKey?: string;
   }): Promise<Session<O, R>>;
   create(options: {
-    agent: DefinitionReference & { readonly type: 'agent' };
+    agent: DefinitionRef & { readonly type: 'agent' };
     title: string;
     idempotencyKey?: string;
   }): Promise<Session>;

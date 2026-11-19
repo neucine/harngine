@@ -1,7 +1,7 @@
 # Document due diligence
 
 This demo keeps text and PDF attachment bytes in application-owned storage while execution records
-carry content-addressed `ArtifactReference` values. A reviewer Agent searches extracted text
+carry content-addressed `Artifact` values. A reviewer Agent searches extracted text
 through a versioned retrieval Tool, builds a cited report and publishes it only after an exact
 approval.
 

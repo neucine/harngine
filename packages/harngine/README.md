@@ -26,7 +26,7 @@ expose explicit read/write, idempotency, reconciliation, and reversibility capab
 `createApp()` also accepts an optional payload-free post-commit telemetry sink; durable execution
 evidence remains available through Work inspection. The optional `@harngine/evaluation` companion
 turns that evidence into bounded benchmarks and usage metrics without adding an execution path.
-Large attachments and generated outputs use validated, content-addressed `ArtifactReference`
+Large attachments and generated outputs use validated, content-addressed `Artifact`
 records. The selected model turn receives these references through `ModelContext.artifacts`; the
 application retains and authorizes access to the bytes. A provider adapter can opt into native
 image or PDF input with an application resolver; Harngine verifies each selected reference's size

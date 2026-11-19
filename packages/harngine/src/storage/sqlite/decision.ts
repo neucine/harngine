@@ -5,7 +5,7 @@ import {
   RuntimeError,
   type AnyWorkflow,
   type Closure,
-  type InputRecord,
+  type Input,
   type Json,
   type Proposal,
   type Reason,
@@ -15,7 +15,7 @@ import type { DefinitionRegistry } from '../../engine/definitions.js';
 import { entityId } from '../../engine/id.js';
 import { disposeInputs, incorporateInputs, inputCount } from './input.js';
 import type { SqliteStore, WorkRow } from './store.js';
-import { clearWakeCondition, planWait, withdrawWaits, workflowWaits } from './wait.js';
+import { clearWakeCondition, planWait, withdrawWaits, workWaits } from './wait.js';
 import { recordGuardrailDecisions } from './operation.js';
 import type { GuardrailDecision } from '../../authoring/guardrail.js';
 
@@ -45,7 +45,7 @@ export interface DecisionCommit {
   readonly row: WorkRow;
   readonly definition: AnyWorkflow;
   readonly proposal: Proposal;
-  readonly inputs: readonly InputRecord[];
+  readonly inputs: readonly Input[];
   readonly inputBoundary: number;
   readonly childCalls?: readonly PreparedChild[];
   readonly childAuthorizations?: readonly ChildCallAuthorization[];
@@ -255,7 +255,7 @@ export class ExecutionStore {
       { inputBoundary, waitingFor: proposal.until?.type ?? 'input' },
       sequence,
     );
-    for (const planned of workflowWaits(this.store, row.id).filter(
+    for (const planned of workWaits(this.store, row.id).filter(
       (candidate) => candidate.kind === 'reply' && candidate.decisionSequence === sequence,
     ))
       this.store.event(

@@ -4,11 +4,11 @@ import {
   type AgentModel,
   type AnyTool,
   type Tool,
-  type ContextItem,
+  type AgentContextItem,
   type Identity,
   type InputDisposition,
   type Json,
-  type ModelContext,
+  type AgentModelInput,
   type Schema,
   type Workflow,
 } from '../core/execution.js';
@@ -17,7 +17,11 @@ import { workflow, tool } from './definition-schema.js';
 import { exact } from '../engine/decision-rules.js';
 import type { Guardrail } from './guardrail.js';
 
-export interface AgentDefinition<O extends Json, R extends Json = string, I extends Json = Json> {
+export interface RuntimeAgentDefinition<
+  O extends Json,
+  R extends Json = string,
+  I extends Json = Json,
+> {
   readonly id: string;
   readonly version: string;
   readonly artifactDigest: string;
@@ -43,7 +47,7 @@ type State = {
   waitSlot?: string;
   question?: string;
 };
-type ModelCall = { request: ModelContext; responseSchema: Json; ordinal: number };
+type ModelCall = { request: AgentModelInput; responseSchema: Json; ordinal: number };
 type AgentResponse<R extends Json = Json> =
   | ({ readonly type: 'call'; readonly tool: Identity & Json; readonly input: Json } & Json)
   | ({ readonly type: 'ask'; readonly question: string } & Json)
@@ -93,7 +97,7 @@ function responseContract(
 }
 
 function modelTool<O extends Json>(
-  definition: AgentDefinition<O, any, any>,
+  definition: RuntimeAgentDefinition<O, any, any>,
   response: Schema<Json>,
   tools: readonly AnyTool[],
 ): Tool<Json, Json> {
@@ -202,7 +206,7 @@ function response<R extends Json>(value: Json): AgentResponse<R> {
   return candidate as AgentResponse<R>;
 }
 
-function selectedContext(values: readonly Json[]): ContextItem[] {
+function selectedContext(values: readonly Json[]): AgentContextItem[] {
   return values.map((value, index) => {
     const source = { type: 'work_context' as const, index };
     if (
@@ -243,18 +247,18 @@ function selectedContext(values: readonly Json[]): ContextItem[] {
       };
     }
     return { type: 'reference', content: value, source };
-  }) as ContextItem[];
+  }) as AgentContextItem[];
 }
 
 /** Define a protocol-level Agent fixture for execution-core conformance tests. */
 export function agent<O extends Json, I extends Json = Json>(
-  definition: AgentDefinition<O, string, I> & { readonly result?: undefined },
+  definition: RuntimeAgentDefinition<O, string, I> & { readonly result?: undefined },
 ): Agent<O, string, I>;
 export function agent<O extends Json, R extends Json, I extends Json = Json>(
-  definition: AgentDefinition<O, R, I> & { readonly result: Schema<R> },
+  definition: RuntimeAgentDefinition<O, R, I> & { readonly result: Schema<R> },
 ): Agent<O, R, I>;
 export function agent<O extends Json, R extends Json, I extends Json = Json>(
-  definition: AgentDefinition<O, R, I>,
+  definition: RuntimeAgentDefinition<O, R, I>,
 ): Agent<O, R, I> {
   if (
     Object.keys(definition).some(
@@ -350,7 +354,7 @@ export function agent<O extends Json, R extends Json, I extends Json = Json>(
   const request = (
     view: { objective: Json; context: readonly Json[] },
     turn: number,
-    items: ContextItem[],
+    items: AgentContextItem[],
   ) =>
     ({
       instructions: definition.instructions,
@@ -365,7 +369,7 @@ export function agent<O extends Json, R extends Json, I extends Json = Json>(
         inputSchema: tool.input.jsonSchema,
         outputSchema: tool.output.jsonSchema,
       })),
-    }) as ModelContext;
+    }) as AgentModelInput;
   const compiled = workflow<O, State & Json, R, I>({
     id: definition.id,
     version: definition.version,
@@ -384,7 +388,7 @@ export function agent<O extends Json, R extends Json, I extends Json = Json>(
           ? view.state
           : { phase: 'model' as const, turn: 0, revision: view.objectiveRevision };
       const ds = dispositions(view.inputs);
-      const items: ContextItem[] = [
+      const items: AgentContextItem[] = [
         ...selectedContext(view.context),
         ...Object.values(view.calls)
           .filter(
@@ -405,7 +409,7 @@ export function agent<O extends Json, R extends Json, I extends Json = Json>(
                 },
                 outcome: call.outcome!,
                 source: { type: 'work_call' as const, id: call.id },
-              }) as ContextItem,
+              }) as AgentContextItem,
           ),
         ...view.inputs.map(
           (input) =>
@@ -413,7 +417,7 @@ export function agent<O extends Json, R extends Json, I extends Json = Json>(
               type: 'input' as const,
               content: input.payload,
               source: { type: 'work_input' as const, id: input.id },
-            }) as ContextItem,
+            }) as AgentContextItem,
         ),
       ];
       if (state.phase === 'model') {
@@ -465,7 +469,7 @@ export function agent<O extends Json, R extends Json, I extends Json = Json>(
           question: state.question!,
           content: wait.payload,
           source: { type: 'reply' as const, waitId: wait.wait.id },
-        } as ContextItem;
+        } as AgentContextItem;
         return {
           type: 'call',
           state: {

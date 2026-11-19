@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, test } from 'vitest';
-import { artifactReference, resolveModelArtifacts, type ArtifactReference } from '../src/index.js';
+import { createArtifact, resolveModelArtifacts, type Artifact } from '../src/index.js';
 
-function reference(id: string, bytes: Uint8Array, mediaType = 'image/png'): ArtifactReference {
-  return artifactReference({
+function reference(id: string, bytes: Uint8Array, mediaType = 'image/png'): Artifact {
+  return createArtifact({
     id,
     mediaType,
     byteLength: bytes.byteLength,

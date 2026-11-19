@@ -4,7 +4,6 @@ import {
   RuntimeError,
   requestId,
   type SessionId,
-  type SessionRef,
   type SessionReceipt,
   type SessionCreate,
   type SessionRecord,
@@ -48,14 +47,11 @@ export function sessionApi(
   committed: () => void,
   clock: () => number,
 ) {
-  function authorize(ref: SessionRef): Row {
+  function authorize(ref: SessionId): Row {
     ensureOpen();
-    exact(ref, ['id']);
-    if (typeof ref.id !== 'string' || !ref.id)
+    if (typeof ref !== 'string' || !ref)
       throw new RuntimeError('INVALID_ID', 'Session identity required');
-    const row = store.db.prepare('SELECT * FROM sessions WHERE id=?').get(ref.id) as
-      | Row
-      | undefined;
+    const row = store.db.prepare('SELECT * FROM sessions WHERE id=?').get(ref) as Row | undefined;
     if (!row) throw new RuntimeError('NOT_FOUND', 'Session not found');
     if (row.principal !== caller.principal)
       throw new RuntimeError('ACCESS_DENIED', 'Session belongs to another principal');
@@ -100,7 +96,7 @@ export function sessionApi(
       .run(scope, id, command, null, canonical(receipt));
     store.db.prepare('INSERT INTO session_receipts VALUES(?,?,?)').run(scope, id, sessionId);
   }
-  function snapshot(ref: SessionRef): ExecutionSessionSnapshot {
+  function snapshot(ref: SessionId): ExecutionSessionSnapshot {
     const row = authorize(ref);
     const foreground = row.foreground_work_id ? store.work(row.foreground_work_id) : null;
     const updatedAt = (
@@ -116,10 +112,10 @@ export function sessionApi(
                WHERE sw.session_id=?
            )`,
         )
-        .get(row.created_at, ref.id, ref.id, ref.id) as { value: number }
+        .get(row.created_at, ref, ref, ref) as { value: number }
     ).value;
     return frozen({
-      id: ref.id,
+      id: ref,
       title: row.title,
       status: row.status,
       version: row.version as SessionVersion,
@@ -141,7 +137,7 @@ export function sessionApi(
             `SELECT w.id,w.definition FROM session_queue q JOIN work w ON w.id=q.work_id
              WHERE q.session_id=? ORDER BY q.sequence`,
           )
-          .all(ref.id) as { id: WorkRef['id']; definition: string }[]
+          .all(ref) as { id: WorkRef['id']; definition: string }[]
       ).map((work) => ({
         id: work.id,
         definition: decodeStoredJson(work.definition, 'session.definition'),
@@ -149,7 +145,7 @@ export function sessionApi(
     });
   }
   function mutate<T extends SessionChange>(
-    ref: SessionRef,
+    ref: SessionId,
     kind: 'record' | 'close',
     raw: SessionRecord | SessionClose,
   ): SessionReceipt<T> {
@@ -165,8 +161,8 @@ export function sessionApi(
       'work' in request.entry
     )
       checkWork(request.entry.work!);
-    const command = canonical({ type: `session.${kind}`, target: ref, request });
-    const previous = prior<T>(request.requestId, command, ref.id);
+    const command = canonical({ type: `session.${kind}`, target: { id: ref }, request });
+    const previous = prior<T>(request.requestId, command, ref);
     if (previous) return frozen(previous);
     let invalid: Reason | undefined;
     try {
@@ -213,7 +209,7 @@ export function sessionApi(
         else if (
           kind === 'close' &&
           (row.foreground_work_id ||
-            store.db.prepare('SELECT 1 FROM session_queue WHERE session_id=?').get(ref.id))
+            store.db.prepare('SELECT 1 FROM session_queue WHERE session_id=?').get(ref))
         )
           rejection = { code: 'SESSION_BUSY', message: 'Session still has pending Work' };
         if (entry) {
@@ -223,7 +219,7 @@ export function sessionApi(
             work &&
             store.db
               .prepare('SELECT 1 FROM session_work WHERE session_id=? AND work_id=?')
-              .get(ref.id, work.id);
+              .get(ref, work.id);
           if (
             row.status === 'closed' &&
             !(linked && (entry.type === 'output' || entry.type === 'result'))
@@ -257,7 +253,7 @@ export function sessionApi(
         result = {
           requestId: request.requestId,
           status: rejection.code === 'STALE_VERSION' ? 'conflict' : 'rejected',
-          target: ref.id,
+          target: ref,
           cursor: row.cursor as SessionCursor,
           reason: rejection,
         };
@@ -268,7 +264,7 @@ export function sessionApi(
         result = {
           requestId: request.requestId,
           status: 'accepted',
-          target: ref.id,
+          target: ref,
           cursor,
           value,
         };
@@ -276,17 +272,17 @@ export function sessionApi(
         if (kind === 'close')
           store.db
             .prepare("UPDATE sessions SET status='closed',version=?,closed_at=? WHERE id=?")
-            .run(version, now, ref.id);
+            .run(version, now, ref);
         else
           store.db
             .prepare('UPDATE sessions SET version=?,cursor=? WHERE id=?')
-            .run(version, cursor, ref.id);
-        save(request.requestId, command, ref.id, result);
+            .run(version, cursor, ref);
+        save(request.requestId, command, ref, result);
         if (kind === 'record') {
           store.db
             .prepare('INSERT INTO session_entries VALUES(?,?,?,?,?,?,?,?)')
             .run(
-              ref.id,
+              ref,
               cursor,
               version,
               caller.source,
@@ -298,24 +294,30 @@ export function sessionApi(
           if (entry!.type === 'work')
             store.db
               .prepare('INSERT INTO session_work VALUES(?,?) ON CONFLICT DO NOTHING')
-              .run(ref.id, entry!.work.id);
+              .run(ref, entry!.work.id);
         }
         return result;
       }
-      save(request.requestId, command, ref.id, result);
+      save(request.requestId, command, ref, result);
       return result;
     });
     committed();
     return frozen(receipt);
   }
   return {
-    create: async (raw: SessionCreate): Promise<SessionReceipt<SessionRef>> => {
+    create: async (raw: SessionCreate): Promise<SessionReceipt<SessionId>> => {
       ensureOpen();
       const request = copy(raw);
       requestId(request.requestId);
       const command = canonical({ type: 'session.create', request });
-      const previous = prior<SessionRef>(request.requestId, command);
-      if (previous) return frozen(previous);
+      const previous = prior<SessionId | { id: SessionId }>(request.requestId, command);
+      if (previous) {
+        if (previous.status !== 'accepted') return frozen(previous);
+        return frozen({
+          ...previous,
+          value: typeof previous.value === 'string' ? previous.value : previous.value.id,
+        });
+      }
       let invalid: Reason | undefined;
       const maxEntries = request.maxEntries === undefined ? 10000 : request.maxEntries;
       try {
@@ -332,7 +334,7 @@ export function sessionApi(
         invalid = reason(error);
       }
       const receipt = store.write(() => {
-        let result: SessionReceipt<SessionRef>;
+        let result: SessionReceipt<SessionId>;
         let id: SessionId | null = null;
         if (invalid) result = { requestId: request.requestId, status: 'rejected', reason: invalid };
         else {
@@ -355,7 +357,7 @@ export function sessionApi(
             status: 'accepted',
             target: id,
             cursor: 0 as SessionCursor,
-            value: { id },
+            value: id,
           };
         }
         save(request.requestId, command, id, result);
@@ -364,11 +366,11 @@ export function sessionApi(
       committed();
       return frozen(receipt);
     },
-    get: async (id: SessionId): Promise<SessionRef> => {
-      authorize({ id });
-      return frozen({ id });
+    get: async (id: SessionId): Promise<SessionId> => {
+      authorize(id);
+      return id;
     },
-    inspect: async (ref: SessionRef): Promise<ExecutionSessionSnapshot> => snapshot(ref),
+    inspect: async (ref: SessionId): Promise<ExecutionSessionSnapshot> => snapshot(ref),
     list: async (options: { beforeRowId?: number; limit?: number } = {}) => {
       ensureOpen();
       exact(options, ['beforeRowId', 'limit']);
@@ -385,19 +387,19 @@ export function sessionApi(
         .all(caller.principal, beforeRowId, limit + 1) as { rowid: number; id: SessionId }[];
       const selected = rows.slice(0, limit);
       return frozen({
-        sessions: selected.map((row) => snapshot({ id: row.id })),
+        sessions: selected.map((row) => snapshot(row.id)),
         nextRowId: selected.at(-1)?.rowid ?? null,
         hasMore: rows.length > limit,
       });
     },
     record: async (
-      ref: SessionRef,
+      ref: SessionId,
       request: SessionRecord,
     ): Promise<SessionReceipt<SessionRecordAcceptance>> => mutate(ref, 'record', request),
-    close: async (ref: SessionRef, request: SessionClose): Promise<SessionReceipt<SessionChange>> =>
+    close: async (ref: SessionId, request: SessionClose): Promise<SessionReceipt<SessionChange>> =>
       mutate(ref, 'close', request),
     history: async (
-      ref: SessionRef,
+      ref: SessionId,
       options: SessionHistoryOptions = {},
     ): Promise<SessionHistory> => {
       const row = authorize(ref);
@@ -425,12 +427,12 @@ export function sessionApi(
               .prepare(
                 'SELECT * FROM session_entries WHERE session_id=? AND sequence>? ORDER BY sequence LIMIT ?',
               )
-              .all(ref.id, after, limit + 1)
+              .all(ref, after, limit + 1)
           : store.db
               .prepare(
                 'SELECT * FROM session_entries WHERE session_id=? AND sequence<? ORDER BY sequence DESC LIMIT ?',
               )
-              .all(ref.id, before, limit + 1)
+              .all(ref, before, limit + 1)
       ) as {
         sequence: number;
         version: number;

@@ -5,7 +5,7 @@ import type {
   Identity,
   Json,
   Outcome,
-  Policy,
+  ExecutionPolicy,
   ReconciliationResult,
   Reason,
   Receipt,
@@ -190,7 +190,7 @@ export class OperationExecutor {
   async execute(row: WorkRow, request: RequestRow): Promise<boolean> {
     const selectedTool = this.options.tools.get(key(JSON.parse(request.tool)));
     if (!selectedTool) return false;
-    const policy = JSON.parse(row.policy) as Policy;
+    const policy = JSON.parse(row.policy) as ExecutionPolicy;
     if (row.spent >= policy.maxAttempts) {
       this.options.fail(row, { code: 'ATTEMPT_LIMIT', message: 'Attempt limit reached' });
       return true;

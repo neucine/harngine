@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { artifactReference, type ModelRequest } from 'harngine';
+import { createArtifact, type ModelRequest } from 'harngine';
 import { createClaudeMessagesAdapter } from '../src/index.js';
 import {
   describeModelAdapterConformance,
@@ -22,7 +22,7 @@ const request: ModelRequest = {
 };
 
 function artifact(name: string, mediaType: string, bytes: Uint8Array) {
-  return artifactReference({
+  return createArtifact({
     id: `attachment:${name}`,
     name,
     mediaType,

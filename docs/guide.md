@@ -362,9 +362,9 @@ Large documents, code files and generated outputs can cross execution as content
 references instead of payloads:
 
 ```ts
-import { artifactReference } from "harngine";
+import { createArtifact } from "harngine";
 
-const agreement = artifactReference({
+const agreement = createArtifact({
   id: "attachment:master-services-agreement",
   name: "master-services-agreement.pdf",
   mediaType: "application/pdf",
@@ -378,7 +378,7 @@ const review = await app.run(reviewer, {
 });
 ```
 
-`ArtifactReference` carries identity, media type, size and digest but no bytes. Harngine validates
+`Artifact` carries identity, media type, size and digest but no bytes. Harngine validates
 and deduplicates references found in the objective and selected Context Items, then exposes them
 through `ModelContext.artifacts`. The application owns storage, authorization, retention and
 resolution; a Tool that reads content verifies the digest and byte length before use. This supports
