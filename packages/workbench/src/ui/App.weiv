@@ -1,32 +1,32 @@
 <template><div class="shell">
-    <Sidebar bind:active="active" bind:connected="connected" bind:note="connectionNote" />
+    <Sidebar :active="active" :connected="connected" :note="connectionNote" />
     <main>
-      <div class="error" if="error" role="alert">{{ error }}</div>
-      <div class="empty" if="loading">Loading Workbench…</div>
-      <div if="!loading && view === 'definitions'">
-        <Definitions bind:items="data" bind:history="showHistory" on:toggle-history="toggleHistory" />
+      <div class="error" #if="error" role="alert">{{ error }}</div>
+      <div class="empty" #if="loading">Loading Workbench…</div>
+      <div #if="!loading && view === 'definitions'">
+        <Definitions :items="data" :history="showHistory" @toggle-history="toggleHistory" />
       </div>
-      <div if="!loading && view === 'definition'">
-        <Definition bind:item="data" on:new-session="newSession" on:start-work="startWork" />
+      <div #if="!loading && view === 'definition'">
+        <Definition :item="data" @new-session="newSession" @start-work="startWork" />
       </div>
-      <div if="!loading && view === 'sessions'"><Sessions bind:items="data" /></div>
-      <div if="!loading && view === 'session'">
-        <Session bind:item="data" on:send="sendMessage" on:close="closeSession" on:respond="respond" on:question="question" />
+      <div #if="!loading && view === 'sessions'"><Sessions :items="data" /></div>
+      <div #if="!loading && view === 'session'">
+        <Session :item="data" @send="sendMessage" @close="closeSession" @respond="respond" @question="question" />
       </div>
-      <div if="!loading && view === 'works'"><Works bind:items="data" /></div>
-      <div if="!loading && view === 'work'">
-        <Work bind:item="data" bind:entries="inspection" bind:detail="detail" bind:next="inspectionNext" bind:preview="preview" on:cancel="cancelWork" on:detail="changeDetail" on:more="moreInspection" on:respond="respond" on:question="question" />
+      <div #if="!loading && view === 'works'"><Works :items="data" /></div>
+      <div #if="!loading && view === 'work'">
+        <Work :item="data" :entries="inspection" :detail="detail" :next="inspectionNext" :preview="preview" @cancel="cancelWork" @detail="changeDetail" @more="moreInspection" @respond="respond" @question="question" />
       </div>
-      <div if="!loading && view === 'audit'">
-        <Audit bind:entries="data" bind:category="category" bind:next="auditNext" on:category="changeCategory" on:more="moreAudit" />
+      <div #if="!loading && view === 'audit'">
+        <Audit :entries="data" :category="category" :next="auditNext" @category="changeCategory" @more="moreAudit" />
       </div>
-      <div if="!loading && view === 'missing'">
+      <div #if="!loading && view === 'missing'">
         <h1>Not found</h1>
         <p>{{ missingPath }}</p>
       </div>
     </main>
-    <div if="inputOpen">
-      <InputDialog bind:open="inputOpen" bind:title="inputTitle" bind:help="inputHelp" bind:initial="inputInitial" on:cancel="dismissInput" on:submit="submitInput" bind:fields="inputFields" />
+    <div #if="inputOpen">
+      <InputDialog :open="inputOpen" :title="inputTitle" :help="inputHelp" :initial="inputInitial" @cancel="dismissInput" @submit="submitInput" :fields="inputFields" />
     </div>
   </div></template>
 <script lang="ts">
@@ -39,7 +39,7 @@ import Session from './views/Session.weiv';
 import Works from './views/Works.weiv';
 import Work from './views/Work.weiv';
 import Audit from './views/Audit.weiv';
-import { api, pretty, short, terminal, watch } from './api.ts';
+import { api, createWatchHandle, isTerminal, pretty, short, watch } from './api.ts';
 export interface Props {}
 export let props: Props;
 let missingPath = '';
@@ -50,7 +50,7 @@ let loading = true;
 let error = '';
 let connected = true;
 let connectionNote = 'public App API';
-let source: EventSource | null = null;
+const manageWatch = createWatchHandle();
 let showHistory = false;
 let inspection: any[] = [];
 let detail = 'story';
@@ -85,8 +85,7 @@ function navigate(path: string) {
   return load();
 }
 function closeWatch() {
-  source?.close();
-  source = null;
+  manageWatch();
 }
 function showError(cause: any) {
   error = (cause?.code ? cause.code + ' · ' : '') + (cause?.message || String(cause));
@@ -156,7 +155,7 @@ function newSession(item: any) {
       const session = await api('/sessions', {
         method: 'POST',
         body: JSON.stringify({
-          agent: { object: item.object, kind: item.kind, id: item.id, revision: item.revision },
+          agent: { object: 'definition', type: item.type, id: item.id, revision: item.revision },
           title,
         }),
       });
@@ -174,8 +173,8 @@ function startWork(item: any) {
         method: 'POST',
         body: JSON.stringify({
           definition: {
-            object: item.object,
-            kind: item.kind,
+            object: 'definition',
+            type: item.type,
             id: item.id,
             revision: item.revision,
           },
@@ -318,7 +317,7 @@ async function load() {
       const definition = await api(
         '/definitions/' + route.slice(1).map(encodeURIComponent).join('/'),
       );
-      data = { ...definition, subtitle: definition.kind + ' · ' + short(definition.revision) };
+      data = { ...definition, subtitle: definition.type + ' · ' + short(definition.revision) };
     } else if (route[0] === 'sessions' && route.length === 1) {
       view = 'sessions';
       data = (await api('/sessions?limit=100')).sessions.map((item: any) => ({
@@ -328,21 +327,19 @@ async function load() {
     } else if (route[0] === 'sessions' && route.length === 2) {
       view = 'session';
       data = prepareSession(await api('/sessions/' + encodeURIComponent(route[1])));
-      source = watch(
+      manageWatch(watch(
         'sessions',
         route[1],
-        (value) =>
-          queueMicrotask(() => {
-            data = prepareSession(value);
-            connected = true;
-            connectionNote = 'Live updates';
-          }),
-        () =>
-          queueMicrotask(() => {
-            connected = false;
-            connectionNote = 'Last durable state shown';
-          }),
-      );
+        (value) => {
+          data = prepareSession(value);
+          connected = true;
+          connectionNote = 'Live updates';
+        },
+        () => {
+          connected = false;
+          connectionNote = 'Last durable state shown';
+        },
+      ));
     } else if (route[0] === 'work' && route.length === 1) {
       view = 'works';
       data = (await api('/works?limit=100')).works.map((item: any) => ({
@@ -354,32 +351,27 @@ async function load() {
       data = prepareWork(await api('/works/' + encodeURIComponent(route[1])));
       detail = 'story';
       await loadInspection();
-      if (!terminal.has(data.status)) {
-        source = watch(
+      if (!isTerminal(data.status)) {
+        manageWatch(watch(
           'works',
           route[1],
-          (value) =>
-            queueMicrotask(() => {
-              data = prepareWork(value);
-              connected = true;
-              connectionNote = 'Live updates';
-              if (terminal.has(value.status)) {
-                preview = '';
-                closeWatch();
-              }
-            }),
-          () =>
-            queueMicrotask(() => {
-              connected = false;
-              connectionNote = 'Last durable state shown';
-            }),
-        );
-        source.addEventListener('model.delta', (event) => {
+          (value) => {
+            data = prepareWork(value);
+            connected = true;
+            connectionNote = 'Live updates';
+            if (isTerminal(value.status)) {
+              preview = '';
+              closeWatch();
+            }
+          },
+          () => {
+            connected = false;
+            connectionNote = 'Last durable state shown';
+          },
+        ))?.addEventListener('model.delta', (event) => {
           const delta = JSON.parse((event as MessageEvent).data);
           if (delta.item?.type === 'text' && delta.workId === data.id)
-            queueMicrotask(() => {
-              preview = (preview + delta.item.text).slice(-131072);
-            });
+            preview = (preview + delta.item.text).slice(-131072);
         });
       } else connectionNote = 'Durable terminal state';
     } else if (route[0] === 'audit' && route.length === 1) {
@@ -403,9 +395,9 @@ document.addEventListener('click', (event) => {
   const anchor = (event.target as Element).closest?.('a[href^="/"]') as HTMLAnchorElement | null;
   if (anchor && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
     event.preventDefault();
-    queueMicrotask(() => navigate(anchor.pathname + anchor.search));
+    navigate(anchor.pathname + anchor.search);
   }
 });
-addEventListener('popstate', () => queueMicrotask(() => load()));
-queueMicrotask(() => load());
+addEventListener('popstate', () => { void load(); });
+void load();
 </script>

@@ -1,5 +1,5 @@
-/** Public Harngine API. Internal execution records live under `harngine/internal`. */
-export { createApp } from './app.js';
+/** Main Harngine API. The engine protocol is exported separately at `harngine/engine`. */
+export { createApp } from './application/app.js';
 export type {
   AccessPolicy,
   App,
@@ -27,7 +27,7 @@ export type {
   EffectResolution,
   Definition,
   DefinitionDescription,
-  DefinitionKind,
+  DefinitionType,
   DefinitionReference,
   Definitions,
   AgentDescription,
@@ -65,7 +65,7 @@ export type {
   WorkSummary,
   WorkStatus,
   WorkUpdate,
-} from './app.js';
+} from './application/contracts.js';
 export {
   ConflictError,
   HarngineError,
@@ -76,11 +76,11 @@ export {
   ValidationError,
   WorkCanceledError,
   WorkFailedError,
-} from './errors.js';
-export type { PublicError } from './errors.js';
-export { schema } from './schema.js';
-export type { Json, Schema, SessionId, WorkId } from './types.js';
-export { tool } from './tool.js';
+} from './core/errors.js';
+export type { PublicError } from './core/errors.js';
+export { schema } from './support/schema.js';
+export type { Json, Schema, SessionId, WorkId } from './core/types.js';
+export { tool } from './authoring/tool.js';
 export type {
   ApprovalPolicy,
   Tool,
@@ -90,8 +90,8 @@ export type {
   ToolReconciliationContext,
   ToolReconciliationResult,
   WriteToolCapabilities,
-} from './tool.js';
-export { workflow } from './workflow.js';
+} from './authoring/tool.js';
+export { workflow } from './authoring/workflow.js';
 export type {
   ChildDefinition,
   ChildTask,
@@ -99,14 +99,14 @@ export type {
   Question,
   Workflow,
   WorkflowDefinition,
-} from './workflow.js';
-export { agent } from './agent.js';
+} from './authoring/workflow.js';
+export { agent } from './authoring/agent.js';
 export {
   guardrail,
   guardrailIdentity,
   guardrailsForStage,
   runGuardrails,
-} from './guardrail.js';
+} from './authoring/guardrail.js';
 export type {
   Guardrail,
   GuardrailDecision,
@@ -115,30 +115,30 @@ export type {
   GuardrailRun,
   GuardrailStage,
   GuardrailSubject,
-} from './guardrail.js';
+} from './authoring/guardrail.js';
 export type {
   StateStoreBackend,
   StateStoreConfiguration,
   StateStoreContract,
-} from './state-store.js';
+} from './storage/sqlite/contracts.js';
 export {
   modelEnvelopeInstructions,
   modelOutputSchema,
   modelResponseContract,
   normalizeModelEnvelope,
-} from './model-contract.js';
-export type { Agent, AgentDefinition } from './agent.js';
-export { artifactReference, artifactReferences } from './artifact.js';
-export type { ArtifactReference, ArtifactReferenceInput } from './artifact.js';
+} from './adapter/contract.js';
+export type { Agent, AgentDefinition } from './authoring/agent.js';
+export { artifactReference, artifactReferences } from './core/artifact.js';
+export type { ArtifactReference, ArtifactReferenceInput } from './core/artifact.js';
 export {
   DEFAULT_MODEL_ARTIFACT_LIMITS,
   resolveModelArtifacts,
-} from './model-artifacts.js';
+} from './adapter/artifacts.js';
 export type {
   ArtifactResolver,
   ResolvedModelArtifact,
   ResolveModelArtifactsOptions,
-} from './model-artifacts.js';
+} from './adapter/artifacts.js';
 export type {
   ContextCandidate,
   ContextConfiguration,
@@ -156,10 +156,10 @@ export type {
   ModelRequest,
   ModelResponse,
   ModelUsage,
-} from './model.js';
+} from './core/model.js';
 export {
   createModelOutputTextPreview,
   type ModelOutputTextPreview,
   type ModelOutputTextPreviewOptions,
-} from './model-preview.js';
-export type { TelemetryEvent, TelemetrySink } from './telemetry.js';
+} from './adapter/preview.js';
+export type { TelemetryEvent, TelemetrySink } from './core/telemetry.js';

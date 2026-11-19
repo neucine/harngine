@@ -1,9 +1,7 @@
 # Core architecture
 
-This document describes the stable design boundaries of Harngine. It is for people extending the
-framework, reviewing security and durability decisions, or building a host application around the
-public API. The [framework guide](guide.md) explains how to use the API; this document explains why
-the runtime is divided the way it is.
+This page explains how Harngine's parts fit together. It is for people building an app with
+Harngine or working on the framework. For steps and examples, see the [framework guide](guide.md).
 
 ## Position
 
@@ -29,6 +27,29 @@ flowchart LR
   MCP[MCP bridge] --> Tool
   Retrieval[Retrieval bridge] --> Tool
 ```
+
+## Package entry points
+
+Apps import from `harngine`. Model providers also import `ModelAdapter` from there. The
+`ModelAdapter` type says what Harngine needs from a model. Code for OpenAI, Claude, and other
+providers lives in separate packages.
+
+`harngine/engine` gives tests and debugging tools direct access to the engine. Its types and
+methods may change. Apps should use `createApp()` and the handles it returns.
+
+The package code is in `packages/harngine/src/`. Its top level has one file, `index.ts`, which
+exports the parts apps can use. The folders each have a job:
+
+| Folder | What it does |
+| --- | --- |
+| `core/` | Defines the main types, including `ModelAdapter` in `core/model.ts`. |
+| `authoring/` | Builds Agent, Workflow, and Tool definitions. |
+| `application/` | Handles calls from apps. |
+| `engine/` | Runs Work. |
+| `storage/sqlite/` | Saves Work in SQLite. |
+| `projection/` | Turns saved records into views that apps can read. |
+| `adapter/` | Helps model provider packages connect to Harngine. |
+| `support/` | Checks JSON data and schemas, which describe the shape of that data. |
 
 ## Public concepts
 
@@ -81,6 +102,24 @@ The runtime has several deliberately narrow layers:
 | Session coordinator | Maintains message ordering, foreground Work and ownership handoff. |
 | Inspection service | Projects durable evidence into story or diagnostic views. |
 | Audit reader | Exposes payload-safe operational evidence without becoming execution authority. |
+
+The main path through the runtime is:
+
+```mermaid
+flowchart LR
+  App[App calls] --> Work[Work service]
+  Work --> Scheduler
+  Scheduler --> Engine[Execution engine]
+  Engine --> Operations[Operation executor]
+  Operations --> External[Model or Tool]
+```
+
+The Work and Session services accept app calls and wake the scheduler. The scheduler asks the
+execution engine to advance Work. The engine uses the operation executor when it needs a model or
+Tool call. The definition registry supplies the saved Agent, Workflow, and Tool definitions. The
+policy evaluator checks access. The wait manager tracks deadlines and waits.
+
+These services share the SQLite store. Inspection and audit read its records to show what happened.
 
 Adapters consume these layers through public contracts. They must not write execution tables or
 infer successful state from a transport response.

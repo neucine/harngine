@@ -9,7 +9,7 @@ import {
   type App,
   type AuditCategory,
   type AuditQuery,
-  type DefinitionKind,
+  type DefinitionType,
   type DefinitionReference,
   HarngineError,
   NotFoundError,
@@ -125,8 +125,8 @@ function reference(kind: string, id: string, revision: string): DefinitionRefere
   if (!['agent', 'workflow', 'tool'].includes(kind) || !revision.startsWith('rev_'))
     throw new HttpError(400, 'INVALID_DEFINITION', 'Invalid Definition reference');
   return {
-    object: kind as DefinitionKind,
-    kind: kind as DefinitionKind,
+    object: 'definition',
+    type: kind as DefinitionType,
     id,
     revision: revision as `rev_${string}`,
   };
@@ -245,7 +245,7 @@ export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<Wo
         throw new HttpError(403, 'HOST_DENIED', 'Workbench host is not allowed');
       if (request.method === 'GET' && !url.pathname.startsWith('/api/')) {
         if (
-          /^\/(?:main|bundle|App|props|api)\.(?:mjs|js)$|^\/styles\.css$|^\/(?:views|components)\/[A-Za-z]+\.mjs$/.test(
+          /^\/(?:main|bundle|App|props|api)\.(?:mjs|js)$|^\/styles\.css$|^\/(?:views|components)\/[A-Za-z]+\.mjs$|^\/__weiv_(?:modules|runtime)\/[A-Za-z0-9_.-]+\.(?:mjs|js)$/.test(
             url.pathname,
           )
         ) {
@@ -280,10 +280,10 @@ export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<Wo
 
       if (method === 'GET' && parts[0] === 'definitions' && parts.length === 1) {
         requirePermission(identity, 'definitions:read');
-        const kind = url.searchParams.get('kind');
+        const type = url.searchParams.get('type');
         const availability = url.searchParams.get('availability');
         const result = await options.app.definitions.list({
-          ...(kind ? { kind: kind as DefinitionKind } : {}),
+          ...(type ? { type: type as DefinitionType } : {}),
           ...(url.searchParams.get('id') ? { id: url.searchParams.get('id')! } : {}),
           ...(availability ? { availability: availability as 'available' | 'unavailable' } : {}),
           ...(url.searchParams.get('page') ? { page: url.searchParams.get('page')! } : {}),
@@ -339,8 +339,8 @@ export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<Wo
         const selected = value.definition as DefinitionReference | undefined;
         if (
           !selected ||
-          selected.object !== selected.kind ||
-          (selected.kind !== 'agent' && selected.kind !== 'workflow')
+          selected.object !== 'definition' ||
+          (selected.type !== 'agent' && selected.type !== 'workflow')
         )
           throw new HttpError(400, 'INVALID_DEFINITION', 'Executable Definition is required');
         const work = await scope.start(selected as never, value.objective as never, {
@@ -451,7 +451,7 @@ export async function serveWorkbench(options: ServeWorkbenchOptions): Promise<Wo
         requirePermission(identity, 'work:control');
         const value = await body(request, options.maxBodyBytes ?? 1_048_576);
         const selected = value.agent as DefinitionReference | undefined;
-        if (!selected || selected.object !== selected.kind || selected.kind !== 'agent')
+        if (!selected || selected.object !== 'definition' || selected.type !== 'agent')
           throw new HttpError(400, 'INVALID_DEFINITION', 'Agent reference is required');
         const session = await scope.sessions.create({
           agent: selected as never,

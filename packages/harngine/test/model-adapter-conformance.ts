@@ -35,7 +35,7 @@ export function conformanceRequest(withTool = false): ModelRequest {
       ? [
           {
             id: toolId,
-            kind: 'tool',
+            type: 'tool',
             description: 'Look up one query.',
             inputSchema: {
               type: 'object',

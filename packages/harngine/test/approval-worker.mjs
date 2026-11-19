@@ -1,4 +1,4 @@
-import { Runtime, schema, workflow, tool, requestId } from '../dist/internal/index.js';
+import { Runtime, schema, workflow, tool, requestId } from '../dist/engine/index.js';
 import { appendFileSync, openSync, fsyncSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
 const [directory, boundary] = process.argv.slice(2);

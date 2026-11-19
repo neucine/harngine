@@ -131,9 +131,9 @@ continue.
 `App` is the application facade for registering definitions and accessing Work and Sessions. It is
 not another execution primitive.
 
-Serialized public values identify themselves with `object` (for example, `work`, `session`, or
-`model_response`). `kind` identifies a definition namespace and `type` identifies a variant within
-an object. Generated entity IDs use readable prefixes with compact opaque suffixes, such as
+Serialized public values identify their schema with `object` (for example, `work`,
+`definition`, or `interaction`). `type` identifies the variant within a schema: a definition may be an `agent`,
+`workflow`, or `tool`, while an interaction may be a `question` or `approval`. Generated entity IDs use readable prefixes with compact opaque suffixes, such as
 `work_...`, `session_...`, and `rev_...`.
 
 ## Install

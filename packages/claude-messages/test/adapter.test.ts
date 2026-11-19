@@ -343,7 +343,7 @@ describe('Claude Messages adapter', () => {
       tools: [
         {
           id: 'read-file',
-          kind: 'tool',
+          type: 'tool',
           description: 'Read a file',
           inputSchema: {
             type: 'object',

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { PolicyEvaluator } from '../src/internal/policy-evaluator.js';
+import { PolicyEvaluator } from '../src/engine/policy.js';
 
 test('PolicyEvaluator provides the explicit legacy-permissive embedded policy', async () => {
   const policy = new PolicyEvaluator();

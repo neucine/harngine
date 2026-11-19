@@ -1,20 +1,20 @@
 <template><div>
-    <div class="modal-backdrop" if="props.open">
-      <section class="modal panel" role="dialog" aria-modal="true" bind:aria-label="props.title">
+    <div class="modal-backdrop" #if="props.open">
+      <section class="modal panel" role="dialog" aria-modal="true" :aria-label="props.title">
         <h2>{{ props.title }}</h2>
         <p class="muted">{{ props.help }}</p>
         <div class="toolbar">
-          <span class="label">Contract input</span><button type="button" on:click="toggleMode">
+          <span class="label">Contract input</span><button type="button" @click="toggleMode">
             {{ formMode ? 'JSON editor' : 'Generated form' }}
           </button>
         </div>
-        <div class="schema-form" bind:class="formMode ? 'schema-form' : 'hidden'">
-          <label for="field in props.fields">{{ field.label }}<input bind:data-path="field.path" bind:data-type="field.type" bind:value="field.value" /></label>
+        <div class="schema-form" :class="formMode ? 'schema-form' : 'hidden'">
+          <label #for="field in props.fields">{{ field.label }}<input :data-path="field.path" :data-type="field.type" :value="field.value" /></label>
         </div>
-        <textarea id="contract-input" class="json-editor" bind:class="formMode ? 'hidden' : 'json-editor'" rows="12" bind:value="props.initial"></textarea>
-        <div class="error" if="error">{{ error }}</div>
+        <textarea id="contract-input" class="json-editor" :class="formMode ? 'hidden' : 'json-editor'" rows="12" :value="props.initial"></textarea>
+        <div class="error" #if="error">{{ error }}</div>
         <div class="dialog-actions">
-          <button on:click="cancel">Cancel</button><button class="primary" on:click="submit">Continue</button>
+          <button @click="cancel">Cancel</button><button class="primary" @click="submit">Continue</button>
         </div>
       </section>
     </div>

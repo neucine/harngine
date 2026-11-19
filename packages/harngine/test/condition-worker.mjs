@@ -1,4 +1,4 @@
-import { Runtime, schema, workflow, requestId } from '../dist/internal/index.js';
+import { Runtime, schema, workflow, requestId } from '../dist/engine/index.js';
 const [directory, boundary] = process.argv.slice(2);
 const number = schema({ id: 'condition-number', version: '1', jsonSchema: { type: 'integer' } });
 const leaf = (slot) => ({

@@ -1,4 +1,4 @@
-import { Runtime, requestId } from '../dist/internal/index.js';
+import { Runtime, requestId } from '../dist/engine/index.js';
 import { appendFileSync, openSync, fsyncSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
 import { fixture } from './fixture.mjs';

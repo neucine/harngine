@@ -15,10 +15,10 @@ import {
   type Outcome,
   type WorkRef,
   type WorkHistoryOptions,
-} from '../src/internal/index.js';
-import { Runtime } from '../src/internal/runtime.js';
-import { migrations } from '../src/internal/migrations.js';
-import { digest } from '../src/schema.js';
+} from '../src/engine/index.js';
+import { Runtime } from '../src/engine/runtime.js';
+import { migrations } from '../src/storage/sqlite/migrations.js';
+import { digest } from '../src/support/schema.js';
 const dirs: string[] = [];
 const runtimes: Runtime[] = [];
 const children: ChildProcess[] = [];

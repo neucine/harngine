@@ -59,6 +59,10 @@ test('serves stable browser routes and protects the public protocol with a local
   const appSource = await appAsset.text();
   expect(appSource).toContain('loadInspection');
   expect(appSource).toContain('model.delta');
+  const runtime = await fetch(`${server.url}__weiv_runtime/cell.js`);
+  expect(runtime.status).toBe(200);
+  expect(runtime.headers.get('content-type')).toContain('text/javascript');
+  expect(await runtime.text()).toContain('createCell');
   const styles = await fetch(`${server.url}styles.css`);
   expect(styles.status).toBe(200);
   expect(await styles.text()).toContain('.shell');
@@ -71,8 +75,8 @@ test('serves stable browser routes and protects the public protocol with a local
     object: 'list',
     definitions: [
       {
-        object: 'workflow',
-        kind: 'workflow',
+        object: 'definition',
+        type: 'workflow',
         id: double.id,
         revision: double.revision,
         availability: 'available',
@@ -125,8 +129,8 @@ test('Workbench streams model previews and exposes its audit projection', async 
     headers: { ...headers, 'idempotency-key': 'req_stream_agent' },
     body: JSON.stringify({
       definition: {
-        object: 'agent',
-        kind: 'agent',
+        object: 'definition',
+        type: 'agent',
         id: assistant.id,
         revision: assistant.revision,
       },
@@ -173,7 +177,12 @@ test('commands require retry keys and duplicate starts return the same durable W
   const { server, headers } = await started();
   const url = `${server.url}api/v1/works`;
   const body = JSON.stringify({
-    definition: { object: 'workflow', kind: 'workflow', id: double.id, revision: double.revision },
+    definition: {
+      object: 'definition',
+      type: 'workflow',
+      id: double.id,
+      revision: double.revision,
+    },
     objective: 21,
   });
   expect(
@@ -221,8 +230,8 @@ test('closing an SSE observer leaves the Work running and reconnectable', async 
     },
     body: JSON.stringify({
       definition: {
-        object: 'workflow',
-        kind: 'workflow',
+        object: 'definition',
+        type: 'workflow',
         id: waiting.id,
         revision: waiting.revision,
       },
@@ -290,7 +299,12 @@ test('Session messages queue follow-up Work while explicit steering addresses fo
     method: 'POST',
     headers: { ...headers, 'idempotency-key': 'req_create_session' },
     body: JSON.stringify({
-      agent: { object: 'agent', kind: 'agent', id: assistant.id, revision: assistant.revision },
+      agent: {
+        object: 'definition',
+        type: 'agent',
+        id: assistant.id,
+        revision: assistant.revision,
+      },
       title: 'Test Session',
     }),
   });

@@ -229,9 +229,9 @@ test('coding orchestrator exposes specialists and durable research/review compos
   );
   expect(requests[0]!.tools).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ id: coding.readAssistant.id, kind: 'agent' }),
-      expect.objectContaining({ id: coding.writeAssistant.id, kind: 'agent' }),
-      expect.objectContaining({ id: coding.reviewer.id, kind: 'agent' }),
+      expect.objectContaining({ id: coding.readAssistant.id, type: 'agent' }),
+      expect.objectContaining({ id: coding.writeAssistant.id, type: 'agent' }),
+      expect.objectContaining({ id: coding.reviewer.id, type: 'agent' }),
     ]),
   );
 
@@ -252,7 +252,7 @@ test('coding orchestrator exposes specialists and durable research/review compos
       expect.objectContaining({
         phase: 'started',
         mode: 'concurrent',
-        definition: expect.objectContaining({ kind: 'agent', id: coding.readAssistant.id }),
+        definition: expect.objectContaining({ type: 'agent', id: coding.readAssistant.id }),
       }),
       expect.objectContaining({ phase: 'joined' }),
       expect.objectContaining({ phase: 'closed' }),

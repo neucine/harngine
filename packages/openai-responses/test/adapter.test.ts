@@ -479,7 +479,7 @@ describe('Codex API adapter', () => {
         tools: [
           {
             id: toolId,
-            kind: 'tool',
+            type: 'tool',
             description: 'Search',
             inputSchema: {
               type: 'object',

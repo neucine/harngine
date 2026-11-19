@@ -1,12 +1,12 @@
 <template><div>
-    <PageHeader bind:title="props.item.id" bind:subtitle="props.item.subtitle">
-      <button class="primary" if="props.item.availability === 'available' && props.item.kind === 'agent'" on:click="session">
+    <PageHeader :title="props.item.id" :subtitle="props.item.subtitle">
+      <button class="primary" #if="props.item.availability === 'available' && props.item.type === 'agent'" @click="session">
         New Session
       </button>
-      <button if="props.item.availability === 'available' && props.item.kind === 'agent'" on:click="work">
+      <button #if="props.item.availability === 'available' && props.item.type === 'agent'" @click="work">
         Run once
       </button>
-      <button class="primary" if="props.item.availability === 'available' && props.item.kind === 'workflow'" on:click="work">
+      <button class="primary" #if="props.item.availability === 'available' && props.item.type === 'workflow'" @click="work">
         Start Work
       </button>
     </PageHeader>
@@ -15,11 +15,11 @@
         <section class="panel">
           <div class="section-head">
             <h2>Overview</h2>
-            <Status bind:value="props.item.availability" />
+            <Status :value="props.item.availability" />
           </div>
           <div class="fact-list">
             <div class="fact">
-              <span class="label">Type</span><span>{{ props.item.kind }}</span>
+              <span class="label">Type</span><span>{{ props.item.type }}</span>
             </div>
             <div class="fact">
               <span class="label">Revision</span><span class="mono">{{ props.item.revision }}</span>
@@ -34,10 +34,10 @@
       <aside class="stack">
         <section class="panel">
           <h2>Contracts</h2>
-          <h3>{{ props.item.kind === 'tool' ? 'Input' : 'Objective' }}</h3>
-          <pre>{{ pretty(props.item.kind === 'tool' ? props.item.input : props.item.objective) }}</pre>
-          <h3>{{ props.item.kind === 'tool' ? 'Output' : 'Result' }}</h3>
-          <pre>{{ pretty(props.item.kind === 'tool' ? props.item.output : props.item.result) }}</pre>
+          <h3>{{ props.item.type === 'tool' ? 'Input' : 'Objective' }}</h3>
+          <pre>{{ pretty(props.item.type === 'tool' ? props.item.input : props.item.objective) }}</pre>
+          <h3>{{ props.item.type === 'tool' ? 'Output' : 'Result' }}</h3>
+          <pre>{{ pretty(props.item.type === 'tool' ? props.item.output : props.item.result) }}</pre>
         </section>
       </aside>
     </div>

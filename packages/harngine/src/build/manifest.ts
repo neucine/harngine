@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { RuntimeError } from '../internal/contracts.js';
-import { digest } from '../schema.js';
-import type { Json } from '../types.js';
+import { RuntimeError } from '../core/execution.js';
+import { digest } from '../support/schema.js';
+import type { Json } from '../core/types.js';
 
 interface RevisionManifest {
   readonly format: 1;

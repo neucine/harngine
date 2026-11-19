@@ -1,6 +1,6 @@
 <template><div>
-    <PageHeader bind:title="props.item.title" bind:subtitle="props.item.agent.id"><Status bind:value="props.item.status" />
-      <button if="props.item.status === 'open' && !active()" on:click="close">
+    <PageHeader :title="props.item.title" :subtitle="props.item.agent.id"><Status :value="props.item.status" />
+      <button #if="props.item.status === 'open' && !active()" @click="close">
         Close Session
       </button></PageHeader>
     <div class="split">
@@ -11,17 +11,17 @@
             <span class="muted">{{ props.item.recentMessages?.length || 0 }} messages</span>
           </div>
           <div class="message-list">
-            <div class="message" for="message in props.item.recentMessages || []" bind:class="'message ' + message.author">
+            <div class="message" #for="message in props.item.recentMessages || []" :class="'message ' + message.author">
               <div class="label">{{ message.author === 'human' ? 'You' : 'Agent' }}</div>
               <div>{{ display(message.content) }}</div>
-              <a bind:class="message.workId ? 'message-link' : 'hidden'" bind:href="message.workUrl">View Work →</a>
+              <a :class="message.workId ? 'message-link' : 'hidden'" :href="message.workUrl">View Work →</a>
             </div>
-            <div class="empty" if="!props.item.recentMessages?.length">
+            <div class="empty" #if="!props.item.recentMessages?.length">
               Send a prompt to begin this Session.
             </div>
           </div>
         </section>
-        <section class="panel composer" if="props.item.status === 'open'">
+        <section class="panel composer" #if="props.item.status === 'open'">
           <div class="section-head">
             <div>
               <h2>Message Agent</h2>
@@ -30,13 +30,13 @@
                 'A message starts new durable Work.' }}
               </div>
             </div>
-            <span if="active()"><Status bind:value="props.item.foregroundWork.status" /></span>
+            <span #if="active()"><Status :value="props.item.foregroundWork.status" /></span>
           </div>
-          <textarea aria-label="Message Agent" placeholder="Ask the Agent to investigate, compare, or act…" bind:value="draft" on:input="input" on:keydown="keydown"></textarea>
+          <textarea aria-label="Message Agent" placeholder="Ask the Agent to investigate, compare, or act…" :value="draft" @input="input" @keydown="keydown"></textarea>
           <div class="actions">
-            <button class="primary" on:click="queue">
+            <button class="primary" @click="queue">
               {{ active() ? 'Queue message' : 'Send message' }}
-            </button><button if="active()" on:click="steer">Steer current Work</button>
+            </button><button #if="active()" @click="steer">Steer current Work</button>
           </div>
         </section>
       </div>
@@ -53,23 +53,23 @@
             <div class="fact">
               <span class="label">Created</span><span>{{ time(props.item.createdAt) }}</span>
             </div>
-            <div class="fact" if="props.item.queuedWorkIds?.length">
+            <div class="fact" #if="props.item.queuedWorkIds?.length">
               <span class="label">Queued Work</span><span>{{ props.item.queuedWorkIds.length }}</span>
             </div>
           </div>
         </section>
-        <section class="panel" if="props.item.foregroundWork">
+        <section class="panel" #if="props.item.foregroundWork">
           <div class="section-head">
             <h2>Current Work</h2>
-            <Status bind:value="props.item.foregroundWork.status" />
+            <Status :value="props.item.foregroundWork.status" />
           </div>
           <div class="value mono">{{ props.item.foregroundWork.id }}</div>
           <div class="muted">{{ props.item.foregroundWork.definition.id }}</div>
           <p>
-            <a class="message-link" bind:href="'/work/' + encodeURIComponent(props.item.foregroundWork.id)">Open execution →</a>
+            <a class="message-link" :href="'/work/' + encodeURIComponent(props.item.foregroundWork.id)">Open execution →</a>
           </p>
         </section>
-        <section class="panel" if="!props.item.foregroundWork">
+        <section class="panel" #if="!props.item.foregroundWork">
           <div class="section-head">
             <h2>Current Work</h2>
             <span class="pill">Idle</span>
@@ -78,13 +78,13 @@
         </section>
       </aside>
     </div>
-    <InteractionList bind:work="props.item.foregroundWork" on:respond="respond" on:question="question" />
+    <InteractionList :work="props.item.foregroundWork" @respond="respond" @question="question" />
   </div></template>
 <script lang="ts">
 import PageHeader from '../components/PageHeader.weiv';
 import Status from '../components/Status.weiv';
 import InteractionList from '../components/InteractionList.weiv';
-import { display, short, terminal, time } from '../api.ts';
+import { display, isTerminal, short, time } from '../api.ts';
 export interface Props {
   item: any;
 }
@@ -94,7 +94,7 @@ function input(event: Event) {
   draft = (event.target as HTMLTextAreaElement).value;
 }
 function active() {
-  return props.item.foregroundWork && !terminal.has(props.item.foregroundWork.status);
+  return props.item.foregroundWork && !isTerminal(props.item.foregroundWork.status);
 }
 function send(delivery: string) {
   if (!draft.trim()) return;

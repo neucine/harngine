@@ -10,8 +10,8 @@ import {
   requestId,
   type Receipt,
   type Outcome,
-} from '../src/internal/index.js';
-import { Runtime, type Checkpoint } from '../src/internal/runtime.js';
+} from '../src/engine/index.js';
+import { Runtime, type Checkpoint } from '../src/engine/runtime.js';
 const dirs: string[] = [];
 const runtimes: Runtime[] = [];
 afterEach(async () => {

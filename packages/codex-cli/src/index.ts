@@ -10,7 +10,7 @@ import {
   normalizeModelEnvelope,
 } from 'harngine';
 import type { Json, ModelAdapter, ModelResponse, ModelProgress } from 'harngine';
-import type { Outcome } from 'harngine/internal';
+import type { Outcome } from 'harngine/engine';
 
 export interface CodexCliOptions {
   command?: string;

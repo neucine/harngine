@@ -60,7 +60,7 @@ export function createHarngineHttpServer(options: HttpAdapterOptions): Server {
           response,
           200,
           await options.app.definitions.list({
-            kind: 'agent',
+            type: 'agent',
             availability: 'available',
             limit: 100,
           }),
@@ -105,8 +105,8 @@ export function createHarngineHttpServer(options: HttpAdapterOptions): Server {
           await scope.sessions
             .create({
               agent: {
-                object: 'agent',
-                kind: 'agent',
+                object: 'definition',
+                type: 'agent',
                 id: string(agent.id),
                 revision: revision(agent.revision),
               },

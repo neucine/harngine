@@ -1,4 +1,4 @@
-import { schema, workflow, tool } from '../dist/internal/index.js';
+import { schema, workflow, tool } from '../dist/engine/index.js';
 export function fixture(invoke = async ({ input }) => ({ status: 'success', value: input + 1 })) {
   const number = schema({ id: 'number', version: '1', jsonSchema: { type: 'integer' } });
   const cap = tool({

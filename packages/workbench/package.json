@@ -27,7 +27,7 @@
     "harngine": "0.1.0"
   },
   "devDependencies": {
-    "weivjs": "0.1.0"
+    "weivjs": "0.1.3"
   },
   "scripts": {
     "build:ui": "bun build-ui.mjs"

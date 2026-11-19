@@ -12,7 +12,7 @@
   "compilerOptions": {
     "paths": {
       "harngine": ["./packages/harngine/src/index.ts"],
-      "harngine/internal": ["./packages/harngine/src/internal/index.ts"],
+      "harngine/engine": ["./packages/harngine/src/engine/index.ts"],
       "@harngine/http": ["./packages/http/src/index.ts"],
       "@harngine/codex-cli": ["./packages/codex-cli/src/index.ts"],
       "@harngine/openai-responses": ["./packages/openai-responses/src/index.ts"],

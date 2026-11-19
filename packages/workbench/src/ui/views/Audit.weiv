@@ -1,8 +1,8 @@
 <template><div>
-    <PageHeader bind:title="'Audit'" bind:subtitle="'Payload-safe operational evidence across Work, policy, Attempts, Interactions, and Sessions.'"><label class="pill">Category
-        <select bind:value="props.category" on:change="categoryChange">
+    <PageHeader :title="'Audit'" :subtitle="'Payload-safe operational evidence across Work, policy, Attempts, Interactions, and Sessions.'"><label class="pill">Category
+        <select :value="props.category" @change="categoryChange">
           <option value="">All</option>
-          <option for="option in categories" bind:value="option">{{ option }}</option>
+          <option #for="option in categories" :value="option">{{ option }}</option>
         </select></label></PageHeader>
     <section class="panel">
       <div class="section-head">
@@ -12,7 +12,7 @@
         </div>
       </div>
       <div class="timeline">
-        <div class="entry" for="entry in props.entries">
+        <div class="entry" #for="entry in props.entries">
           <div class="toolbar">
             <b>{{ entry.action }}</b><span class="pill">{{ entry.category }}</span>
           </div>
@@ -28,8 +28,8 @@
             <pre>{{ pretty(entry) }}</pre>
           </details>
         </div>
-        <div class="muted" if="!props.entries.length">No audit entries match this filter.</div>
-        <button if="props.next" on:click="more">Load more</button>
+        <div class="muted" #if="!props.entries.length">No audit entries match this filter.</div>
+        <button #if="props.next" @click="more">Load more</button>
       </div>
     </section>
   </div></template>

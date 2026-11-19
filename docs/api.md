@@ -88,7 +88,7 @@ create a Session.
 curl -X POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"agent":{"object":"agent","kind":"agent","id":"example.assistant","revision":"rev_example"}}' \
+  -d '{"agent":{"object":"definition","type":"agent","id":"example.assistant","revision":"rev_example"}}' \
   http://127.0.0.1:3000/sessions
 ```
 

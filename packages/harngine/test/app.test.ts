@@ -370,12 +370,12 @@ test('cancel returns a typed result error and principal access stays scoped', as
 
 test('definitions expose exact revisions and exact references start Work', async () => {
   const app = open();
-  const page = await app.definitions.list({ kind: 'workflow' });
+  const page = await app.definitions.list({ type: 'workflow' });
   expect(page.next).toBeNull();
   expect(page.definitions).toEqual([
     expect.objectContaining({
-      object: 'workflow',
-      kind: 'workflow',
+      object: 'definition',
+      type: 'workflow',
       id: double.id,
       revision: double.revision,
       availability: 'available',
@@ -384,9 +384,15 @@ test('definitions expose exact revisions and exact references start Work', async
   ]);
 
   const selected = page.definitions[0]!;
-  if (selected.kind !== 'workflow') throw new Error('expected Workflow');
+  if (selected.type !== 'workflow') throw new Error('expected Workflow');
   const work = await app.start(selected, 9);
   expect(work.id).toMatch(/^work_[A-Za-z0-9_-]{16}$/);
+  expect((await work.snapshot()).definition).toEqual({
+    object: 'definition',
+    type: 'workflow',
+    id: double.id,
+    revision: double.revision,
+  });
   await expect(work.result()).resolves.toBe(18);
   await expect(app.definitions.get(selected)).resolves.toEqual(selected);
 });
@@ -410,7 +416,7 @@ test('principal-scoped Work discovery reconnects handles in stable creation orde
     id: local.id,
     objective: 2,
     status: 'completed',
-    definition: { kind: 'workflow', id: double.id, revision: double.revision },
+    definition: { type: 'workflow', id: double.id, revision: double.revision },
   });
   expect(localPage.works[0]!.createdAt).toBeLessThanOrEqual(localPage.works[0]!.updatedAt);
   await expect((await app.works.get(local.id)).result()).resolves.toBe(4);
@@ -428,13 +434,13 @@ test('persisted definitions and completed Work remain inspectable when code is u
   const restored = createApp({ directory: location });
   apps.push(restored);
   const description = await restored.definitions.get({
-    object: 'workflow',
-    kind: 'workflow',
+    object: 'definition',
+    type: 'workflow',
     id: double.id,
     revision: double.revision,
   });
   expect(description.availability).toBe('unavailable');
-  if (description.kind !== 'workflow') throw new Error('expected Workflow');
+  if (description.type !== 'workflow') throw new Error('expected Workflow');
   const reopened = await restored.works.get(work.id);
   await expect(reopened.snapshot()).resolves.toMatchObject({
     id: work.id,

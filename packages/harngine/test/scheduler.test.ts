@@ -1,6 +1,6 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { expect, test } from 'vitest';
-import { Scheduler } from '../src/internal/scheduler.js';
+import { Scheduler } from '../src/engine/scheduler.js';
 
 async function until(check: () => boolean): Promise<void> {
   for (let attempt = 0; attempt < 100; attempt++) {

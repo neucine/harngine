@@ -4,8 +4,8 @@ Harngine is an execution framework for agent applications. Applications define A
 and Tools; Harngine runs them as durable, inspectable Work. Model providers answer a turn;
 Harngine runs the application around those turns.
 
-The npm package is not published yet. The installation commands below apply after publication.
-For an install from a locally packed tarball and a process restart demonstration, use the
+Harngine 0.1.0 is published on npm and requires Node.js 24.21. For a process restart
+demonstration using the published package, see the
 [quickstart](../../examples/quickstart/README.md).
 
 ```bash

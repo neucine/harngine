@@ -12,9 +12,9 @@ import {
   type Json,
   type Receipt,
   type SessionReceipt,
-} from '../src/internal/index.js';
-import type { ModelContext as LegacyModelContext } from '../src/internal/contracts.js';
-import type { Runtime } from '../src/internal/runtime.js';
+} from '../src/engine/index.js';
+import type { ModelContext as LegacyModelContext } from '../src/core/execution.js';
+import type { Runtime } from '../src/engine/runtime.js';
 
 const dirs: string[] = [];
 const runtimes: Runtime[] = [];

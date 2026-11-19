@@ -16,10 +16,10 @@ import {
   type View,
   type WorkRef,
   type WorkId,
-} from '../src/internal/index.js';
-import { Runtime, type Checkpoint } from '../src/internal/runtime.js';
-import { migrations } from '../src/internal/migrations.js';
-import { canonical, digest } from '../src/schema.js';
+} from '../src/engine/index.js';
+import { Runtime, type Checkpoint } from '../src/engine/runtime.js';
+import { migrations } from '../src/storage/sqlite/migrations.js';
+import { canonical, digest } from '../src/support/schema.js';
 const dirs: string[] = [];
 const runtimes: Runtime[] = [];
 const children: ChildProcess[] = [];

@@ -1,14 +1,14 @@
 <template><div>
-    <PageHeader bind:title="'Work'" bind:subtitle="'Every durable execution, from accepted objective to result.'" />
-    <div class="grid" if="props.items.length">
-      <a class="card" for="item in props.items" bind:href="item.url"><div class="card-kind">{{ item.definition.kind }} Work</div>
+    <PageHeader :title="'Work'" :subtitle="'Every durable execution, from accepted objective to result.'" />
+    <div class="grid" #if="props.items.length">
+      <a class="card" #for="item in props.items" :href="item.url"><div class="card-kind">{{ item.definition.type }} Work</div>
         <h2>{{ typeof item.objective === 'string' ? item.objective : 'Structured objective' }}</h2>
         <div class="muted">{{ item.definition.id }}</div>
         <div class="meta">
-          <span bind:class="'pill ' + item.status">{{ item.status }}</span><span class="muted mono">{{ short(item.id) }}</span>
+          <span :class="'pill ' + item.status">{{ item.status }}</span><span class="muted mono">{{ short(item.id) }}</span>
         </div></a>
     </div>
-    <div class="empty" if="!props.items.length">
+    <div class="empty" #if="!props.items.length">
       <h2>No Work yet</h2>
       <p>Start an Agent or Workflow from Definitions.</p>
     </div>

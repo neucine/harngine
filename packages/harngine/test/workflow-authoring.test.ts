@@ -79,7 +79,7 @@ test('public definitions derive immutable revision identities', () => {
   expect(open(definition).describe(definition)).toMatchObject({
     id: 'revision-workflow',
     revision: definition.revision,
-    kind: 'workflow',
+    type: 'workflow',
     tools: [{ id: 'revision-tool', revision: first.revision }],
   });
 });
@@ -192,8 +192,8 @@ test('flow.child creates durable child Work and links its result back to the par
     'parent-delegation',
   ]);
   expect(app.describe(parent)).toMatchObject({
-    kind: 'workflow',
-    children: [{ kind: 'workflow', id: child.id, revision: child.revision }],
+    type: 'workflow',
+    children: [{ type: 'workflow', id: child.id, revision: child.revision }],
   });
   const childSummary = works.works.find((work) => work.definition.id === child.id)!;
   expect((await app.diagnostics.records(childSummary.id)).records).toEqual(
@@ -681,7 +681,7 @@ test('child Call authorization denial creates no child Work and records the exac
     access: {
       revision: 'deny-child-calls-v1',
       canStart: () => true,
-      canCall: ({ target }) => target.kind === 'tool',
+      canCall: ({ target }) => target.type === 'tool',
       canRespond: () => true,
     },
   });
@@ -871,7 +871,7 @@ test('a reconcilable Tool automatically reconstructs an unknown write result', a
     run: (objective, flow) => flow.call('write', recovered, objective),
   });
   const app = open(definition);
-  expect(app.describe(recovered)).toMatchObject({ kind: 'tool', reconcilable: true });
+  expect(app.describe(recovered)).toMatchObject({ type: 'tool', reconcilable: true });
   const work = await app.start(definition, 2);
 
   await expect(work.result()).resolves.toBe(12);

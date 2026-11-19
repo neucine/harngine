@@ -647,12 +647,12 @@ components:
           const: ok
     DefinitionReference:
       type: object
-      required: [object, kind, id, revision]
+      required: [object, type, id, revision]
       properties:
         object:
           type: string
-          enum: [agent, workflow, tool]
-        kind:
+          const: definition
+        type:
           type: string
           enum: [agent, workflow, tool]
         id:
@@ -665,32 +665,26 @@ components:
         - $ref: "#/components/schemas/DefinitionReference"
         - type: object
           properties:
-            object:
-              type: string
-              enum: [agent, workflow]
-            kind:
+            type:
               type: string
               enum: [agent, workflow]
     AgentReference:
       allOf:
         - $ref: "#/components/schemas/DefinitionReference"
         - type: object
-          required: [object, kind]
+          required: [object, type]
           properties:
-            object:
-              type: string
-              const: agent
-            kind:
+            type:
               type: string
               const: agent
     DefinitionDescription:
       type: object
-      required: [object, kind, id, revision, availability]
+      required: [object, type, id, revision, availability]
       properties:
         object:
           type: string
-          enum: [agent, workflow, tool]
-        kind:
+          const: definition
+        type:
           type: string
           enum: [agent, workflow, tool]
         id:
@@ -1149,7 +1143,7 @@ components:
           properties:
             id:
               type: string
-            kind:
+            type:
               type: string
               enum: [agent, workflow, tool]
             revision:

@@ -25,6 +25,7 @@ function files(directory) {
 }
 function fingerprint() {
   const hash = createHash('sha256');
+  hash.update(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).devDependencies.weivjs);
   for (const path of files(source).sort()) {
     hash.update(path.slice(source.length));
     hash.update(readFileSync(path));
@@ -42,7 +43,10 @@ function useCheckedInAssets() {
     'Weiv compiler is unavailable and checked-in Workbench assets do not match the UI source',
   );
 }
-const compiler = join(root, '../../node_modules/weivjs/bin/weiv.mjs');
+const workspaceCompiler = join(root, 'node_modules/weivjs/bin/weiv.mjs');
+const compiler = existsSync(workspaceCompiler)
+  ? workspaceCompiler
+  : join(root, '../../node_modules/weivjs/bin/weiv.mjs');
 if (!existsSync(compiler)) {
   useCheckedInAssets();
   process.exit(0);
@@ -62,13 +66,12 @@ if (result.status !== 0) {
   throw new Error(result.stdout + result.stderr);
 }
 const generated = readFileSync(join(output, 'styles.css'), 'utf8');
+const baseStyles = readFileSync(join(root, 'src/ui/styles.css'), 'utf8').trimEnd();
 writeFileSync(
   join(output, 'styles.css'),
-  readFileSync(join(root, 'src/ui/styles.css'), 'utf8').trimEnd() +
-    '\n' +
-    generated.trimEnd() +
-    '\n',
+  baseStyles + (generated.trim() ? '\n' + generated.trimEnd() : '') + '\n',
 );
 copyFileSync(join(root, 'src/ui/index.html'), join(output, 'index.html'));
 writeFileSync(fingerprintFile, fingerprint() + '\n');
-for (const file of ['server.ts', 'package.json']) rmSync(join(output, file), { force: true });
+for (const file of ['server.ts', 'package.json', 'api.js'])
+  rmSync(join(output, file), { force: true });

@@ -204,7 +204,7 @@ test('Codex output contract binds each tool name to its own required input', asy
       tools: [
         {
           id: 'read',
-          kind: 'tool',
+          type: 'tool',
           description: 'Read',
           inputSchema: {
             type: 'object',
@@ -215,7 +215,7 @@ test('Codex output contract binds each tool name to its own required input', asy
         },
         {
           id: 'edit',
-          kind: 'tool',
+          type: 'tool',
           description: 'Edit',
           inputSchema: {
             type: 'object',

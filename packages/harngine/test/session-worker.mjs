@@ -1,4 +1,4 @@
-import { Runtime, requestId } from '../dist/internal/index.js';
+import { Runtime, requestId } from '../dist/engine/index.js';
 const [directory, action] = process.argv.slice(2);
 let armed = action === 'create';
 let ref;

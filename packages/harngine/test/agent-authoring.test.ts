@@ -177,7 +177,7 @@ test('Agent delegates only explicitly exposed CallTargets and receives child Clo
     'evidence for Collect the evidence',
   );
   expect(parentRequests[0]!.tools).toEqual([
-    expect.objectContaining({ id: 'specialist.researcher', kind: 'agent' }),
+    expect.objectContaining({ id: 'specialist.researcher', type: 'agent' }),
   ]);
   expect(parentRequests[0]!.tools.some((item) => item.id === registeredOnly.id)).toBe(false);
   expect((await app.works.list()).works).toHaveLength(2);
@@ -215,8 +215,8 @@ test('concurrent Agent delegate lets the parent complete a Tool step before join
       if (parentTurns === 1) {
         expect(request.tools).toEqual(
           expect.arrayContaining([
-            expect.objectContaining({ id: child.id, kind: 'workflow' }),
-            expect.objectContaining({ id: 'record', kind: 'tool' }),
+            expect.objectContaining({ id: child.id, type: 'workflow' }),
+            expect.objectContaining({ id: 'record', type: 'tool' }),
           ]),
         );
         return {
@@ -323,7 +323,7 @@ test('concurrent Agent delegate lets the parent complete a Tool step before join
   expect(childEntry).toMatchObject({
     callId: expect.stringMatching(/^call_/),
     mode: 'concurrent',
-    definition: { kind: 'workflow', id: child.id },
+    definition: { type: 'workflow', id: child.id },
   });
 });
 
@@ -581,7 +581,7 @@ test('Session projections pin the Agent revision and creation is retry-safe', as
   const app = createApp({ directory: directory(), agents: [assistant] });
   apps.push(app);
   const description = app.describe(assistant);
-  if (description.kind !== 'agent') throw new Error('expected Agent');
+  if (description.type !== 'agent') throw new Error('expected Agent');
 
   const first = await app.sessions.create({
     agent: description,
@@ -597,13 +597,13 @@ test('Session projections pin the Agent revision and creation is retry-safe', as
   const snapshot = await first.snapshot();
   expect(snapshot).toMatchObject({
     id: first.id,
-    agent: { kind: 'agent', id: assistant.id, revision: assistant.revision },
+    agent: { type: 'agent', id: assistant.id, revision: assistant.revision },
     foregroundWorkId: null,
   });
   expect(snapshot.createdAt).toBeLessThanOrEqual(snapshot.updatedAt);
   expect((await app.sessions.list()).sessions[0]).toMatchObject({
     id: first.id,
-    agent: { kind: 'agent', id: assistant.id, revision: assistant.revision },
+    agent: { type: 'agent', id: assistant.id, revision: assistant.revision },
   });
 });
 

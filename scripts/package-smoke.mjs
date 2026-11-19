@@ -18,7 +18,7 @@ try {
   );
   const files = execFileSync('tar', ['-tzf', tarball], { encoding: 'utf8' });
   assert(files.includes('package/dist/index.js'));
-  assert(files.includes('package/dist/internal/index.js'));
+  assert(files.includes('package/dist/engine/index.js'));
   assert(files.includes('package/LICENSE'));
   assert(!files.includes('/src/') && !files.includes('/test/') && !files.includes('ARCHITECTURE'));
   execFileSync('bun', ['pm', 'pack', '--destination', temp], {

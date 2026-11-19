@@ -9,9 +9,9 @@ import {
   type Outcome,
   type Policy,
   type WorkId,
-} from '../src/internal/contracts.js';
-import { OperationStore } from '../src/internal/operation-store.js';
-import { SqliteStore } from '../src/internal/store.js';
+} from '../src/core/execution.js';
+import { OperationStore } from '../src/storage/sqlite/operation.js';
+import { SqliteStore } from '../src/storage/sqlite/store.js';
 
 const stores: SqliteStore[] = [];
 const directories: string[] = [];

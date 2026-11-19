@@ -15,8 +15,8 @@ import {
   type Receipt,
   type Outcome,
   type Proposal,
-} from '../src/internal/index.js';
-import type { Runtime } from '../src/internal/runtime.js';
+} from '../src/engine/index.js';
+import type { Runtime } from '../src/engine/runtime.js';
 const directories: string[] = [];
 const runtimes: Runtime[] = [];
 const processes: ChildProcess[] = [];

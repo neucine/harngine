@@ -1,4 +1,4 @@
-import { Runtime, requestId } from '../dist/internal/index.js';
+import { Runtime, requestId } from '../dist/engine/index.js';
 import { fixture } from './fixture.mjs';
 const [directory, kind] = process.argv.slice(2);
 let request, ref, api;

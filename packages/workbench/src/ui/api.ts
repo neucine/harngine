@@ -55,7 +55,21 @@ export function watch(
   return source;
 }
 
-export const terminal = new Set(['completed', 'failed', 'canceled']);
+export function createWatchHandle() {
+  let current: EventSource | null = null;
+  return (next?: EventSource): EventSource | null => {
+    if (next) current = next;
+    else {
+      current?.close();
+      current = null;
+    }
+    return current;
+  };
+}
+
+export function isTerminal(status: string): boolean {
+  return status === 'completed' || status === 'failed' || status === 'canceled';
+}
 export const pretty = (value: any) => JSON.stringify(value, null, 2);
 export const short = (value: string) =>
   value?.length > 30 ? value.slice(0, 14) + '…' + value.slice(-6) : value;

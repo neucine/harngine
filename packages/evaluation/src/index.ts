@@ -56,7 +56,7 @@ export interface WorkTreeEvidence {
 
 export interface CallMetric {
   readonly callId: string;
-  readonly tool: DefinitionReference & { readonly kind: 'tool' };
+  readonly tool: DefinitionReference & { readonly type: 'tool' };
   readonly phase: CallInspectionEntry['phase'];
   readonly attemptCount: number;
 }
@@ -64,7 +64,7 @@ export interface CallMetric {
 export interface ChildMetric {
   readonly callId: string;
   readonly childWorkId: WorkId;
-  readonly definition: DefinitionReference & { readonly kind: 'agent' | 'workflow' };
+  readonly definition: DefinitionReference & { readonly type: 'agent' | 'workflow' };
   readonly mode: 'sequential' | 'concurrent';
   readonly phase: 'started' | 'joined' | 'closed';
   readonly phases: readonly ('started' | 'joined' | 'closed')[];
@@ -79,7 +79,7 @@ export interface InteractionMetric {
 
 export interface WorkEvidenceMetrics {
   readonly workId: WorkId;
-  readonly definition: DefinitionReference & { readonly kind: 'agent' | 'workflow' };
+  readonly definition: DefinitionReference & { readonly type: 'agent' | 'workflow' };
   readonly status: WorkStatus;
   readonly recordedDurationMs: number | null;
   readonly inputs: Readonly<Record<string, number>>;

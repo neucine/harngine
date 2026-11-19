@@ -1,3 +1,8 @@
+import { isObservable as __weiv_isObservable, createCell as __weiv_createCell, createCellScope as __weiv_createCellScope, unbindCellValue as __weiv_unbindCellValue, normalizeCellValue as __weiv_normalizeCellValue, cellAssignmentTarget as __weiv_cellAssignmentTarget, bindingObject as __weiv_bindingObject, bindingIterator as __weiv_bindingIterator, initializeClassName as __weiv_initializeClassName } from "./__weiv_runtime/cell.js";
+import { moduleState as __weiv_publisher_0 } from "./__weiv_modules/8f9bcec8c215c7a6.publisher.mjs";
+import { moduleState as __weiv_publisher_1 } from "./__weiv_modules/8f9bcec8c215c7a6.publisher.mjs";
+import { moduleState as __weiv_publisher_2 } from "./__weiv_modules/8f9bcec8c215c7a6.publisher.mjs";
+import { moduleState as __weiv_publisher_3 } from "./__weiv_modules/8f9bcec8c215c7a6.publisher.mjs";
 import * as Sidebar from "./components/Sidebar.mjs";
 import * as InputDialog from "./components/InputDialog.mjs";
 import * as Definitions from "./views/Definitions.mjs";
@@ -7,11 +12,12 @@ import * as Session from "./views/Session.mjs";
 import * as Works from "./views/Works.mjs";
 import * as Work from "./views/Work.mjs";
 import * as Audit from "./views/Audit.mjs";
-import { api as __weiv_import_api } from "./api.js";
-import { pretty as __weiv_import_pretty } from "./api.js";
-import { short as __weiv_import_short } from "./api.js";
-import { terminal as __weiv_import_terminal } from "./api.js";
-import { watch as __weiv_import_watch } from "./api.js";
+import { api as __weiv_import_api } from "./__weiv_modules/8f9bcec8c215c7a6.mjs";
+import { createWatchHandle as __weiv_import_createWatchHandle } from "./__weiv_modules/8f9bcec8c215c7a6.mjs";
+import { isTerminal as __weiv_import_isTerminal } from "./__weiv_modules/8f9bcec8c215c7a6.mjs";
+import { pretty as __weiv_import_pretty } from "./__weiv_modules/8f9bcec8c215c7a6.mjs";
+import { short as __weiv_import_short } from "./__weiv_modules/8f9bcec8c215c7a6.mjs";
+import { watch as __weiv_import_watch } from "./__weiv_modules/8f9bcec8c215c7a6.mjs";
 
 function replaceBetween(start, end, content) {
   const parent = start.parentNode;
@@ -44,252 +50,24 @@ function moveBoundaryBefore(start, end, reference) {
   }
 }
 
-function cloneScope(scope) {
-  const snapshot = {};
-  for (const key of Object.keys(scope)) {
-    snapshot[key] = scope[key];
-  }
-  return snapshot;
-}
-
-function hasScopeChanged(beforeScope, afterScope) {
-  const beforeKeys = Object.keys(beforeScope);
-  const afterKeys = Object.keys(afterScope);
-  if (beforeKeys.length !== afterKeys.length) {
-    return true;
-  }
-  for (const key of afterKeys) {
-    if (!Object.prototype.hasOwnProperty.call(beforeScope, key)) {
-      return true;
-    }
-    if (!Object.is(beforeScope[key], afterScope[key])) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function collectDirtyBindings(beforeScope, afterScope) {
-  const dirty = [];
-  const seen = new Set();
-  for (const key of Object.keys(beforeScope)) {
-    seen.add(key);
-    if (!Object.prototype.hasOwnProperty.call(afterScope, key) || !Object.is(beforeScope[key], afterScope[key])) {
-      dirty.push(key);
-    }
-  }
-  for (const key of Object.keys(afterScope)) {
-    if (seen.has(key)) {
-      continue;
-    }
-    if (!Object.prototype.hasOwnProperty.call(beforeScope, key)) {
-      dirty.push(key);
-    }
-  }
-  return dirty;
-}
-
 function normalizeDirtyState(dirtyState) {
   if (Array.isArray(dirtyState)) {
-    return { bindings: dirtyState, paths: [] };
+    return { bindings: dirtyState, paths: [], preciseBindings: [] };
   }
   if (!dirtyState || typeof dirtyState !== "object") {
-    return { bindings: [], paths: [] };
+    return { bindings: [], paths: [], preciseBindings: [] };
   }
   return {
     bindings: Array.isArray(dirtyState.bindings) ? dirtyState.bindings : [],
     paths: Array.isArray(dirtyState.paths) ? dirtyState.paths : [],
+    preciseBindings: Array.isArray(dirtyState.preciseBindings) ? dirtyState.preciseBindings : [],
   };
 }
-
-const __weiv_observableBrand = Symbol.for("weiv.observable");
-
-function __weiv_getObservableNode(value) {
-  if (!value || (typeof value !== "object" && typeof value !== "function")) {
-    return null;
-  }
-  const node = Reflect.get(value, __weiv_observableBrand);
-  if (!node || typeof node !== "object") {
-    return null;
-  }
-  return node;
-}
-
-function __weiv_isObservable(value) {
-  return __weiv_getObservableNode(value) !== null;
-}
-
-const __weiv_trackedRootCache = new Map();
-const __weiv_trackedSubscribers = new Set();
-const __weiv_pendingTrackedPathIds = new Set();
-let __weiv_trackedFlushScheduled = false;
-
-function __weiv_findTrackedRootPlan(bindingName) {
-  if (!trackedStateGraph || !Array.isArray(trackedStateGraph.roots)) {
-    return null;
-  }
-  for (const root of trackedStateGraph.roots) {
-    if (root && root.bindingName === bindingName) {
-      return root;
-    }
-  }
-  return null;
-}
-
-function __weiv_markTrackedPathsForWrite(rootId, fullPath) {
-  if (!trackedStateGraph || !Array.isArray(trackedStateGraph.paths)) {
-    return;
-  }
-  for (const pathRecord of trackedStateGraph.paths) {
-    if (!pathRecord || pathRecord.rootId !== rootId || typeof pathRecord.path !== "string") continue;
-    if (pathRecord.path === fullPath || pathRecord.path.startsWith(`${fullPath}.`)) {
-      __weiv_pendingTrackedPathIds.add(pathRecord.pathId);
-    }
-  }
-}
-
-function __weiv_scheduleTrackedFlush() {
-  if (__weiv_trackedFlushScheduled) {
-    return;
-  }
-  __weiv_trackedFlushScheduled = true;
-  globalThis.queueMicrotask(() => {
-    __weiv_trackedFlushScheduled = false;
-    const dirtyPaths = Array.from(__weiv_pendingTrackedPathIds);
-    __weiv_pendingTrackedPathIds.clear();
-    if (dirtyPaths.length === 0) {
-      return;
-    }
-    for (const instance of Array.from(__weiv_trackedSubscribers)) {
-      if (!instance || instance.destroyed) {
-        __weiv_trackedSubscribers.delete(instance);
-        continue;
-      }
-      if (typeof instance.updateDirty === "function") {
-        const scope = instance.refresh();
-        instance.updateDirty({ bindings: [], paths: dirtyPaths }, scope);
-      } else if (typeof instance.update === "function") {
-        instance.update();
-      }
-    }
-  });
-}
-
-function __weiv_wrapTrackedValue(rootId, currentPath, value) {
-  if (!value || (typeof value !== "object" && typeof value !== "function")) {
-    return value;
-  }
-  const proxy = new Proxy(value, {
-    get(target, prop, receiver) {
-      const result = Reflect.get(target, prop, receiver);
-      if (typeof prop !== "string") {
-        return result;
-      }
-      const nextPath = currentPath ? `${currentPath}.${prop}` : prop;
-      return __weiv_wrapTrackedValue(rootId, nextPath, result);
-    },
-    set(target, prop, nextValue, receiver) {
-      const updated = Reflect.set(target, prop, nextValue, receiver);
-      if (updated && typeof prop === "string") {
-        const nextPath = currentPath ? `${currentPath}.${prop}` : prop;
-        __weiv_markTrackedPathsForWrite(rootId, nextPath);
-        __weiv_scheduleTrackedFlush();
-      }
-      return updated;
-    },
-    deleteProperty(target, prop) {
-      const updated = Reflect.deleteProperty(target, prop);
-      if (updated && typeof prop === "string") {
-        const nextPath = currentPath ? `${currentPath}.${prop}` : prop;
-        __weiv_markTrackedPathsForWrite(rootId, nextPath);
-        __weiv_scheduleTrackedFlush();
-      }
-      return updated;
-    },
-  });
-  return proxy;
-}
-
-function __weiv_getTrackedRoot(bindingName, value) {
-  if (__weiv_isObservable(value)) {
-    return value;
-  }
-  const rootPlan = __weiv_findTrackedRootPlan(bindingName);
-  if (!rootPlan) {
-    return value;
-  }
-  const cachedEntry = __weiv_trackedRootCache.get(rootPlan.rootId);
-  if (cachedEntry && Object.is(cachedEntry.value, value)) {
-    return cachedEntry.proxy;
-  }
-  const trackedValue = __weiv_wrapTrackedValue(rootPlan.rootId, bindingName, value);
-  __weiv_trackedRootCache.set(rootPlan.rootId, { value, proxy: trackedValue });
-  return trackedValue;
-}
-
-function collectTrackedDirtyPaths() {
-  if (__weiv_pendingTrackedPathIds.size === 0) {
-    return [];
-  }
-  const dirtyPaths = Array.from(__weiv_pendingTrackedPathIds);
-  __weiv_pendingTrackedPathIds.clear();
-  return dirtyPaths;
-}
-
-function __weiv_hasTrackedRoots() {
-  return trackedStateGraph && Array.isArray(trackedStateGraph.roots) && trackedStateGraph.roots.length > 0;
-}
-
-function __weiv_registerTrackedSubscriber(instance) {
-  if (__weiv_hasTrackedRoots()) {
-    __weiv_trackedSubscribers.add(instance);
-  }
-}
-
-function __weiv_unregisterTrackedSubscriber(instance) {
-  __weiv_trackedSubscribers.delete(instance);
-}
-
-function flushOwnedBoundary(instance, beforeScope) {
-  if (instance.destroyed) {
-    return beforeScope;
-  }
-  const afterScope = instance.refresh();
-  const dirtyBindings = collectDirtyBindings(beforeScope, afterScope);
-  const dirtyPaths = collectTrackedDirtyPaths();
-  if (dirtyBindings.length > 0 || dirtyPaths.length > 0) {
-    if (typeof instance.updateDirty === "function") {
-      instance.updateDirty({ bindings: dirtyBindings, paths: dirtyPaths }, afterScope);
-    } else {
-      instance.update();
-    }
-    return cloneScope(instance.refresh());
-  }
-  return cloneScope(afterScope);
-}
-
-function runOwnedBoundary(instance, callback) {
-  let beforeScope = cloneScope(instance.refresh());
-  let result;
-  try {
-    result = callback();
-  } catch (error) {
-    flushOwnedBoundary(instance, beforeScope);
-    throw error;
-  }
-  beforeScope = flushOwnedBoundary(instance, beforeScope);
-  if (result && typeof result.then === "function") {
-    return result.finally(() => {
-      flushOwnedBoundary(instance, beforeScope);
-    });
-  }
-  return result;
-}
-function createConditionalFragment_3(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_3(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[3].parentNode?.localName === "foreignObject" ? undefined : refs[3].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_7 = document.createElement("div");
+    const __ref_7 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[7] = __ref_7;
     __ref_7.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     __ref_7.setAttribute("class", "error");
@@ -303,21 +81,19 @@ function createConditionalFragment_3(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_3(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_3(instance, refs, wasConsequent) {
   if (wasConsequent) {
   } else {
   }
 }
 
-function updateConditional_3(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(scope.error);
+function updateConditional_3(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[3](__weiv_context))(scope));
   if (refs[5] !== next) {
     const previous = refs[5];
-    destroyConditionalBranch_3(instance, previous === true);
+    destroyConditionalBranch_3(instance, refs, previous === true);
     refs[5] = next;
-    replaceBetween(refs[3], refs[4], createConditionalFragment_3(instance, scope, next));
+    replaceBetween(refs[3], refs[4], createConditionalFragment_3(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_text_6(instance, scope, refs);
@@ -325,11 +101,11 @@ function updateConditional_3(instance, scope) {
   }
 }
 
-function createConditionalFragment_8(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_8(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[8].parentNode?.localName === "foreignObject" ? undefined : refs[8].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_11 = document.createElement("div");
+    const __ref_11 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[11] = __ref_11;
     __ref_11.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     __ref_11.setAttribute("class", "empty");
@@ -340,32 +116,30 @@ function createConditionalFragment_8(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_8(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_8(instance, refs, wasConsequent) {
   if (wasConsequent) {
   } else {
   }
 }
 
-function updateConditional_8(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(scope.loading);
+function updateConditional_8(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[5](__weiv_context))(scope));
   if (refs[10] !== next) {
     const previous = refs[10];
-    destroyConditionalBranch_8(instance, previous === true);
+    destroyConditionalBranch_8(instance, refs, previous === true);
     refs[10] = next;
-    replaceBetween(refs[8], refs[9], createConditionalFragment_8(instance, scope, next));
+    replaceBetween(refs[8], refs[9], createConditionalFragment_8(instance, scope, refs, next));
   }
   if (next) {
   } else {
   }
 }
 
-function createConditionalFragment_12(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_12(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[12].parentNode?.localName === "foreignObject" ? undefined : refs[12].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_18 = document.createElement("div");
+    const __ref_18 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[18] = __ref_18;
     __ref_18.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     const __ref_15 = document.createComment("component:start");
@@ -374,8 +148,8 @@ function createConditionalFragment_12(instance, scope, isConsequent) {
     refs[16] = __ref_16;
     __ref_18.append(__ref_15);
     __ref_18.append(__ref_16);
-    const __props_17 = {"items": scope.data, "history": scope.showHistory};
-    const __handlers_17 = {"toggle-history": (payload) => { const resolved = scope.toggleHistory; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }};
+    const __props_17 = {"items": ((__weiv_context) => __weiv_context.__weiv_eval[7](__weiv_context))(scope), "history": ((__weiv_context) => __weiv_context.__weiv_eval[8](__weiv_context))(scope)};
+    const __handlers_17 = {"toggle-history": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[9](__weiv_context, payload))(scope); return resolved; }};
     refs[17] = Definitions.mountIntoBoundary(__ref_15, __ref_16, __props_17, __handlers_17, undefined);
     fragment.append(__ref_18);
   } else {
@@ -383,24 +157,23 @@ function createConditionalFragment_12(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_12(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_12(instance, refs, wasConsequent) {
   if (wasConsequent) {
     if (refs[17] && typeof refs[17].destroy === "function") {
       refs[17].destroy();
     }
+    refs[17] = undefined;
   } else {
   }
 }
 
-function updateConditional_12(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(!scope.loading && scope.view === 'definitions');
+function updateConditional_12(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[6](__weiv_context))(scope));
   if (refs[14] !== next) {
     const previous = refs[14];
-    destroyConditionalBranch_12(instance, previous === true);
+    destroyConditionalBranch_12(instance, refs, previous === true);
     refs[14] = next;
-    replaceBetween(refs[12], refs[13], createConditionalFragment_12(instance, scope, next));
+    replaceBetween(refs[12], refs[13], createConditionalFragment_12(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_child_17(instance, scope, refs);
@@ -408,11 +181,11 @@ function updateConditional_12(instance, scope) {
   }
 }
 
-function createConditionalFragment_19(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_19(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[19].parentNode?.localName === "foreignObject" ? undefined : refs[19].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_25 = document.createElement("div");
+    const __ref_25 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[25] = __ref_25;
     __ref_25.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     const __ref_22 = document.createComment("component:start");
@@ -421,8 +194,8 @@ function createConditionalFragment_19(instance, scope, isConsequent) {
     refs[23] = __ref_23;
     __ref_25.append(__ref_22);
     __ref_25.append(__ref_23);
-    const __props_24 = {"item": scope.data};
-    const __handlers_24 = {"new-session": (payload) => { const resolved = scope.newSession; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "start-work": (payload) => { const resolved = scope.startWork; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }};
+    const __props_24 = {"item": ((__weiv_context) => __weiv_context.__weiv_eval[11](__weiv_context))(scope)};
+    const __handlers_24 = {"new-session": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[12](__weiv_context, payload))(scope); return resolved; }, "start-work": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[13](__weiv_context, payload))(scope); return resolved; }};
     refs[24] = Definition.mountIntoBoundary(__ref_22, __ref_23, __props_24, __handlers_24, undefined);
     fragment.append(__ref_25);
   } else {
@@ -430,24 +203,23 @@ function createConditionalFragment_19(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_19(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_19(instance, refs, wasConsequent) {
   if (wasConsequent) {
     if (refs[24] && typeof refs[24].destroy === "function") {
       refs[24].destroy();
     }
+    refs[24] = undefined;
   } else {
   }
 }
 
-function updateConditional_19(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(!scope.loading && scope.view === 'definition');
+function updateConditional_19(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[10](__weiv_context))(scope));
   if (refs[21] !== next) {
     const previous = refs[21];
-    destroyConditionalBranch_19(instance, previous === true);
+    destroyConditionalBranch_19(instance, refs, previous === true);
     refs[21] = next;
-    replaceBetween(refs[19], refs[20], createConditionalFragment_19(instance, scope, next));
+    replaceBetween(refs[19], refs[20], createConditionalFragment_19(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_child_24(instance, scope, refs);
@@ -455,11 +227,11 @@ function updateConditional_19(instance, scope) {
   }
 }
 
-function createConditionalFragment_26(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_26(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[26].parentNode?.localName === "foreignObject" ? undefined : refs[26].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_32 = document.createElement("div");
+    const __ref_32 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[32] = __ref_32;
     __ref_32.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     const __ref_29 = document.createComment("component:start");
@@ -468,7 +240,7 @@ function createConditionalFragment_26(instance, scope, isConsequent) {
     refs[30] = __ref_30;
     __ref_32.append(__ref_29);
     __ref_32.append(__ref_30);
-    const __props_31 = {"items": scope.data};
+    const __props_31 = {"items": ((__weiv_context) => __weiv_context.__weiv_eval[15](__weiv_context))(scope)};
     refs[31] = Sessions.mountIntoBoundary(__ref_29, __ref_30, __props_31, undefined, undefined);
     fragment.append(__ref_32);
   } else {
@@ -476,24 +248,23 @@ function createConditionalFragment_26(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_26(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_26(instance, refs, wasConsequent) {
   if (wasConsequent) {
     if (refs[31] && typeof refs[31].destroy === "function") {
       refs[31].destroy();
     }
+    refs[31] = undefined;
   } else {
   }
 }
 
-function updateConditional_26(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(!scope.loading && scope.view === 'sessions');
+function updateConditional_26(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[14](__weiv_context))(scope));
   if (refs[28] !== next) {
     const previous = refs[28];
-    destroyConditionalBranch_26(instance, previous === true);
+    destroyConditionalBranch_26(instance, refs, previous === true);
     refs[28] = next;
-    replaceBetween(refs[26], refs[27], createConditionalFragment_26(instance, scope, next));
+    replaceBetween(refs[26], refs[27], createConditionalFragment_26(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_child_31(instance, scope, refs);
@@ -501,11 +272,11 @@ function updateConditional_26(instance, scope) {
   }
 }
 
-function createConditionalFragment_33(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_33(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[33].parentNode?.localName === "foreignObject" ? undefined : refs[33].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_39 = document.createElement("div");
+    const __ref_39 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[39] = __ref_39;
     __ref_39.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     const __ref_36 = document.createComment("component:start");
@@ -514,8 +285,8 @@ function createConditionalFragment_33(instance, scope, isConsequent) {
     refs[37] = __ref_37;
     __ref_39.append(__ref_36);
     __ref_39.append(__ref_37);
-    const __props_38 = {"item": scope.data};
-    const __handlers_38 = {"send": (payload) => { const resolved = scope.sendMessage; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "close": (payload) => { const resolved = scope.closeSession; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "respond": (payload) => { const resolved = scope.respond; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "question": (payload) => { const resolved = scope.question; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }};
+    const __props_38 = {"item": ((__weiv_context) => __weiv_context.__weiv_eval[17](__weiv_context))(scope)};
+    const __handlers_38 = {"send": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[18](__weiv_context, payload))(scope); return resolved; }, "close": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[19](__weiv_context, payload))(scope); return resolved; }, "respond": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[20](__weiv_context, payload))(scope); return resolved; }, "question": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[21](__weiv_context, payload))(scope); return resolved; }};
     refs[38] = Session.mountIntoBoundary(__ref_36, __ref_37, __props_38, __handlers_38, undefined);
     fragment.append(__ref_39);
   } else {
@@ -523,24 +294,23 @@ function createConditionalFragment_33(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_33(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_33(instance, refs, wasConsequent) {
   if (wasConsequent) {
     if (refs[38] && typeof refs[38].destroy === "function") {
       refs[38].destroy();
     }
+    refs[38] = undefined;
   } else {
   }
 }
 
-function updateConditional_33(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(!scope.loading && scope.view === 'session');
+function updateConditional_33(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[16](__weiv_context))(scope));
   if (refs[35] !== next) {
     const previous = refs[35];
-    destroyConditionalBranch_33(instance, previous === true);
+    destroyConditionalBranch_33(instance, refs, previous === true);
     refs[35] = next;
-    replaceBetween(refs[33], refs[34], createConditionalFragment_33(instance, scope, next));
+    replaceBetween(refs[33], refs[34], createConditionalFragment_33(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_child_38(instance, scope, refs);
@@ -548,11 +318,11 @@ function updateConditional_33(instance, scope) {
   }
 }
 
-function createConditionalFragment_40(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_40(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[40].parentNode?.localName === "foreignObject" ? undefined : refs[40].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_46 = document.createElement("div");
+    const __ref_46 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[46] = __ref_46;
     __ref_46.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     const __ref_43 = document.createComment("component:start");
@@ -561,7 +331,7 @@ function createConditionalFragment_40(instance, scope, isConsequent) {
     refs[44] = __ref_44;
     __ref_46.append(__ref_43);
     __ref_46.append(__ref_44);
-    const __props_45 = {"items": scope.data};
+    const __props_45 = {"items": ((__weiv_context) => __weiv_context.__weiv_eval[23](__weiv_context))(scope)};
     refs[45] = Works.mountIntoBoundary(__ref_43, __ref_44, __props_45, undefined, undefined);
     fragment.append(__ref_46);
   } else {
@@ -569,24 +339,23 @@ function createConditionalFragment_40(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_40(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_40(instance, refs, wasConsequent) {
   if (wasConsequent) {
     if (refs[45] && typeof refs[45].destroy === "function") {
       refs[45].destroy();
     }
+    refs[45] = undefined;
   } else {
   }
 }
 
-function updateConditional_40(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(!scope.loading && scope.view === 'works');
+function updateConditional_40(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[22](__weiv_context))(scope));
   if (refs[42] !== next) {
     const previous = refs[42];
-    destroyConditionalBranch_40(instance, previous === true);
+    destroyConditionalBranch_40(instance, refs, previous === true);
     refs[42] = next;
-    replaceBetween(refs[40], refs[41], createConditionalFragment_40(instance, scope, next));
+    replaceBetween(refs[40], refs[41], createConditionalFragment_40(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_child_45(instance, scope, refs);
@@ -594,11 +363,11 @@ function updateConditional_40(instance, scope) {
   }
 }
 
-function createConditionalFragment_47(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_47(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[47].parentNode?.localName === "foreignObject" ? undefined : refs[47].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_53 = document.createElement("div");
+    const __ref_53 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[53] = __ref_53;
     __ref_53.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     const __ref_50 = document.createComment("component:start");
@@ -607,8 +376,8 @@ function createConditionalFragment_47(instance, scope, isConsequent) {
     refs[51] = __ref_51;
     __ref_53.append(__ref_50);
     __ref_53.append(__ref_51);
-    const __props_52 = {"item": scope.data, "entries": scope.inspection, "detail": scope.detail, "next": scope.inspectionNext, "preview": scope.preview};
-    const __handlers_52 = {"cancel": (payload) => { const resolved = scope.cancelWork; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "detail": (payload) => { const resolved = scope.changeDetail; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "more": (payload) => { const resolved = scope.moreInspection; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "respond": (payload) => { const resolved = scope.respond; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "question": (payload) => { const resolved = scope.question; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }};
+    const __props_52 = {"item": ((__weiv_context) => __weiv_context.__weiv_eval[25](__weiv_context))(scope), "entries": ((__weiv_context) => __weiv_context.__weiv_eval[26](__weiv_context))(scope), "detail": ((__weiv_context) => __weiv_context.__weiv_eval[27](__weiv_context))(scope), "next": ((__weiv_context) => __weiv_context.__weiv_eval[28](__weiv_context))(scope), "preview": ((__weiv_context) => __weiv_context.__weiv_eval[29](__weiv_context))(scope)};
+    const __handlers_52 = {"cancel": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[30](__weiv_context, payload))(scope); return resolved; }, "detail": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[31](__weiv_context, payload))(scope); return resolved; }, "more": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[32](__weiv_context, payload))(scope); return resolved; }, "respond": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[33](__weiv_context, payload))(scope); return resolved; }, "question": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[34](__weiv_context, payload))(scope); return resolved; }};
     refs[52] = Work.mountIntoBoundary(__ref_50, __ref_51, __props_52, __handlers_52, undefined);
     fragment.append(__ref_53);
   } else {
@@ -616,24 +385,23 @@ function createConditionalFragment_47(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_47(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_47(instance, refs, wasConsequent) {
   if (wasConsequent) {
     if (refs[52] && typeof refs[52].destroy === "function") {
       refs[52].destroy();
     }
+    refs[52] = undefined;
   } else {
   }
 }
 
-function updateConditional_47(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(!scope.loading && scope.view === 'work');
+function updateConditional_47(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[24](__weiv_context))(scope));
   if (refs[49] !== next) {
     const previous = refs[49];
-    destroyConditionalBranch_47(instance, previous === true);
+    destroyConditionalBranch_47(instance, refs, previous === true);
     refs[49] = next;
-    replaceBetween(refs[47], refs[48], createConditionalFragment_47(instance, scope, next));
+    replaceBetween(refs[47], refs[48], createConditionalFragment_47(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_child_52(instance, scope, refs);
@@ -641,11 +409,11 @@ function updateConditional_47(instance, scope) {
   }
 }
 
-function createConditionalFragment_54(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_54(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[54].parentNode?.localName === "foreignObject" ? undefined : refs[54].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_60 = document.createElement("div");
+    const __ref_60 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[60] = __ref_60;
     __ref_60.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     const __ref_57 = document.createComment("component:start");
@@ -654,8 +422,8 @@ function createConditionalFragment_54(instance, scope, isConsequent) {
     refs[58] = __ref_58;
     __ref_60.append(__ref_57);
     __ref_60.append(__ref_58);
-    const __props_59 = {"entries": scope.data, "category": scope.category, "next": scope.auditNext};
-    const __handlers_59 = {"category": (payload) => { const resolved = scope.changeCategory; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "more": (payload) => { const resolved = scope.moreAudit; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }};
+    const __props_59 = {"entries": ((__weiv_context) => __weiv_context.__weiv_eval[36](__weiv_context))(scope), "category": ((__weiv_context) => __weiv_context.__weiv_eval[37](__weiv_context))(scope), "next": ((__weiv_context) => __weiv_context.__weiv_eval[38](__weiv_context))(scope)};
+    const __handlers_59 = {"category": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[39](__weiv_context, payload))(scope); return resolved; }, "more": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[40](__weiv_context, payload))(scope); return resolved; }};
     refs[59] = Audit.mountIntoBoundary(__ref_57, __ref_58, __props_59, __handlers_59, undefined);
     fragment.append(__ref_60);
   } else {
@@ -663,24 +431,23 @@ function createConditionalFragment_54(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_54(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_54(instance, refs, wasConsequent) {
   if (wasConsequent) {
     if (refs[59] && typeof refs[59].destroy === "function") {
       refs[59].destroy();
     }
+    refs[59] = undefined;
   } else {
   }
 }
 
-function updateConditional_54(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(!scope.loading && scope.view === 'audit');
+function updateConditional_54(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[35](__weiv_context))(scope));
   if (refs[56] !== next) {
     const previous = refs[56];
-    destroyConditionalBranch_54(instance, previous === true);
+    destroyConditionalBranch_54(instance, refs, previous === true);
     refs[56] = next;
-    replaceBetween(refs[54], refs[55], createConditionalFragment_54(instance, scope, next));
+    replaceBetween(refs[54], refs[55], createConditionalFragment_54(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_child_59(instance, scope, refs);
@@ -688,19 +455,19 @@ function updateConditional_54(instance, scope) {
   }
 }
 
-function createConditionalFragment_61(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_61(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[61].parentNode?.localName === "foreignObject" ? undefined : refs[61].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_67 = document.createElement("div");
+    const __ref_67 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[67] = __ref_67;
     __ref_67.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
-    const __ref_64 = document.createElement("h1");
+    const __ref_64 = (__ref_67.namespaceURI === "http://www.w3.org/2000/svg" && __ref_67.localName !== "foreignObject") || __ref_67.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "h1") : document.createElement("h1");
     refs[64] = __ref_64;
     __ref_64.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     __ref_64.append(document.createTextNode("Not found"));
     __ref_67.append(__ref_64);
-    const __ref_66 = document.createElement("p");
+    const __ref_66 = (__ref_67.namespaceURI === "http://www.w3.org/2000/svg" && __ref_67.localName !== "foreignObject") || __ref_67.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "p") : document.createElement("p");
     refs[66] = __ref_66;
     __ref_66.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     const __ref_65 = document.createTextNode("");
@@ -713,21 +480,19 @@ function createConditionalFragment_61(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_61(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_61(instance, refs, wasConsequent) {
   if (wasConsequent) {
   } else {
   }
 }
 
-function updateConditional_61(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(!scope.loading && scope.view === 'missing');
+function updateConditional_61(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[41](__weiv_context))(scope));
   if (refs[63] !== next) {
     const previous = refs[63];
-    destroyConditionalBranch_61(instance, previous === true);
+    destroyConditionalBranch_61(instance, refs, previous === true);
     refs[63] = next;
-    replaceBetween(refs[61], refs[62], createConditionalFragment_61(instance, scope, next));
+    replaceBetween(refs[61], refs[62], createConditionalFragment_61(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_text_65(instance, scope, refs);
@@ -735,11 +500,11 @@ function updateConditional_61(instance, scope) {
   }
 }
 
-function createConditionalFragment_69(instance, scope, isConsequent) {
-  const refs = instance.refs;
+function createConditionalFragment_69(instance, scope, refs, isConsequent) {
   const fragment = document.createDocumentFragment();
+  fragment.__weiv_namespace = refs[69].parentNode?.localName === "foreignObject" ? undefined : refs[69].parentNode?.namespaceURI;
   if (isConsequent) {
-    const __ref_75 = document.createElement("div");
+    const __ref_75 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
     refs[75] = __ref_75;
     __ref_75.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
     const __ref_72 = document.createComment("component:start");
@@ -748,8 +513,8 @@ function createConditionalFragment_69(instance, scope, isConsequent) {
     refs[73] = __ref_73;
     __ref_75.append(__ref_72);
     __ref_75.append(__ref_73);
-    const __props_74 = {"open": scope.inputOpen, "title": scope.inputTitle, "help": scope.inputHelp, "initial": scope.inputInitial, "fields": scope.inputFields};
-    const __handlers_74 = {"cancel": (payload) => { const resolved = scope.dismissInput; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "submit": (payload) => { const resolved = scope.submitInput; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }};
+    const __props_74 = {"open": ((__weiv_context) => __weiv_context.__weiv_eval[44](__weiv_context))(scope), "title": ((__weiv_context) => __weiv_context.__weiv_eval[45](__weiv_context))(scope), "help": ((__weiv_context) => __weiv_context.__weiv_eval[46](__weiv_context))(scope), "initial": ((__weiv_context) => __weiv_context.__weiv_eval[47](__weiv_context))(scope), "fields": ((__weiv_context) => __weiv_context.__weiv_eval[48](__weiv_context))(scope)};
+    const __handlers_74 = {"cancel": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[49](__weiv_context, payload))(scope); return resolved; }, "submit": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[50](__weiv_context, payload))(scope); return resolved; }};
     refs[74] = InputDialog.mountIntoBoundary(__ref_72, __ref_73, __props_74, __handlers_74, undefined);
     fragment.append(__ref_75);
   } else {
@@ -757,24 +522,23 @@ function createConditionalFragment_69(instance, scope, isConsequent) {
   return fragment;
 }
 
-function destroyConditionalBranch_69(instance, wasConsequent) {
-  const refs = instance.refs;
+function destroyConditionalBranch_69(instance, refs, wasConsequent) {
   if (wasConsequent) {
     if (refs[74] && typeof refs[74].destroy === "function") {
       refs[74].destroy();
     }
+    refs[74] = undefined;
   } else {
   }
 }
 
-function updateConditional_69(instance, scope) {
-  const refs = instance.refs;
-  const next = Boolean(scope.inputOpen);
+function updateConditional_69(instance, scope, refs) {
+  const next = Boolean(((__weiv_context) => __weiv_context.__weiv_eval[43](__weiv_context))(scope));
   if (refs[71] !== next) {
     const previous = refs[71];
-    destroyConditionalBranch_69(instance, previous === true);
+    destroyConditionalBranch_69(instance, refs, previous === true);
     refs[71] = next;
-    replaceBetween(refs[69], refs[70], createConditionalFragment_69(instance, scope, next));
+    replaceBetween(refs[69], refs[70], createConditionalFragment_69(instance, scope, refs, next));
   }
   if (next) {
     updateRegion_child_74(instance, scope, refs);
@@ -783,382 +547,538 @@ function updateConditional_69(instance, scope) {
 }
 
 function setup(__weiv_props, __weiv_event_handlers = {}) {
-  let props = __weiv_props;
-  let __weiv_handlers = __weiv_event_handlers;
-  let __weiv_runBoundary = (callback) => callback();
-  const __weiv_wrapCallback = (callback) => {
-    if (typeof callback !== "function") {
-      return callback;
-    }
-    return (...args) => __weiv_runBoundary(() => callback(...args));
-  };
-  const setTimeout = (callback, ...args) => globalThis.setTimeout(__weiv_wrapCallback(callback), ...args);
-  const setInterval = (callback, ...args) => globalThis.setInterval(__weiv_wrapCallback(callback), ...args);
-  const queueMicrotask = (callback) => globalThis.queueMicrotask(__weiv_wrapCallback(callback));
-  const requestAnimationFrame = (callback) => globalThis.requestAnimationFrame(__weiv_wrapCallback(callback));
-  const emit = (name, payload) => {
+  const __weiv_propsCell = __weiv_createCell(__weiv_props);
+  let props = __weiv_propsCell.value;
+  let __weiv_handlers = __weiv_event_handlers;  const emit = (name, payload) => {
     if (typeof __weiv_handlers[name] === "function") {
       return __weiv_handlers[name](payload);
     }
     return undefined;
   };
-  let missingPath = "";
-  let active = "definitions";
-  let view = "";
-  let data = null;
-  let loading = true;
-  let error = "";
-  let connected = true;
-  let connectionNote = "public App API";
-  let source = null;
-  let showHistory = false;
-  let inspection = [];
-  let detail = "story";
-  let inspectionNext = "";
-  let preview = "";
-  let auditNext = "";
-  let category = "";
-  let inputOpen = false;
-  let inputTitle = "";
-  let inputHelp = "";
-  let inputInitial = "null";
-  let inputFields = [];
-  let inputSchema = null;
-  let inputSubmit = null;
-  function prepareSession(value) {
-  return {
-  ...value,
-  recentMessages: (value.recentMessages || []).map((message) => ({
-  ...message,
-  workUrl: message.workId ? "/work/" + encodeURIComponent(message.workId) : ""
-  }))
-  };
-  }
-  function prepareWork(value) {
-  return {
-  ...value,
-  subtitle: value.definition.id + " · " + short(value.id)
-  };
-  }
-  function parts() {
-  return location.pathname.split("/").filter(Boolean).map(decodeURIComponent);
-  }
-  function navigate(path) {
-  history.pushState({}, "", path);
-  return load();
-  }
-  function closeWatch() {
-  source?.close();
-  source = null;
-  }
-  function showError(cause) {
-  error = (cause?.code ? cause.code + " · " : "") + (cause?.message || String(cause));
-  }
-  function schemaValue(schema) {
-  if (schema?.default !== undefined) return schema.default;
-  if (schema?.type === "object") return Object.fromEntries(Object.entries(schema.properties || {}).map(([name, child]) => [name, schemaValue(child)]));
-  if (schema?.type === "array") return [];
-  if (schema?.type === "boolean") return false;
-  if (schema?.type === "number" || schema?.type === "integer") return 0;
-  return "";
-  }
-  function fieldsFor(schema, value, path = "") {
-  if (schema?.type === "object") return Object.entries(schema.properties || {}).flatMap(([name, child]) => fieldsFor(child, value?.[name], path ? path + "." + name : name));
-  return [{
-  label: path || "Value",
-  path,
-  type: schema?.type || "string",
-  value: schema?.type === "array" || schema?.type === "object" ? pretty(value) : String(value ?? "")
-  }];
-  }
-  function openInput(title, schema, help, submit) {
-  const value = schemaValue(schema);
-  inputTitle = title;
-  inputHelp = help;
-  inputSchema = schema;
-  inputInitial = pretty(value);
-  inputFields = fieldsFor(schema, value);
-  inputSubmit = submit;
-  inputOpen = true;
-  }
-  function dismissInput() {
-  inputOpen = false;
-  }
-  async function submitInput(value) {
-  try {
-  await inputSubmit?.(value);
-  inputOpen = false;
-  } catch (cause) {
-  showError(cause);
-  }
-  }
-  function newSession(item) {
-  openInput("New Session", {
-  type: "string",
-  default: item.id
-  }, "Choose a title for this Agent Session.", async (title) => {
-  const session = await api("/sessions", {
-  method: "POST",
-  body: JSON.stringify({
-  agent: {
-  object: item.object,
-  kind: item.kind,
-  id: item.id,
-  revision: item.revision
-  },
-  title
-  })
-  });
-  return navigate("/sessions/" + encodeURIComponent(session.id));
-  });
-  }
-  function startWork(item) {
-  openInput("Start " + item.id, item.objective, "The server validates this value against the Definition contract.", async (objective) => {
-  const work = await api("/works", {
-  method: "POST",
-  body: JSON.stringify({
-  definition: {
-  object: item.object,
-  kind: item.kind,
-  id: item.id,
-  revision: item.revision
-  },
-  objective
-  })
-  });
-  return navigate("/work/" + encodeURIComponent(work.id));
-  });
-  }
-  function question(value) {
-  openInput("Reply to question", value.item.response, value.item.prompt, async (response) => respond({
-  ...value,
-  id: value.item.id,
-  response
-  }));
-  }
-  async function respond(value) {
-  try {
-  await api("/works/" + encodeURIComponent(value.work) + "/interactions/" + encodeURIComponent(value.id) + "/response", {
-  method: "POST",
-  body: JSON.stringify({ response: value.response })
-  });
-  } catch (cause) {
-  showError(cause);
-  }
-  }
-  async function sendMessage(value) {
-  try {
-  await api("/sessions/" + encodeURIComponent(value.id) + "/messages", {
-  method: "POST",
-  body: JSON.stringify({
-  content: value.content,
-  delivery: value.delivery
-  })
-  });
-  } catch (cause) {
-  showError(cause);
-  }
-  }
-  async function closeSession(id) {
-  try {
-  await api("/sessions/" + encodeURIComponent(id) + "/close", {
-  method: "POST",
-  body: "{}"
-  });
-  await load();
-  } catch (cause) {
-  showError(cause);
-  }
-  }
-  async function cancelWork(id) {
-  try {
-  await api("/works/" + encodeURIComponent(id) + "/cancel", {
-  method: "POST",
-  body: JSON.stringify({ reason: "Canceled from Workbench" })
-  });
-  } catch (cause) {
-  showError(cause);
-  }
-  }
-  async function loadInspection(after = "") {
-  if (view !== "work") return;
-  try {
-  const page = await api("/works/" + encodeURIComponent(data.id) + "/inspection?detail=" + detail + "&limit=100" + (after ? "&after=" + encodeURIComponent(after) : ""));
-  inspection = after ? [...inspection, ...page.entries] : page.entries;
-  inspectionNext = page.hasMore ? page.next || "" : "";
-  } catch (cause) {
-  showError(cause);
-  }
-  }
-  function changeDetail(value) {
-  detail = value;
-  return loadInspection();
-  }
-  function moreInspection(after) {
-  return loadInspection(after);
-  }
-  async function loadAudit(after = "") {
-  const query = "limit=50" + (category ? "&category=" + encodeURIComponent(category) : "") + (after ? "&after=" + encodeURIComponent(after) : "");
-  const page = await api("/audit?" + query);
-  const entries = page.entries.map((entry) => ({
-  ...entry,
-  correlationText: Object.entries(entry.correlation || {}).map(([name, value]) => name + " · " + value).join(" · "),
-  reasonText: entry.reason ? entry.reason.code + " · " + entry.reason.message : "—"
-  }));
-  data = after ? [...data, ...entries] : entries;
-  auditNext = page.next || "";
-  }
-  function changeCategory(value) {
-  return navigate("/audit" + (value ? "?category=" + encodeURIComponent(value) : ""));
-  }
-  async function moreAudit(after) {
-  try {
-  await loadAudit(after);
-  } catch (cause) {
-  showError(cause);
-  }
-  }
-  function toggleHistory() {
-  return navigate(showHistory ? "/definitions" : "/definitions?history=1");
-  }
-  async function load() {
-  closeWatch();
-  error = "";
-  loading = true;
-  preview = "";
-  inspection = [];
-  inspectionNext = "";
-  const route = parts();
-  try {
-  if (!route.length) {
-  await navigate("/definitions");
-  return;
-  }
-  active = route[0] === "definitions" ? "definitions" : route[0] === "sessions" ? "sessions" : route[0] === "audit" ? "audit" : "work";
-  if (route[0] === "definitions" && route.length === 1) {
-  view = "definitions";
-  showHistory = new URLSearchParams(location.search).get("history") === "1";
-  data = (await api("/definitions?" + (showHistory ? "" : "availability=available&") + "limit=100")).definitions;
-  } else if (route[0] === "definitions" && route.length === 4) {
-  view = "definition";
-  const definition = await api("/definitions/" + route.slice(1).map(encodeURIComponent).join("/"));
-  data = {
-  ...definition,
-  subtitle: definition.kind + " · " + short(definition.revision)
-  };
-  } else if (route[0] === "sessions" && route.length === 1) {
-  view = "sessions";
-  data = (await api("/sessions?limit=100")).sessions.map((item) => ({
-  ...item,
-  url: "/sessions/" + encodeURIComponent(item.id)
-  }));
-  } else if (route[0] === "sessions" && route.length === 2) {
-  view = "session";
-  data = prepareSession(await api("/sessions/" + encodeURIComponent(route[1])));
-  source = watch("sessions", route[1], (value) => queueMicrotask(() => {
-  data = prepareSession(value);
-  connected = true;
-  connectionNote = "Live updates";
-  }), () => queueMicrotask(() => {
-  connected = false;
-  connectionNote = "Last durable state shown";
-  }));
-  } else if (route[0] === "work" && route.length === 1) {
-  view = "works";
-  data = (await api("/works?limit=100")).works.map((item) => ({
-  ...item,
-  url: "/work/" + encodeURIComponent(item.id)
-  }));
-  } else if (route[0] === "work" && route.length === 2) {
-  view = "work";
-  data = prepareWork(await api("/works/" + encodeURIComponent(route[1])));
-  detail = "story";
-  await loadInspection();
-  if (!terminal.has(data.status)) {
-  source = watch("works", route[1], (value) => queueMicrotask(() => {
-  data = prepareWork(value);
-  connected = true;
-  connectionNote = "Live updates";
-  if (terminal.has(value.status)) {
-  preview = "";
-  closeWatch();
-  }
-  }), () => queueMicrotask(() => {
-  connected = false;
-  connectionNote = "Last durable state shown";
-  }));
-  source.addEventListener("model.delta", (event) => {
-  const delta = JSON.parse(event.data);
-  if (delta.item?.type === "text" && delta.workId === data.id) queueMicrotask(() => {
-  preview = (preview + delta.item.text).slice(-131072);
-  });
-  });
-  } else connectionNote = "Durable terminal state";
-  } else if (route[0] === "audit" && route.length === 1) {
-  view = "audit";
-  category = new URLSearchParams(location.search).get("category") || "";
-  data = [];
-  await loadAudit();
-  } else {
-  view = "missing";
-  missingPath = location.pathname;
-  data = null;
-  }
-  } catch (cause) {
-  showError(cause);
-  view = "missing";
-  } finally {
-  loading = false;
-  }
-  }
-  document.addEventListener("click", (event) => {
-  const anchor = event.target.closest?.("a[href^=\"/\"]");
-  if (anchor && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
-  event.preventDefault();
-  queueMicrotask(() => navigate(anchor.pathname + anchor.search));
-  }
-  });
-  addEventListener("popstate", () => queueMicrotask(() => load()));
-  queueMicrotask(() => load());
-  const api = __weiv_getTrackedRoot("api", __weiv_import_api);
-  const pretty = __weiv_getTrackedRoot("pretty", __weiv_import_pretty);
-  const short = __weiv_getTrackedRoot("short", __weiv_import_short);
-  const terminal = __weiv_getTrackedRoot("terminal", __weiv_import_terminal);
-  const watch = __weiv_getTrackedRoot("watch", __weiv_import_watch);
-  props = __weiv_getTrackedRoot("props", props);
-  const __weiv_scope = {};
+let missingPath = __weiv_createCell("");
+let active = __weiv_createCell("definitions");
+let view = __weiv_createCell("");
+let data = __weiv_createCell(null);
+let loading = __weiv_createCell(true);
+let error = __weiv_createCell("");
+let connected = __weiv_createCell(true);
+let connectionNote = __weiv_createCell("public App API");
+const manageWatch = __weiv_createCell(__weiv_import_createWatchHandle());
+let showHistory = __weiv_createCell(false);
+let inspection = __weiv_createCell([]);
+let detail = __weiv_createCell("story");
+let inspectionNext = __weiv_createCell("");
+let preview = __weiv_createCell("");
+let auditNext = __weiv_createCell("");
+let category = __weiv_createCell("");
+let inputOpen = __weiv_createCell(false);
+let inputTitle = __weiv_createCell("");
+let inputHelp = __weiv_createCell("");
+let inputInitial = __weiv_createCell("null");
+let inputFields = __weiv_createCell([]);
+let inputSchema = null;
+let inputSubmit = __weiv_createCell(null);
+function prepareSession(value) {
+	return {
+		...value,
+		recentMessages: (value.recentMessages || []).map((message) => ({
+			...message,
+			workUrl: message.workId ? "/work/" + encodeURIComponent(message.workId) : ""
+		}))
+	};
+}
+function prepareWork(value) {
+	return {
+		...value,
+		subtitle: value.definition.id + " · " + __weiv_import_short(value.id)
+	};
+}
+function parts() {
+	return location.pathname.split("/").filter(Boolean).map(decodeURIComponent);
+}
+function navigate(path) {
+	history.pushState({}, "", path);
+	return load();
+}
+function closeWatch() {
+	__weiv_unbindCellValue(manageWatch.value)();
+}
+function showError(cause) {
+	__weiv_cellAssignmentTarget(() => error).value = __weiv_normalizeCellValue((cause?.code ? cause.code + " · " : "") + (cause?.message || String(cause)));
+}
+function schemaValue(schema) {
+	if (schema?.default !== undefined) return schema.default;
+	if (schema?.type === "object") return Object.fromEntries(Object.entries(schema.properties || {}).map(([name, child]) => [name, schemaValue(child)]));
+	if (schema?.type === "array") return [];
+	if (schema?.type === "boolean") return false;
+	if (schema?.type === "number" || schema?.type === "integer") return 0;
+	return "";
+}
+function fieldsFor(schema, value, path = "") {
+	if (schema?.type === "object") return Object.entries(schema.properties || {}).flatMap(([name, child]) => fieldsFor(child, value?.[name], path ? path + "." + name : name));
+	return [{
+		label: path || "Value",
+		path,
+		type: schema?.type || "string",
+		value: schema?.type === "array" || schema?.type === "object" ? __weiv_import_pretty(value) : String(value ?? "")
+	}];
+}
+function openInput(title, schema, help, submit) {
+	const value = schemaValue(schema);
+	__weiv_cellAssignmentTarget(() => inputTitle).value = __weiv_normalizeCellValue(title);
+	__weiv_cellAssignmentTarget(() => inputHelp).value = __weiv_normalizeCellValue(help);
+	inputSchema = schema;
+	__weiv_cellAssignmentTarget(() => inputInitial).value = __weiv_normalizeCellValue(__weiv_import_pretty(value));
+	__weiv_cellAssignmentTarget(() => inputFields).value = __weiv_normalizeCellValue(fieldsFor(schema, value));
+	__weiv_cellAssignmentTarget(() => inputSubmit).value = __weiv_normalizeCellValue(submit);
+	__weiv_cellAssignmentTarget(() => inputOpen).value = __weiv_normalizeCellValue(true);
+}
+function dismissInput() {
+	__weiv_cellAssignmentTarget(() => inputOpen).value = __weiv_normalizeCellValue(false);
+}
+async function submitInput(value) {
+	try {
+		await __weiv_unbindCellValue(inputSubmit.value)?.(value);
+		__weiv_cellAssignmentTarget(() => inputOpen).value = __weiv_normalizeCellValue(false);
+	} catch (cause) {
+		showError(cause);
+	}
+}
+function newSession(item) {
+	openInput("New Session", {
+		type: "string",
+		default: item.id
+	}, "Choose a title for this Agent Session.", async (title) => {
+		const session = await __weiv_import_api("/sessions", {
+			method: "POST",
+			body: JSON.stringify({
+				agent: {
+					object: "definition",
+					type: item.type,
+					id: item.id,
+					revision: item.revision
+				},
+				title
+			})
+		});
+		return navigate("/sessions/" + encodeURIComponent(session.id));
+	});
+}
+function startWork(item) {
+	openInput("Start " + item.id, item.objective, "The server validates this value against the Definition contract.", async (objective) => {
+		const work = await __weiv_import_api("/works", {
+			method: "POST",
+			body: JSON.stringify({
+				definition: {
+					object: "definition",
+					type: item.type,
+					id: item.id,
+					revision: item.revision
+				},
+				objective
+			})
+		});
+		return navigate("/work/" + encodeURIComponent(work.id));
+	});
+}
+function question(value) {
+	openInput("Reply to question", value.item.response, value.item.prompt, async (response) => respond({
+		...value,
+		id: value.item.id,
+		response
+	}));
+}
+async function respond(value) {
+	try {
+		await __weiv_import_api("/works/" + encodeURIComponent(value.work) + "/interactions/" + encodeURIComponent(value.id) + "/response", {
+			method: "POST",
+			body: JSON.stringify({ response: value.response })
+		});
+	} catch (cause) {
+		showError(cause);
+	}
+}
+async function sendMessage(value) {
+	try {
+		await __weiv_import_api("/sessions/" + encodeURIComponent(value.id) + "/messages", {
+			method: "POST",
+			body: JSON.stringify({
+				content: value.content,
+				delivery: value.delivery
+			})
+		});
+	} catch (cause) {
+		showError(cause);
+	}
+}
+async function closeSession(id) {
+	try {
+		await __weiv_import_api("/sessions/" + encodeURIComponent(id) + "/close", {
+			method: "POST",
+			body: "{}"
+		});
+		await load();
+	} catch (cause) {
+		showError(cause);
+	}
+}
+async function cancelWork(id) {
+	try {
+		await __weiv_import_api("/works/" + encodeURIComponent(id) + "/cancel", {
+			method: "POST",
+			body: JSON.stringify({ reason: "Canceled from Workbench" })
+		});
+	} catch (cause) {
+		showError(cause);
+	}
+}
+async function loadInspection(after = "") {
+	if (view.value !== "work") return;
+	try {
+		const page = await __weiv_import_api("/works/" + encodeURIComponent(data.value.id) + "/inspection?detail=" + detail.value + "&limit=100" + (after ? "&after=" + encodeURIComponent(after) : ""));
+		__weiv_cellAssignmentTarget(() => inspection).value = __weiv_normalizeCellValue(after ? [...inspection.value, ...page.entries] : page.entries);
+		__weiv_cellAssignmentTarget(() => inspectionNext).value = __weiv_normalizeCellValue(page.hasMore ? page.next || "" : "");
+	} catch (cause) {
+		showError(cause);
+	}
+}
+function changeDetail(value) {
+	__weiv_cellAssignmentTarget(() => detail).value = __weiv_normalizeCellValue(value);
+	return loadInspection();
+}
+function moreInspection(after) {
+	return loadInspection(after);
+}
+async function loadAudit(after = "") {
+	const query = "limit=50" + (category.value ? "&category=" + encodeURIComponent(category.value) : "") + (after ? "&after=" + encodeURIComponent(after) : "");
+	const page = await __weiv_import_api("/audit?" + query);
+	const entries = page.entries.map((entry) => ({
+		...entry,
+		correlationText: Object.entries(entry.correlation || {}).map(([name, value]) => name + " · " + value).join(" · "),
+		reasonText: entry.reason ? entry.reason.code + " · " + entry.reason.message : "—"
+	}));
+	__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue(after ? [...data.value, ...entries] : entries);
+	__weiv_cellAssignmentTarget(() => auditNext).value = __weiv_normalizeCellValue(page.next || "");
+}
+function changeCategory(value) {
+	return navigate("/audit" + (value ? "?category=" + encodeURIComponent(value) : ""));
+}
+async function moreAudit(after) {
+	try {
+		await loadAudit(after);
+	} catch (cause) {
+		showError(cause);
+	}
+}
+function toggleHistory() {
+	return navigate(showHistory.value ? "/definitions" : "/definitions?history=1");
+}
+async function load() {
+	closeWatch();
+	__weiv_cellAssignmentTarget(() => error).value = __weiv_normalizeCellValue("");
+	__weiv_cellAssignmentTarget(() => loading).value = __weiv_normalizeCellValue(true);
+	__weiv_cellAssignmentTarget(() => preview).value = __weiv_normalizeCellValue("");
+	__weiv_cellAssignmentTarget(() => inspection).value = __weiv_normalizeCellValue([]);
+	__weiv_cellAssignmentTarget(() => inspectionNext).value = __weiv_normalizeCellValue("");
+	const route = parts();
+	try {
+		if (!route.length) {
+			await navigate("/definitions");
+			return;
+		}
+		__weiv_cellAssignmentTarget(() => active).value = __weiv_normalizeCellValue(route[0] === "definitions" ? "definitions" : route[0] === "sessions" ? "sessions" : route[0] === "audit" ? "audit" : "work");
+		if (route[0] === "definitions" && route.length === 1) {
+			__weiv_cellAssignmentTarget(() => view).value = __weiv_normalizeCellValue("definitions");
+			__weiv_cellAssignmentTarget(() => showHistory).value = __weiv_normalizeCellValue(new URLSearchParams(location.search).get("history") === "1");
+			__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue((await __weiv_import_api("/definitions?" + (showHistory.value ? "" : "availability=available&") + "limit=100")).definitions);
+		} else if (route[0] === "definitions" && route.length === 4) {
+			__weiv_cellAssignmentTarget(() => view).value = __weiv_normalizeCellValue("definition");
+			const definition = await __weiv_import_api("/definitions/" + route.slice(1).map(encodeURIComponent).join("/"));
+			__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue({
+				...definition,
+				subtitle: definition.type + " · " + __weiv_import_short(definition.revision)
+			});
+		} else if (route[0] === "sessions" && route.length === 1) {
+			__weiv_cellAssignmentTarget(() => view).value = __weiv_normalizeCellValue("sessions");
+			__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue((await __weiv_import_api("/sessions?limit=100")).sessions.map((item) => ({
+				...item,
+				url: "/sessions/" + encodeURIComponent(item.id)
+			})));
+		} else if (route[0] === "sessions" && route.length === 2) {
+			__weiv_cellAssignmentTarget(() => view).value = __weiv_normalizeCellValue("session");
+			__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue(prepareSession(await __weiv_import_api("/sessions/" + encodeURIComponent(route[1]))));
+			__weiv_unbindCellValue(manageWatch.value)(__weiv_import_watch("sessions", route[1], (value) => {
+				__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue(prepareSession(value));
+				__weiv_cellAssignmentTarget(() => connected).value = __weiv_normalizeCellValue(true);
+				__weiv_cellAssignmentTarget(() => connectionNote).value = __weiv_normalizeCellValue("Live updates");
+			}, () => {
+				__weiv_cellAssignmentTarget(() => connected).value = __weiv_normalizeCellValue(false);
+				__weiv_cellAssignmentTarget(() => connectionNote).value = __weiv_normalizeCellValue("Last durable state shown");
+			}));
+		} else if (route[0] === "work" && route.length === 1) {
+			__weiv_cellAssignmentTarget(() => view).value = __weiv_normalizeCellValue("works");
+			__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue((await __weiv_import_api("/works?limit=100")).works.map((item) => ({
+				...item,
+				url: "/work/" + encodeURIComponent(item.id)
+			})));
+		} else if (route[0] === "work" && route.length === 2) {
+			__weiv_cellAssignmentTarget(() => view).value = __weiv_normalizeCellValue("work");
+			__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue(prepareWork(await __weiv_import_api("/works/" + encodeURIComponent(route[1]))));
+			__weiv_cellAssignmentTarget(() => detail).value = __weiv_normalizeCellValue("story");
+			await loadInspection();
+			if (!__weiv_import_isTerminal(data.value.status)) {
+				__weiv_unbindCellValue(manageWatch.value)(__weiv_import_watch("works", route[1], (value) => {
+					__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue(prepareWork(value));
+					__weiv_cellAssignmentTarget(() => connected).value = __weiv_normalizeCellValue(true);
+					__weiv_cellAssignmentTarget(() => connectionNote).value = __weiv_normalizeCellValue("Live updates");
+					if (__weiv_import_isTerminal(value.status)) {
+						__weiv_cellAssignmentTarget(() => preview).value = __weiv_normalizeCellValue("");
+						closeWatch();
+					}
+				}, () => {
+					__weiv_cellAssignmentTarget(() => connected).value = __weiv_normalizeCellValue(false);
+					__weiv_cellAssignmentTarget(() => connectionNote).value = __weiv_normalizeCellValue("Last durable state shown");
+				}))?.addEventListener("model.delta", (event) => {
+					const delta = JSON.parse(event.data);
+					if (delta.item?.type === "text" && delta.workId === data.value.id) __weiv_cellAssignmentTarget(() => preview).value = __weiv_normalizeCellValue((preview.value + delta.item.text).slice(-131072));
+				});
+			} else __weiv_cellAssignmentTarget(() => connectionNote).value = __weiv_normalizeCellValue("Durable terminal state");
+		} else if (route[0] === "audit" && route.length === 1) {
+			__weiv_cellAssignmentTarget(() => view).value = __weiv_normalizeCellValue("audit");
+			__weiv_cellAssignmentTarget(() => category).value = __weiv_normalizeCellValue(new URLSearchParams(location.search).get("category") || "");
+			__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue([]);
+			await loadAudit();
+		} else {
+			__weiv_cellAssignmentTarget(() => view).value = __weiv_normalizeCellValue("missing");
+			__weiv_cellAssignmentTarget(() => missingPath).value = __weiv_normalizeCellValue(location.pathname);
+			__weiv_cellAssignmentTarget(() => data).value = __weiv_normalizeCellValue(null);
+		}
+	} catch (cause) {
+		showError(cause);
+		__weiv_cellAssignmentTarget(() => view).value = __weiv_normalizeCellValue("missing");
+	} finally {
+		__weiv_cellAssignmentTarget(() => loading).value = __weiv_normalizeCellValue(false);
+	}
+}
+document.addEventListener("click", (event) => {
+	const anchor = event.target.closest?.("a[href^=\"/\"]");
+	if (anchor && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+		event.preventDefault();
+		navigate(anchor.pathname + anchor.search);
+	}
+});
+addEventListener("popstate", () => {
+	void load();
+});
+void load();
+;
+const __weiv_templateExpressions = [
+	(__weiv_context) => {
+		return active.value;
+	},
+	(__weiv_context) => {
+		return connected.value;
+	},
+	(__weiv_context) => {
+		return connectionNote.value;
+	},
+	(__weiv_context) => {
+		return error.value;
+	},
+	(__weiv_context) => {
+		return error.value;
+	},
+	(__weiv_context) => {
+		return loading.value;
+	},
+	(__weiv_context) => {
+		return !loading.value && view.value === "definitions";
+	},
+	(__weiv_context) => {
+		return data.value;
+	},
+	(__weiv_context) => {
+		return showHistory.value;
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return toggleHistory?.(__weiv_argument);
+	},
+	(__weiv_context) => {
+		return !loading.value && view.value === "definition";
+	},
+	(__weiv_context) => {
+		return data.value;
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return newSession?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return startWork?.(__weiv_argument);
+	},
+	(__weiv_context) => {
+		return !loading.value && view.value === "sessions";
+	},
+	(__weiv_context) => {
+		return data.value;
+	},
+	(__weiv_context) => {
+		return !loading.value && view.value === "session";
+	},
+	(__weiv_context) => {
+		return data.value;
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return sendMessage?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return closeSession?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return respond?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return question?.(__weiv_argument);
+	},
+	(__weiv_context) => {
+		return !loading.value && view.value === "works";
+	},
+	(__weiv_context) => {
+		return data.value;
+	},
+	(__weiv_context) => {
+		return !loading.value && view.value === "work";
+	},
+	(__weiv_context) => {
+		return data.value;
+	},
+	(__weiv_context) => {
+		return inspection.value;
+	},
+	(__weiv_context) => {
+		return detail.value;
+	},
+	(__weiv_context) => {
+		return inspectionNext.value;
+	},
+	(__weiv_context) => {
+		return preview.value;
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return cancelWork?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return changeDetail?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return moreInspection?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return respond?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return question?.(__weiv_argument);
+	},
+	(__weiv_context) => {
+		return !loading.value && view.value === "audit";
+	},
+	(__weiv_context) => {
+		return data.value;
+	},
+	(__weiv_context) => {
+		return category.value;
+	},
+	(__weiv_context) => {
+		return auditNext.value;
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return changeCategory?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return moreAudit?.(__weiv_argument);
+	},
+	(__weiv_context) => {
+		return !loading.value && view.value === "missing";
+	},
+	(__weiv_context) => {
+		return missingPath.value;
+	},
+	(__weiv_context) => {
+		return inputOpen.value;
+	},
+	(__weiv_context) => {
+		return inputOpen.value;
+	},
+	(__weiv_context) => {
+		return inputTitle.value;
+	},
+	(__weiv_context) => {
+		return inputHelp.value;
+	},
+	(__weiv_context) => {
+		return inputInitial.value;
+	},
+	(__weiv_context) => {
+		return inputFields.value;
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return dismissInput?.(__weiv_argument);
+	},
+	(__weiv_context, __weiv_argument) => {
+		const payload = __weiv_argument;
+		return submitInput?.(__weiv_argument);
+	}
+];
+
+  const __weiv_scope = {__proto__: null};
+  __weiv_scope.__weiv_eval = __weiv_templateExpressions;
   function __weiv_refresh() {
     __weiv_scope.props = props;
     __weiv_scope.emit = emit;
-    __weiv_scope.api = api;
-    __weiv_scope.pretty = pretty;
-    __weiv_scope.short = short;
-    __weiv_scope.terminal = terminal;
-    __weiv_scope.watch = watch;
+    __weiv_scope.api = __weiv_import_api;
+    __weiv_scope.createWatchHandle = __weiv_import_createWatchHandle;
+    __weiv_scope.isTerminal = __weiv_import_isTerminal;
+    __weiv_scope.pretty = __weiv_import_pretty;
+    __weiv_scope.short = __weiv_import_short;
+    __weiv_scope.watch = __weiv_import_watch;
     __weiv_scope.props = props;
-    __weiv_scope.missingPath = missingPath;
-    __weiv_scope.active = active;
-    __weiv_scope.view = view;
-    __weiv_scope.data = data;
-    __weiv_scope.loading = loading;
-    __weiv_scope.error = error;
-    __weiv_scope.connected = connected;
-    __weiv_scope.connectionNote = connectionNote;
-    __weiv_scope.source = source;
-    __weiv_scope.showHistory = showHistory;
-    __weiv_scope.inspection = inspection;
-    __weiv_scope.detail = detail;
-    __weiv_scope.inspectionNext = inspectionNext;
-    __weiv_scope.preview = preview;
-    __weiv_scope.auditNext = auditNext;
-    __weiv_scope.category = category;
-    __weiv_scope.inputOpen = inputOpen;
-    __weiv_scope.inputTitle = inputTitle;
-    __weiv_scope.inputHelp = inputHelp;
-    __weiv_scope.inputInitial = inputInitial;
-    __weiv_scope.inputFields = inputFields;
+    __weiv_scope.missingPath = missingPath.value;
+    __weiv_scope.active = active.value;
+    __weiv_scope.view = view.value;
+    __weiv_scope.data = data.value;
+    __weiv_scope.loading = loading.value;
+    __weiv_scope.error = error.value;
+    __weiv_scope.connected = connected.value;
+    __weiv_scope.connectionNote = connectionNote.value;
+    __weiv_scope.manageWatch = manageWatch.value;
+    __weiv_scope.showHistory = showHistory.value;
+    __weiv_scope.inspection = inspection.value;
+    __weiv_scope.detail = detail.value;
+    __weiv_scope.inspectionNext = inspectionNext.value;
+    __weiv_scope.preview = preview.value;
+    __weiv_scope.auditNext = auditNext.value;
+    __weiv_scope.category = category.value;
+    __weiv_scope.inputOpen = inputOpen.value;
+    __weiv_scope.inputTitle = inputTitle.value;
+    __weiv_scope.inputHelp = inputHelp.value;
+    __weiv_scope.inputInitial = inputInitial.value;
+    __weiv_scope.inputFields = inputFields.value;
     __weiv_scope.inputSchema = inputSchema;
-    __weiv_scope.inputSubmit = inputSubmit;
+    __weiv_scope.inputSubmit = inputSubmit.value;
     __weiv_scope.prepareSession = prepareSession;
     __weiv_scope.prepareWork = prepareWork;
     __weiv_scope.parts = parts;
@@ -1188,46 +1108,54 @@ function setup(__weiv_props, __weiv_event_handlers = {}) {
     return __weiv_scope;
   }
   function __weiv_setProps(nextProps) {
-    props = __weiv_getTrackedRoot("props", nextProps);
+    __weiv_propsCell.value = nextProps;
+    props = __weiv_propsCell.value;
   }
   function __weiv_setEventHandlers(nextHandlers) {
     __weiv_handlers = nextHandlers;
   }
-  function __weiv_setBoundaryRunner(nextRunner) {
-    __weiv_runBoundary = nextRunner;
+  function __weiv_subscribeImportedObservables(__weiv_instance) {
+    const __weiv_cellScope = __weiv_createCellScope((dirty) => { if (!__weiv_instance.destroyed) __weiv_instance.updateDirty({ bindings: [...dirty], paths: [] }, __weiv_instance.refresh()); });
+    __weiv_cellScope.watch(__weiv_propsCell, "props");
+    __weiv_cellScope.watch(missingPath, "missingPath");
+    __weiv_cellScope.watch(active, "active");
+    __weiv_cellScope.watch(view, "view");
+    __weiv_cellScope.watch(data, "data");
+    __weiv_cellScope.watch(loading, "loading");
+    __weiv_cellScope.watch(error, "error");
+    __weiv_cellScope.watch(connected, "connected");
+    __weiv_cellScope.watch(connectionNote, "connectionNote");
+    __weiv_cellScope.watch(showHistory, "showHistory");
+    __weiv_cellScope.watch(inspection, "inspection");
+    __weiv_cellScope.watch(detail, "detail");
+    __weiv_cellScope.watch(inspectionNext, "inspectionNext");
+    __weiv_cellScope.watch(preview, "preview");
+    __weiv_cellScope.watch(auditNext, "auditNext");
+    __weiv_cellScope.watch(category, "category");
+    __weiv_cellScope.watch(inputOpen, "inputOpen");
+    __weiv_cellScope.watch(inputTitle, "inputTitle");
+    __weiv_cellScope.watch(inputHelp, "inputHelp");
+    __weiv_cellScope.watch(inputInitial, "inputInitial");
+    __weiv_cellScope.watch(inputFields, "inputFields");
+    __weiv_cellScope.watch(inputSubmit, "submitInput");
+    __weiv_cellScope.watch(category, "moreAudit");
+    __weiv_cellScope.watch(data, "moreAudit");
+    __weiv_cellScope.watch(showHistory, "moreAudit");
+    __weiv_cellScope.watch(data, "changeCategory");
+    __weiv_cellScope.watch(manageWatch, "changeCategory");
+    __weiv_cellScope.watch(preview, "changeCategory");
+    __weiv_cellScope.watch(showHistory, "changeCategory");
+    __weiv_cellScope.watch(detail, "changeCategory");
+    __weiv_cellScope.watch(inspection, "changeCategory");
+    __weiv_cellScope.watch(view, "changeCategory");
+    __weiv_cellScope.watch(showHistory, "toggleHistory");
+    __weiv_cellScope.watch(__weiv_publisher_0.getCell("capability"), "api");
+    __weiv_cellScope.watch(__weiv_publisher_1.getCell("fragment"), "api");
+    __weiv_cellScope.watch(__weiv_publisher_2.getCell("capability"), "watch");
+    __weiv_cellScope.watch(__weiv_publisher_3.getCell("fragment"), "watch");
+    return () => __weiv_cellScope.dispose();
   }
-  function __weiv_subscribeImportedObservables(instance) {
-    const __weiv_unsubscribes = [];
-    const __weiv_seen = new Set();
-    const __weiv_register = (value) => {
-      const __weiv_node = __weiv_getObservableNode(value);
-      if (!__weiv_node || __weiv_seen.has(__weiv_node) || !__weiv_node.listeners || typeof __weiv_node.listeners.add !== "function") {
-        return;
-      }
-      __weiv_seen.add(__weiv_node);
-      const __weiv_listener = () => {
-        if (instance.destroyed) {
-          return;
-        }
-        if (typeof instance.update === "function") {
-          instance.update();
-        }
-      };
-      __weiv_node.listeners.add(__weiv_listener);
-      __weiv_unsubscribes.push(() => __weiv_node.listeners.delete(__weiv_listener));
-    };
-    __weiv_register(api);
-    __weiv_register(pretty);
-    __weiv_register(short);
-    __weiv_register(terminal);
-    __weiv_register(watch);
-    return () => {
-      for (const __weiv_unsubscribe of __weiv_unsubscribes) {
-        __weiv_unsubscribe();
-      }
-    };
-  }
-  return { scope: __weiv_scope, refresh: __weiv_refresh, setProps: __weiv_setProps, setEventHandlers: __weiv_setEventHandlers, setBoundaryRunner: __weiv_setBoundaryRunner, subscribeImportedObservables: __weiv_subscribeImportedObservables };
+  return { scope: __weiv_scope, refresh: __weiv_refresh, setProps: __weiv_setProps, setEventHandlers: __weiv_setEventHandlers, subscribeImportedObservables: __weiv_subscribeImportedObservables };
 }
 
 export const scopeId = "w52BC126DEC420AC0";
@@ -1238,7 +1166,7 @@ export const trackedStateGraph = { roots: [], paths: [], regions: [] };
 function createDom(instance) {
   const fragment = document.createDocumentFragment();
   const refs = instance.refs;
-  const __ref_76 = document.createElement("div");
+  const __ref_76 = (fragment.namespaceURI === "http://www.w3.org/2000/svg" && fragment.localName !== "foreignObject") || fragment.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "div") : document.createElement("div");
   refs[76] = __ref_76;
   __ref_76.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
   __ref_76.setAttribute("class", "shell");
@@ -1248,9 +1176,9 @@ function createDom(instance) {
   refs[1] = __ref_1;
   __ref_76.append(__ref_0);
   __ref_76.append(__ref_1);
-  const __props_2 = {"active": instance.refresh().active, "connected": instance.refresh().connected, "note": instance.refresh().connectionNote};
+  const __props_2 = {"active": ((__weiv_context) => __weiv_context.__weiv_eval[0](__weiv_context))(instance.refresh()), "connected": ((__weiv_context) => __weiv_context.__weiv_eval[1](__weiv_context))(instance.refresh()), "note": ((__weiv_context) => __weiv_context.__weiv_eval[2](__weiv_context))(instance.refresh())};
   refs[2] = Sidebar.mountIntoBoundary(__ref_0, __ref_1, __props_2, undefined, undefined);
-  const __ref_68 = document.createElement("main");
+  const __ref_68 = (__ref_76.namespaceURI === "http://www.w3.org/2000/svg" && __ref_76.localName !== "foreignObject") || __ref_76.__weiv_namespace === "http://www.w3.org/2000/svg" ? document.createElementNS("http://www.w3.org/2000/svg", "main") : document.createElement("main");
   refs[68] = __ref_68;
   __ref_68.setAttribute("data-weiv-scope", "w52BC126DEC420AC0");
   const __ref_3 = document.createComment("if:start");
@@ -1336,90 +1264,99 @@ function createDom(instance) {
 }
 
 function updateRegion_child_2(instance, scope, refs) {
-  refs[2].setProps({"active": scope.active, "connected": scope.connected, "note": scope.connectionNote});
+  if (!refs[2]) return;
+  refs[2].setProps({"active": ((__weiv_context) => __weiv_context.__weiv_eval[0](__weiv_context))(scope), "connected": ((__weiv_context) => __weiv_context.__weiv_eval[1](__weiv_context))(scope), "note": ((__weiv_context) => __weiv_context.__weiv_eval[2](__weiv_context))(scope)});
   refs[2].update();
 }
 function updateRegion_conditional_3(instance, scope, refs) {
-  updateConditional_3(instance, scope);
+  updateConditional_3(instance, scope, refs);
 }
 function updateRegion_text_6(instance, scope, refs) {
-  const __next_text_6 = String((scope.error) ?? "");
+  const __next_text_6 = String((((__weiv_context) => __weiv_context.__weiv_eval[4](__weiv_context))(scope)) ?? "");
   if (refs[6].data !== __next_text_6) {
     refs[6].data = __next_text_6;
   }
 }
 function updateRegion_conditional_8(instance, scope, refs) {
-  updateConditional_8(instance, scope);
+  updateConditional_8(instance, scope, refs);
 }
 function updateRegion_conditional_12(instance, scope, refs) {
-  updateConditional_12(instance, scope);
+  updateConditional_12(instance, scope, refs);
 }
 function updateRegion_child_17(instance, scope, refs) {
-  refs[17].setProps({"items": scope.data, "history": scope.showHistory});
-  refs[17].setEventHandlers({"toggle-history": (payload) => { const resolved = scope.toggleHistory; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }});
+  if (!refs[17]) return;
+  refs[17].setProps({"items": ((__weiv_context) => __weiv_context.__weiv_eval[7](__weiv_context))(scope), "history": ((__weiv_context) => __weiv_context.__weiv_eval[8](__weiv_context))(scope)});
+  refs[17].setEventHandlers({"toggle-history": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[9](__weiv_context, payload))(scope); return resolved; }});
   refs[17].update();
 }
 function updateRegion_conditional_19(instance, scope, refs) {
-  updateConditional_19(instance, scope);
+  updateConditional_19(instance, scope, refs);
 }
 function updateRegion_child_24(instance, scope, refs) {
-  refs[24].setProps({"item": scope.data});
-  refs[24].setEventHandlers({"new-session": (payload) => { const resolved = scope.newSession; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "start-work": (payload) => { const resolved = scope.startWork; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }});
+  if (!refs[24]) return;
+  refs[24].setProps({"item": ((__weiv_context) => __weiv_context.__weiv_eval[11](__weiv_context))(scope)});
+  refs[24].setEventHandlers({"new-session": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[12](__weiv_context, payload))(scope); return resolved; }, "start-work": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[13](__weiv_context, payload))(scope); return resolved; }});
   refs[24].update();
 }
 function updateRegion_conditional_26(instance, scope, refs) {
-  updateConditional_26(instance, scope);
+  updateConditional_26(instance, scope, refs);
 }
 function updateRegion_child_31(instance, scope, refs) {
-  refs[31].setProps({"items": scope.data});
+  if (!refs[31]) return;
+  refs[31].setProps({"items": ((__weiv_context) => __weiv_context.__weiv_eval[15](__weiv_context))(scope)});
   refs[31].update();
 }
 function updateRegion_conditional_33(instance, scope, refs) {
-  updateConditional_33(instance, scope);
+  updateConditional_33(instance, scope, refs);
 }
 function updateRegion_child_38(instance, scope, refs) {
-  refs[38].setProps({"item": scope.data});
-  refs[38].setEventHandlers({"send": (payload) => { const resolved = scope.sendMessage; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "close": (payload) => { const resolved = scope.closeSession; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "respond": (payload) => { const resolved = scope.respond; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "question": (payload) => { const resolved = scope.question; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }});
+  if (!refs[38]) return;
+  refs[38].setProps({"item": ((__weiv_context) => __weiv_context.__weiv_eval[17](__weiv_context))(scope)});
+  refs[38].setEventHandlers({"send": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[18](__weiv_context, payload))(scope); return resolved; }, "close": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[19](__weiv_context, payload))(scope); return resolved; }, "respond": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[20](__weiv_context, payload))(scope); return resolved; }, "question": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[21](__weiv_context, payload))(scope); return resolved; }});
   refs[38].update();
 }
 function updateRegion_conditional_40(instance, scope, refs) {
-  updateConditional_40(instance, scope);
+  updateConditional_40(instance, scope, refs);
 }
 function updateRegion_child_45(instance, scope, refs) {
-  refs[45].setProps({"items": scope.data});
+  if (!refs[45]) return;
+  refs[45].setProps({"items": ((__weiv_context) => __weiv_context.__weiv_eval[23](__weiv_context))(scope)});
   refs[45].update();
 }
 function updateRegion_conditional_47(instance, scope, refs) {
-  updateConditional_47(instance, scope);
+  updateConditional_47(instance, scope, refs);
 }
 function updateRegion_child_52(instance, scope, refs) {
-  refs[52].setProps({"item": scope.data, "entries": scope.inspection, "detail": scope.detail, "next": scope.inspectionNext, "preview": scope.preview});
-  refs[52].setEventHandlers({"cancel": (payload) => { const resolved = scope.cancelWork; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "detail": (payload) => { const resolved = scope.changeDetail; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "more": (payload) => { const resolved = scope.moreInspection; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "respond": (payload) => { const resolved = scope.respond; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "question": (payload) => { const resolved = scope.question; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }});
+  if (!refs[52]) return;
+  refs[52].setProps({"item": ((__weiv_context) => __weiv_context.__weiv_eval[25](__weiv_context))(scope), "entries": ((__weiv_context) => __weiv_context.__weiv_eval[26](__weiv_context))(scope), "detail": ((__weiv_context) => __weiv_context.__weiv_eval[27](__weiv_context))(scope), "next": ((__weiv_context) => __weiv_context.__weiv_eval[28](__weiv_context))(scope), "preview": ((__weiv_context) => __weiv_context.__weiv_eval[29](__weiv_context))(scope)});
+  refs[52].setEventHandlers({"cancel": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[30](__weiv_context, payload))(scope); return resolved; }, "detail": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[31](__weiv_context, payload))(scope); return resolved; }, "more": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[32](__weiv_context, payload))(scope); return resolved; }, "respond": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[33](__weiv_context, payload))(scope); return resolved; }, "question": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[34](__weiv_context, payload))(scope); return resolved; }});
   refs[52].update();
 }
 function updateRegion_conditional_54(instance, scope, refs) {
-  updateConditional_54(instance, scope);
+  updateConditional_54(instance, scope, refs);
 }
 function updateRegion_child_59(instance, scope, refs) {
-  refs[59].setProps({"entries": scope.data, "category": scope.category, "next": scope.auditNext});
-  refs[59].setEventHandlers({"category": (payload) => { const resolved = scope.changeCategory; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "more": (payload) => { const resolved = scope.moreAudit; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }});
+  if (!refs[59]) return;
+  refs[59].setProps({"entries": ((__weiv_context) => __weiv_context.__weiv_eval[36](__weiv_context))(scope), "category": ((__weiv_context) => __weiv_context.__weiv_eval[37](__weiv_context))(scope), "next": ((__weiv_context) => __weiv_context.__weiv_eval[38](__weiv_context))(scope)});
+  refs[59].setEventHandlers({"category": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[39](__weiv_context, payload))(scope); return resolved; }, "more": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[40](__weiv_context, payload))(scope); return resolved; }});
   refs[59].update();
 }
 function updateRegion_conditional_61(instance, scope, refs) {
-  updateConditional_61(instance, scope);
+  updateConditional_61(instance, scope, refs);
 }
 function updateRegion_text_65(instance, scope, refs) {
-  const __next_text_65 = String((scope.missingPath) ?? "");
+  const __next_text_65 = String((((__weiv_context) => __weiv_context.__weiv_eval[42](__weiv_context))(scope)) ?? "");
   if (refs[65].data !== __next_text_65) {
     refs[65].data = __next_text_65;
   }
 }
 function updateRegion_conditional_69(instance, scope, refs) {
-  updateConditional_69(instance, scope);
+  updateConditional_69(instance, scope, refs);
 }
 function updateRegion_child_74(instance, scope, refs) {
-  refs[74].setProps({"open": scope.inputOpen, "title": scope.inputTitle, "help": scope.inputHelp, "initial": scope.inputInitial, "fields": scope.inputFields});
-  refs[74].setEventHandlers({"cancel": (payload) => { const resolved = scope.dismissInput; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }, "submit": (payload) => { const resolved = scope.submitInput; if (typeof resolved === "function") { return runOwnedBoundary(instance, () => resolved(payload)); } return undefined; }});
+  if (!refs[74]) return;
+  refs[74].setProps({"open": ((__weiv_context) => __weiv_context.__weiv_eval[44](__weiv_context))(scope), "title": ((__weiv_context) => __weiv_context.__weiv_eval[45](__weiv_context))(scope), "help": ((__weiv_context) => __weiv_context.__weiv_eval[46](__weiv_context))(scope), "initial": ((__weiv_context) => __weiv_context.__weiv_eval[47](__weiv_context))(scope), "fields": ((__weiv_context) => __weiv_context.__weiv_eval[48](__weiv_context))(scope)});
+  refs[74].setEventHandlers({"cancel": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[49](__weiv_context, payload))(scope); return resolved; }, "submit": (payload) => { const resolved = ((__weiv_context) => __weiv_context.__weiv_eval[50](__weiv_context, payload))(scope); return resolved; }});
   refs[74].update();
 }
 
@@ -1444,6 +1381,7 @@ function updateDirtyRegions(instance, dirtyState, scope = instance.refresh()) {
   const refs = instance.refs;
   const normalizedDirtyState = normalizeDirtyState(dirtyState);
   const dirtySet = new Set(normalizedDirtyState.bindings);
+  const preciseBindingSet = new Set(normalizedDirtyState.preciseBindings);
   const dirtyPathSet = new Set(normalizedDirtyState.paths);
   const dirtyRegionSet = new Set();
   if (dirtyPathSet.size > 0 && trackedStateGraph && Array.isArray(trackedStateGraph.regions)) {
@@ -1500,6 +1438,7 @@ function destroyDom(instance) {
   if (refs[2] && typeof refs[2].destroy === "function") {
     refs[2].destroy();
   }
+  refs[2] = undefined;
   if (refs[5] === true) {
   } else {
   }
@@ -1510,42 +1449,49 @@ function destroyDom(instance) {
     if (refs[17] && typeof refs[17].destroy === "function") {
       refs[17].destroy();
     }
+    refs[17] = undefined;
   } else {
   }
   if (refs[21] === true) {
     if (refs[24] && typeof refs[24].destroy === "function") {
       refs[24].destroy();
     }
+    refs[24] = undefined;
   } else {
   }
   if (refs[28] === true) {
     if (refs[31] && typeof refs[31].destroy === "function") {
       refs[31].destroy();
     }
+    refs[31] = undefined;
   } else {
   }
   if (refs[35] === true) {
     if (refs[38] && typeof refs[38].destroy === "function") {
       refs[38].destroy();
     }
+    refs[38] = undefined;
   } else {
   }
   if (refs[42] === true) {
     if (refs[45] && typeof refs[45].destroy === "function") {
       refs[45].destroy();
     }
+    refs[45] = undefined;
   } else {
   }
   if (refs[49] === true) {
     if (refs[52] && typeof refs[52].destroy === "function") {
       refs[52].destroy();
     }
+    refs[52] = undefined;
   } else {
   }
   if (refs[56] === true) {
     if (refs[59] && typeof refs[59].destroy === "function") {
       refs[59].destroy();
     }
+    refs[59] = undefined;
   } else {
   }
   if (refs[63] === true) {
@@ -1555,6 +1501,7 @@ function destroyDom(instance) {
     if (refs[74] && typeof refs[74].destroy === "function") {
       refs[74].destroy();
     }
+    refs[74] = undefined;
   } else {
   }
 }
@@ -1566,7 +1513,6 @@ export function createInstance(props = {}, eventHandlers = {}, slots = {}) {
     refresh: base.refresh,
     setProps: base.setProps,
     setEventHandlers: base.setEventHandlers,
-    setBoundaryRunner: base.setBoundaryRunner,
     subscribeImportedObservables: base.subscribeImportedObservables,
     slots,
     setSlots: (nextSlots = {}) => { instance.slots = nextSlots; },
@@ -1576,8 +1522,6 @@ export function createInstance(props = {}, eventHandlers = {}, slots = {}) {
     updateDirty: () => {},
     destroy: () => {},
   };
-  instance.setBoundaryRunner((callback) => runOwnedBoundary(instance, callback));
-  __weiv_registerTrackedSubscriber(instance);
   return instance;
 }
 
@@ -1591,7 +1535,7 @@ export function mountIntoBoundary(start, end, props = {}, eventHandlers = {}, sl
   const __weiv_unsubscribeImportedObservables = typeof instance.subscribeImportedObservables === "function"
     ? instance.subscribeImportedObservables(instance)
     : null;
-  instance.destroy = () => { if (typeof __weiv_unsubscribeImportedObservables === "function") __weiv_unsubscribeImportedObservables(); __weiv_unregisterTrackedSubscriber(instance); instance.destroyed = true; destroyDom(instance); replaceBetween(start, end, document.createDocumentFragment()); };
+  instance.destroy = () => { if (typeof __weiv_unsubscribeImportedObservables === "function") __weiv_unsubscribeImportedObservables(); instance.destroyed = true; destroyDom(instance); replaceBetween(start, end, document.createDocumentFragment()); };
   instance.update();
   return {
     instance,

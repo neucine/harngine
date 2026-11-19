@@ -1,17 +1,17 @@
-<template><section class="panel" if="props.work?.interactions?.length">
+<template><section class="panel" #if="props.work?.interactions?.length">
     <h2>Interactions</h2>
     <div class="stack">
-      <div class="entry interaction" for="item in items()">
+      <div class="entry interaction" #for="item in items()">
         <b>{{ item.type === 'approval' ? item.title : item.prompt }}</b>
         <pre>{{ pretty(item.type === 'approval' ? item.details : item.response) }}</pre>
         <div class="actions">
-          <button bind:class="item.type === 'approval' ? 'primary' : 'hidden'" on:click="approve(item.id)">
+          <button :class="item.type === 'approval' ? 'primary' : 'hidden'" @click="approve(item.id)">
             Approve
           </button>
-          <button bind:class="item.type === 'approval' ? '' : 'hidden'" on:click="deny(item.id)">
+          <button :class="item.type === 'approval' ? '' : 'hidden'" @click="deny(item.id)">
             Deny
           </button>
-          <button bind:class="item.type !== 'approval' ? 'primary' : 'hidden'" on:click="reply(item)">
+          <button :class="item.type !== 'approval' ? 'primary' : 'hidden'" @click="reply(item)">
             Reply
           </button>
         </div>
